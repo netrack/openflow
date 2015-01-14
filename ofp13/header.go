@@ -1,8 +1,10 @@
 package ofp13
 
 const (
+	OPENFLOW_VERSION uint8 = 0x04
+
 	// Immutable messages
-	T_HELLO = iota
+	T_HELLO Type = iota
 	T_ERROR
 	T_ECHO_REQUEST
 	T_ECHO_REPLY
