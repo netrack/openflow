@@ -1,7 +1,7 @@
 package ofp13
 
 const (
-	OPENFLOW_VERSION uint8 = 0x04
+	VERSION uint8 = 0x04
 
 	// Immutable messages
 	T_HELLO Type = iota

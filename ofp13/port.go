@@ -24,6 +24,8 @@ const (
 	PF_PAUSE_ASYM PortFeatures = 1 << iota
 )
 
+type PortFeatures uint32
+
 const (
 	PC_PORT_DOWN    PortConfig = 1 << iota
 	PC_NO_RCV       PortConfig = 1 << iota
@@ -31,11 +33,15 @@ const (
 	PC_NO_PACKET_IN PortConfig = 1 << iota
 )
 
+type PortConfig uint32
+
 const (
 	PS_LINK_DOWN PortState = 1 << iota
 	PS_BLOCKED   PortState = 1 << iota
 	PS_LIVE      PortState = 1 << iota
 )
+
+type PortState uint32
 
 const (
 	// Maximum number of physical and logical switch ports
@@ -52,12 +58,6 @@ const (
 	P_LOCAL      PortNo = 0xfffffff8 + iota
 	P_ANY        PortNo = 0xfffffff8 + iota
 )
-
-type PortFeatures uint32
-
-type PortConfig uint32
-
-type PortState uint32
 
 type PortNo uint32
 
@@ -76,4 +76,13 @@ type Port struct {
 
 	CurrSpeed uint32
 	MaxSpeed  uint32
+}
+
+type PortMod struct {
+	Header    Header
+	PortNo    PortNo
+	HWAddr    net.HardwareAddr
+	Config    PortConfig
+	Mask      PortConfig
+	Advertise PortFeatures
 }

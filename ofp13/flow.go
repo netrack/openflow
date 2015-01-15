@@ -5,6 +5,8 @@ const (
 	MT_OXM
 )
 
+type MatchType uint16
+
 const (
 	XMT_OFB_IN_PORT OXMField = iota
 	XMT_OFB_IN_PHY_PORT
@@ -48,12 +50,16 @@ const (
 	XMT_OFB_IPV6_EXTHDR
 )
 
+type OXMField uint8
+
 const (
 	XMC_NXM_0          OXMClass = iota
 	XMC_NXM_1          OXMCLass = iota
 	XMC_OPENFLOW_BASIC OXMClass = 0x8000
 	XMC_EXPERIMENTER   OXMClass = 0xffff
 )
+
+type OXMClass uint16
 
 var (
 	OXM_OF_IN_PORT        = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_IN_PORT, false, 4}
@@ -103,6 +109,8 @@ const (
 	VID_PRESENT VlanId = iota << 12
 )
 
+type VlanId uint16
+
 const (
 	IEH_NONEXT IPv6ExtHdrFlags = 1 << iota
 	IEH_ESP    IPv6ExtHdrFlags = 1 << iota
@@ -114,14 +122,6 @@ const (
 	IEH_UNREP  IPv6ExtHdrFlags = 1 << iota
 	IEH_UNSEQ  IPv6ExtHdrFlags = 1 << iota
 )
-
-type MatchType uint16
-
-type OXMClass uint16
-
-type OXMField uint8
-
-type VlanId uint16
 
 type IPv6ExtHdrFlags uint16
 
@@ -136,4 +136,83 @@ type OXMHeader struct {
 	Field   OXMField
 	HasMask bool
 	Length  uint8
+}
+
+type OXMExperimenterHeader struct {
+	OXMHeader    OXMHeader
+	Experimenter uint32
+}
+
+const (
+	IT_GOTO_TABLE     InstructionType = 1 + iota
+	IT_WRITE_METADATA InstructionType = 1 + iota
+	IT_WRITE_ACTIONS  InstructionType = 1 + iota
+	IT_APPLY_ACTIONS  InstructionType = 1 + iota
+	IT_CLEAR_ACTIONS  InstructionType = 1 + iota
+	IT_METER          InstructionType = 1 + iota
+	IT_EXPERIMENTER   InstructionType = 0xffff
+)
+
+type InstructionType uint16
+
+type InstrutionGotoTable struct {
+	Type    InstructionType
+	Length  uint16
+	TableId uint8
+}
+
+type InstructionWriteMetadata struct {
+	Type         InstructionType
+	Length       uint16
+	Metadata     uint64
+	MetadataMask uint64
+}
+
+type InstructionActions struct {
+	Type    InstructionType
+	Length  uint16
+	Actions []ActionHeader
+}
+
+type InstructionMeter struct {
+	Type    InstructionType
+	Length  uint16
+	MeterId uint8
+}
+
+const (
+	FC_ADD FlowModCommand = iota
+	FC_MODIFY
+	FC_MODIFY_STRICT
+	FC_DELETE
+	FC_DELETE_STRICT
+)
+
+type FlowModCommand uint8
+
+const (
+	FF_SEND_FLOW_REM FlowModFlags = 1 << iota
+	FF_CHECK_OVERLAP FlowModFlags = 1 << iota
+	FF_RESET_COUNTS  FlowModFlags = 1 << iota
+	FF_NO_PKT_COUNTS FlowModFlags = 1 << iota
+	FF_NO_BYT_COUNTS FlowModFlags = 1 << iota
+)
+
+type FlowModFlags uint16
+
+type FlowMod struct {
+	Header      Header
+	Cookie      uint64
+	CookieMask  uint64
+	TableId     Table
+	Command     FlowModCommand
+	IdleTimeout uint16
+	HardTimeout uint16
+	Priority    uint16
+	BufferId    uint16
+	OutPort     PortNo
+	//OutGroup    GroupNo
+
+	Flags FlowModFlags
+	Match Match
 }
