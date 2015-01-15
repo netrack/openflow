@@ -216,3 +216,28 @@ type FlowMod struct {
 	Flags FlowModFlags
 	Match Match
 }
+
+type FlowStatsRequest struct {
+	TableId    Table
+	OutPort    PortNo
+	OutGroup   GroupNo
+	Cookie     uint64
+	CookieMask uint64
+	Match      Match
+}
+
+type FlowStats struct {
+	Length      uint16
+	TableId     Table
+	DurationSec uint32
+	DurationSec uint32
+
+	Priority    uint16
+	IdleTimeout uint16
+	HardTimeout uint16
+	Flags       FlowModFlags
+	Cookie      uint64
+	PacketCount uint64
+	ByteCount   uint64
+	Match       Match
+}

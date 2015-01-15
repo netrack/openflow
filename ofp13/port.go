@@ -86,3 +86,25 @@ type PortMod struct {
 	Mask      PortConfig
 	Advertise PortFeatures
 }
+
+type PortStatsRequest struct {
+	PortNo PortNo
+}
+
+type PortStats struct {
+	PortNo       PortNo
+	RxPackets    uint64
+	TxPackets    uint64
+	RxBytes      uint64
+	TxBytes      uint64
+	RxDropped    uint64
+	TxDropped    uint64
+	RxErrors     uint64
+	TxErrors     uint64
+	RxFrameErr   uint64
+	RxOverErr    uint64
+	RxCrcErr     uint64
+	Collisions   uint64
+	DurationSec  uint32
+	DurationNSec uint32
+}
