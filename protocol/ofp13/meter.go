@@ -51,11 +51,13 @@ type MeterBandHeader struct {
 
 type MeterBandDrop struct {
 	MeterBandHeader
+	_ pad4
 }
 
 type MeterBandDscpRemart struct {
 	MeterBandHeader
 	PrecLevel uint8
+	_         pad3
 }
 
 type MeterBandExperimenter struct {
@@ -65,11 +67,13 @@ type MeterBandExperimenter struct {
 
 type MeterMultipartRequest struct {
 	MeterId Meter
+	_       pad4
 }
 
 type MeterStats struct {
 	MeterId       Meter
 	Length        uint16
+	_             pad6
 	FlowCount     uint32
 	PacketInCount uint64
 	ByteInCount   uint64
@@ -96,4 +100,5 @@ type MeterFeatures struct {
 	Capabilities MeterFlags
 	MaxBands     uint8
 	MaxColor     uint8
+	_            pad2
 }

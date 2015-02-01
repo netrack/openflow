@@ -63,7 +63,9 @@ type PortNo uint32
 
 type Port struct {
 	PortNo PortNo
+	_      pad4
 	HWAddr net.HardwareAddr
+	_      pad2
 	Name   string
 
 	Config PortConfig
@@ -81,18 +83,23 @@ type Port struct {
 type PortMod struct {
 	Header    Header
 	PortNo    PortNo
+	_         pad4
 	HWAddr    net.HardwareAddr
+	_         pad2
 	Config    PortConfig
 	Mask      PortConfig
 	Advertise PortFeatures
+	_         pad4
 }
 
 type PortStatsRequest struct {
 	PortNo PortNo
+	_      pad4
 }
 
 type PortStats struct {
 	PortNo       PortNo
+	_            pad4
 	RxPackets    uint64
 	TxPackets    uint64
 	RxBytes      uint64

@@ -33,6 +33,7 @@ type GroupMod struct {
 	Header  Header
 	Command GroupModCommand
 	Type    GroupType
+	_       uint8
 	GroupId uint32
 	Buckets []Bucket
 }
@@ -42,6 +43,7 @@ type Bucket struct {
 	Weight     uint16
 	WatchPort  uint32
 	WatchGroup uint32
+	_          pad4
 	Actions    []ActionHeader
 }
 
@@ -51,8 +53,10 @@ type GroupStatsRequest struct {
 
 type GroupStats struct {
 	Length       uint16
+	_            pad2
 	GroupId      Group
 	RefCount     uint32
+	_            pad4
 	PacketCount  uint64
 	ByteCount    uint64
 	DurationSec  uint32
@@ -68,6 +72,7 @@ type BucketCounter struct {
 type GroupDescStats struct {
 	Length  uint16
 	Type    GroupType
+	_       pad1
 	GroupId Group
 	Buckets []Bucket
 }

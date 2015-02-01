@@ -1,8 +1,13 @@
 package ofp13
 
-const (
-	VERSION uint8 = 0x04
+import (
+	"encoding/binary"
+	"io"
+)
 
+const VERSION uint8 = 0x04
+
+const (
 	// Immutable messages
 	T_HELLO Type = iota
 	T_ERROR
@@ -53,6 +58,45 @@ const (
 type Type uint8
 
 const (
+	L_HELLO uint16 = 8
+	L_ERROR
+	L_ECHO_REQUEST
+	L_ECHO_REPLY
+	L_EXPERIMENTER
+
+	L_FEATURES_REQUEST
+	L_FEATURES_REPLY
+	L_GEL_CONFIG_REQUEST
+	L_GEL_CONFIG_REPLY
+	L_SEL_CONFIG
+
+	L_PACKEL_IN
+	L_FLOW_REMOVED
+	L_PORL_STATUS
+
+	L_PACKEL_OUT
+	L_FLOW_MOD
+	L_GROUP_MOD
+	L_PORL_MOD
+	L_TABLE_MOD
+
+	L_MULTIPARL_REQUEST
+	L_MULTIPARL_REPLY
+
+	L_QUEUE_GEL_CONFIG_REQUEST
+	L_QUEUE_GEL_CONFIG_REPLY
+
+	L_ROLE_REQUEST
+	L_ROLE_REPLY
+
+	L_ASYNC_REQUEST
+	L_ASYNC_REPLY
+	L_SEL_ASYNC
+
+	L_METER_MOD
+)
+
+const (
 	CR_ROLE_NOCHANGE ControllerRole = iota
 	CR_ROLE_EQUAL
 	CR_ROLE_MASTER
@@ -68,25 +112,35 @@ type Header struct {
 	Xid     uint32
 }
 
+func (h *Header) Write(w io.Writer) error {
+	return binary.Write(w, binary.BigEndian, h)
+}
+
+func (h *Header) Read(r io.Reader) error {
+	return binary.Read(r, binary.BigEndian, h)
+}
+
 type PacketOut struct {
 	Header     Header
 	BufferId   uint32
 	InPort     PortNo
 	ActionsLen uint16
+	_          pad6
 	Actions    []ActionHeader
 }
 
 type RoleRequest struct {
 	Header       Header
 	Role         ControllerRole
+	_            pad4
 	GenerationId uint64
 }
 
 type AsyncConfig struct {
 	Header          Header
-	PacketInMask    []uint32 //TODO:
-	PortStatusMast  []uint32 //TODO:
-	FlowRemovedMask []uint32 //TODO:
+	PacketInMask    []uint32 //TODO
+	PortStatusMask  []uint32
+	FlowRemovedMask []uint32
 }
 
 const (
@@ -142,6 +196,7 @@ type PortReason uint8
 type PortStatus struct {
 	Header Header
 	Reason PortReason
+	_      pad7
 	Desc   Port
 }
 
@@ -154,6 +209,28 @@ type HelloElemType uint16
 type Hello struct {
 	Header   Header
 	Elements []HelloElemHeader
+}
+
+func NewHello() *Hello {
+	return &Hello{Header{VERSION, T_HELLO, L_HELLO, 0}, []HelloElemHeader{}}
+}
+
+func (h *Hello) Write(w io.Writer) error {
+	err := binary.Write(w, binary.BigEndian, h.Header)
+	if err != nil {
+		return err
+	}
+
+	return binary.Write(w, binary.BigEndian, h.Elements)
+}
+
+func (h *Hello) Read(r io.Reader) error {
+	err := binary.Read(r, binary.BigEndian, &h.Header)
+	if err != nil {
+		return err
+	}
+
+	return binary.Read(r, binary.BigEndian, &h.Elements)
 }
 
 type HelloElemHeader struct {
@@ -172,3 +249,11 @@ type ExperimenterHeader struct {
 	Experimenter uint32
 	ExpType      uint32
 }
+
+type pad1 [1]uint8
+type pad2 [2]uint8
+type pad3 [3]uint8
+type pad4 [4]uint8
+type pad5 [5]uint8
+type pad6 [6]uint8
+type pad7 [7]uint8

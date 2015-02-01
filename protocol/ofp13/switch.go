@@ -27,6 +27,7 @@ type SwitchFeatures struct {
 	NumBuffers   uint32
 	NumTables    uint8
 	AuxiliaryId  uint8
+	_            uint16
 	Capabilities Capabilities
 	Reserved     uint32
 }

@@ -19,28 +19,33 @@ type PacketQueue struct {
 	QueueId    Queue
 	Port       PortNo
 	Length     uint16
+	_          pad6
 	Properties []QueuePropHeader
 }
 
 type QueuePropHeader struct {
 	Property QueueProperties
 	Length   uint16
+	_        pad3
 }
 
 type QueuePropMinRate struct {
 	PropHeader QueuePropHeader
 	Rate       uint16
+	_          pad6
 }
 
 type QueuePropMaxRate struct {
 	PropHeader QueuePropHeader
 	Rate       uint16
+	_          pad6
 }
 
 type QueuePropExperimenter struct {
 	PropHeader   QueuePropHeader
 	Experimenter uint32
-	date         []byte
+	_            pad4
+	Data         []byte
 }
 
 type QueueStatsRequest struct {
@@ -61,10 +66,12 @@ type QueueStatus struct {
 type QueueGetConfigRequest struct {
 	Header Header
 	Port   PortNo
+	_      pad4
 }
 
 type QueueGetConfigReply struct {
 	Header Header
 	Port   PortNo
+	_      pad4
 	Queues []PacketQueue
 }

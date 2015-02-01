@@ -159,11 +159,13 @@ type InstrutionGotoTable struct {
 	Type    InstructionType
 	Length  uint16
 	TableId uint8
+	_       pad3
 }
 
 type InstructionWriteMetadata struct {
 	Type         InstructionType
 	Length       uint16
+	_            pad4
 	Metadata     uint64
 	MetadataMask uint64
 }
@@ -171,6 +173,7 @@ type InstructionWriteMetadata struct {
 type InstructionActions struct {
 	Type    InstructionType
 	Length  uint16
+	_       pad4
 	Actions []ActionHeader
 }
 
@@ -219,13 +222,16 @@ type FlowMod struct {
 	OutGroup    Group
 
 	Flags FlowModFlags
+	_     pad2
 	Match Match
 }
 
 type FlowStatsRequest struct {
 	TableId    Table
+	_          pad3
 	OutPort    PortNo
 	OutGroup   Group
+	_          pad4
 	Cookie     uint64
 	CookieMask uint64
 	Match      Match
@@ -234,6 +240,7 @@ type FlowStatsRequest struct {
 type FlowStats struct {
 	Length       uint16
 	TableId      Table
+	_            pad1
 	DurationSec  uint32
 	DurationNSec uint32
 
@@ -241,6 +248,7 @@ type FlowStats struct {
 	IdleTimeout uint16
 	HardTimeout uint16
 	Flags       FlowModFlags
+	_           pad4
 	Cookie      uint64
 	PacketCount uint64
 	ByteCount   uint64

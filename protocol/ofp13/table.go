@@ -18,11 +18,13 @@ type TableConfig uint32
 type TableMod struct {
 	Header  Header
 	TableId Table
+	_       pad3
 	Config  TableConfig
 }
 
 type TableStats struct {
 	TableId      Table
+	_            pad3
 	ActiveCount  uint32
 	LookupCount  uint64
 	MatchedCount uint64
@@ -31,7 +33,8 @@ type TableStats struct {
 type TableFeatures struct {
 	Length  uint16
 	TableId Table
-	Name    string
+	_       pad5
+	name    [MAX_TABLE_NAME_LEN]byte
 
 	MetadataMatch uint64
 	MetadataWrite uint64

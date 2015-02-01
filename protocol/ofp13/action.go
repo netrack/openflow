@@ -24,7 +24,7 @@ type ActionType uint16
 
 const (
 	// Maximum MaxLength value which can be used
-	// to request a specific byte length.
+	// to request a specific byte Length.
 	CML_MAX = 0xffe5
 	// Indicates that no buffering should be
 	// applied and the whole packet is to be
@@ -35,12 +35,14 @@ const (
 type ActionHeader struct {
 	Type   ActionType
 	Length uint16
+	_      pad4
 }
 
 type ActionOutput struct {
 	ActionHeader
 	Port      uint32
 	MaxLength uint16
+	_         pad6
 }
 
 type ActionGroup struct {
@@ -56,21 +58,25 @@ type ActionSetQueue struct {
 type ActionMPLSTTL struct {
 	ActionHeader
 	MPLSTTL uint8
+	_       pad3
 }
 
 type ActionSetNWTTL struct {
 	ActionHeader
 	NWTTL uint8
+	_     pad3
 }
 
 type ActionPush struct {
 	ActionHeader
 	Ethertype uint16
+	_         pad2
 }
 
 type ActionPopMPLS struct {
 	ActionHeader
 	Ethertype uint16
+	_         pad2
 }
 
 type ActionSetField struct {
