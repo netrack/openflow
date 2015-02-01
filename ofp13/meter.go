@@ -62,3 +62,38 @@ type MeterBandExperimenter struct {
 	MeterBandHeader
 	Experimenter uint32
 }
+
+type MeterMultipartRequest struct {
+	MeterId Meter
+}
+
+type MeterStats struct {
+	MeterId       Meter
+	Length        uint16
+	FlowCount     uint32
+	PacketInCount uint64
+	ByteInCount   uint64
+	DurationSec   uint32
+	DurationNSec  uint32
+	BandStats     []MeterBandStats
+}
+
+type MeterBandStats struct {
+	PacketBandCount uint64
+	ByteBandCount   uint64
+}
+
+type MeterConfig struct {
+	Length  uint16
+	Flags   MeterModCommands
+	MeterId Meter
+	Bands   []MeterBandHeader
+}
+
+type MeterFeatures struct {
+	MaxMeter     uint32
+	BandTypes    MeterBandType
+	Capabilities MeterFlags
+	MaxBands     uint8
+	MaxColor     uint8
+}

@@ -9,12 +9,16 @@ const (
 
 type Table uint8
 
-type TableConfigFlags uint32
+const (
+	TC_DEPRECATED_MASK TableConfig = 3
+)
+
+type TableConfig uint32
 
 type TableMod struct {
 	Header  Header
 	TableId Table
-	Config  TableConfigFlags
+	Config  TableConfig
 }
 
 type TableStats struct {
@@ -31,10 +35,10 @@ type TableFeatures struct {
 
 	MetadataMatch uint64
 	MetadataWrite uint64
-	Config        TableConfigFlags
+	Config        TableConfig
 
 	MaxEntries uint32
-	//TODO: []Properties
+	Properties []TableFeaturePropHeader
 }
 
 const (
@@ -58,6 +62,11 @@ const (
 
 type TableFeaturePropType uint16
 
+type TableFeaturePropHeader struct {
+	Type   TableFeaturePropType
+	Length uint16
+}
+
 type TableFeaturePropInstructions struct {
 	Type   TableFeaturePropType
 	Length uint16
@@ -77,7 +86,15 @@ type TableFeaturePropActions struct {
 }
 
 type TableFeaturePropOXM struct {
-	Type   TableFeatulrePropType
+	Type   TableFeaturePropType
 	Length uint16
 	OXMIds []OXMHeader
+}
+
+type TableFeaturePropExperimenter struct {
+	Type             TableFeaturePropType
+	Length           uint16
+	Experimenter     uint32
+	ExpType          uint32
+	ExperimenterData []uint32
 }

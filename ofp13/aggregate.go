@@ -1,9 +1,9 @@
 package ofp13
 
 type AggregateStatsRequest struct {
-	TableId Table
-	OutPort PortNo
-	//OutGroup GroupNo
+	TableId    Table
+	OutPort    PortNo
+	OutGroup   Group
 	Cookie     uint64
 	CookieMask uint64
 	Match      Match

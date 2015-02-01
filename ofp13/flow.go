@@ -54,7 +54,7 @@ type OXMField uint8
 
 const (
 	XMC_NXM_0          OXMClass = iota
-	XMC_NXM_1          OXMCLass = iota
+	XMC_NXM_1          OXMClass = iota
 	XMC_OPENFLOW_BASIC OXMClass = 0x8000
 	XMC_EXPERIMENTER   OXMClass = 0xffff
 )
@@ -191,10 +191,15 @@ const (
 type FlowModCommand uint8
 
 const (
+	// Send flow removed message when flow expires or is deleted
 	FF_SEND_FLOW_REM FlowModFlags = 1 << iota
+	// Check for overlapping entries first
 	FF_CHECK_OVERLAP FlowModFlags = 1 << iota
-	FF_RESET_COUNTS  FlowModFlags = 1 << iota
+	// Reset flow packet and byte counts
+	FF_RESET_COUNTS FlowModFlags = 1 << iota
+	// Don't keep track of packet count
 	FF_NO_PKT_COUNTS FlowModFlags = 1 << iota
+	// Don't keep track of byte count
 	FF_NO_BYT_COUNTS FlowModFlags = 1 << iota
 )
 
@@ -211,7 +216,7 @@ type FlowMod struct {
 	Priority    uint16
 	BufferId    uint16
 	OutPort     PortNo
-	//OutGroup    GroupNo
+	OutGroup    Group
 
 	Flags FlowModFlags
 	Match Match
@@ -220,17 +225,17 @@ type FlowMod struct {
 type FlowStatsRequest struct {
 	TableId    Table
 	OutPort    PortNo
-	OutGroup   GroupNo
+	OutGroup   Group
 	Cookie     uint64
 	CookieMask uint64
 	Match      Match
 }
 
 type FlowStats struct {
-	Length      uint16
-	TableId     Table
-	DurationSec uint32
-	DurationSec uint32
+	Length       uint16
+	TableId      Table
+	DurationSec  uint32
+	DurationNSec uint32
 
 	Priority    uint16
 	IdleTimeout uint16

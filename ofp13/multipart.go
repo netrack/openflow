@@ -13,28 +13,23 @@ const (
 	// The request body is struct AggregateStatsRequest.
 	// The reply body is struct AggregateStatsReply.
 	MP_AGGREGATE
-	// Flow table statistics.
-	// The request body is empty.
+	// Flow table statistics. The request body is empty.
 	// The reply body is an array of struct TableStats.
 	MP_TABLE
-	// Port statistics.
-	// The request body is struct PortStatsRequest.
+	// Port statistics. The request body is struct PortStatsRequest.
 	// The reply body is an array of struct PortStats.
 	MP_PORT_STATS
 	// Queue statistics for a port
 	// The request body is struct QueueStatsRequest.
 	// The reply body is an array of struct QueueStats
 	MP_QUEUE
-	// Group counter statistics.
-	// The request body is struct GroupStatsRequest.
+	// Group counter statistics. The request body is struct GroupStatsRequest.
 	// The reply is an array of struct GroupStats.
 	MP_GROUP
-	// Group description.
-	// The request body is empty.
+	// Group description. The request body is empty.
 	// The reply body is an array of struct GroupDescStats.
 	MP_GROUP_DESC
-	// Group features.
-	// The request body is empty.
+	// Group features. The request body is empty.
 	// The reply body is struct GroupFeatures.
 	MP_GROUP_FEATURES
 	// Meter statistics.
@@ -45,8 +40,7 @@ const (
 	// The request body is struct MeterMultipartRequests.
 	// The reply body is an array of struct MeterConfig.
 	MP_METER_CONFIG
-	// Meter features.
-	// The request body is empty.
+	// Meter features. The request body is empty.
 	// The reply body is struct MeterFeatures.
 	MP_METER_FEATURES
 	// Table features.
@@ -56,12 +50,10 @@ const (
 	// set the specified view an error is returned.
 	// The reply body is an array of struct TableFeatures.
 	MP_TABLE_FEATURES
-	// Port description.
-	// The request body is empty.
+	// Port description. The request body is empty.
 	// The reply body is an array of struct Port.
 	MP_PORT_DESC
-	// Experimenter extension.
-	// The request and reply bodies begin with
+	// Experimenter extension. The request and reply bodies begin with
 	// struct ExperimenterMultipartHeader.
 	// The request and reply bodies are otherwise experimenter-defined.
 	MP_EXPERIMENTER MultipartType = 0xffff
@@ -93,4 +85,9 @@ type MultipartReply struct {
 	Type   MultipartType
 	Flags  MultipartReplyFlags
 	Body   []byte
+}
+
+type ExperimenterMultipartHeader struct {
+	Experimenter uint32
+	ExpType      uint32
 }

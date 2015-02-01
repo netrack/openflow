@@ -56,7 +56,7 @@ const (
 	P_ALL        PortNo = 0xfffffff8 + iota
 	P_CONTROLLER PortNo = 0xfffffff8 + iota
 	P_LOCAL      PortNo = 0xfffffff8 + iota
-	P_ANY        PortNo = 0xfffffff8 + iota
+	P_ANY        PortNo = 0xffffffff
 )
 
 type PortNo uint32
@@ -64,7 +64,7 @@ type PortNo uint32
 type Port struct {
 	PortNo PortNo
 	HWAddr net.HardwareAddr
-	Name   []byte
+	Name   string
 
 	Config PortConfig
 	State  PortState
