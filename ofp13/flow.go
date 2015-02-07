@@ -131,9 +131,10 @@ const (
 type IPv6ExtHdrFlags uint16
 
 type Match struct {
-	Type      MatchType
-	Length    uint16
-	OXMFields OXMHeader
+	Type   MatchType
+	Length uint16
+	//TODO: OXMFields OXMHeader
+	OXMHeader uint64
 }
 
 type OXMHeader struct {

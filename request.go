@@ -21,6 +21,7 @@ func (req *Request) Read(r io.Reader) error {
 	}
 
 	contentlen := req.Header.Len() - headerlen
+
 	buf := make([]byte, contentlen)
 
 	n, err := r.Read(buf)

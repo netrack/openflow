@@ -52,7 +52,7 @@ const (
 
 type PacketInReason uint8
 
-type PacketIn struct {
+type packetin struct {
 	BufferId    uint32
 	TotalLength uint16
 	Reason      PacketInReason
@@ -60,7 +60,21 @@ type PacketIn struct {
 	Cookie      uint64
 	Match       Match
 	_           pad2
-	Data        []byte
+}
+
+type PacketIn struct {
+	packetin
+	Data []byte
+}
+
+func (p *PacketIn) Read(r io.Reader) error {
+	err := binary.Read(r, binary.BigEndian, &p.packetin)
+	if err != nil {
+		return err
+	}
+
+	p.Data = make([]byte, p.TotalLength)
+	return binary.Read(r, binary.BigEndian, p.Data)
 }
 
 const (
@@ -96,35 +110,3 @@ type ExperimenterHeader struct {
 	Experimenter uint32
 	ExpType      uint32
 }
-
-//type message struct {
-//Header Header
-//Body   io.Reader
-//}
-
-//func New(t ofp.Type, w Writer) *message {
-//var body bytes.Buffer
-
-//w.Write(&body)
-//length := uint16(8 + body.Len())
-
-//return &message{
-//Header: Header{VERSION, t, length, 0},
-//Body:   &body,
-//}
-//}
-
-//func (m *message) Write(w io.Writer) error {
-//err := m.Header.Write(w)
-//if err != nil {
-//return err
-//}
-
-//b, err := ioutil.ReadAll(m.Body)
-//if err != nil {
-//return err
-//}
-
-//_, err = w.Write(b)
-//return err
-//}

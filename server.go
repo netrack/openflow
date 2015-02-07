@@ -26,6 +26,10 @@ func (h HandlerFunc) Serve(rw ResponseWriter, r *Request) {
 	h(rw, r)
 }
 
+func Discard(rw ResponseWriter, r *Request) {}
+
+var DiscardHandler = HandlerFunc(Discard)
+
 type Hijacker interface {
 	Hijack() (net.Conn, *bufio.ReadWriter, error)
 }
@@ -207,8 +211,7 @@ func (mux *ServeMux) Handler(r *Request) (Handler, Type) {
 
 	h, ok := mux.m[r.Header.Type]
 	if !ok {
-		//TODO: panic or nope handler
-		panic("openflow: nil handler")
+		h = DiscardHandler
 	}
 
 	return h, r.Header.Type
