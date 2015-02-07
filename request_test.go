@@ -6,12 +6,13 @@ import (
 )
 
 func TestReadRequest(t *testing.T) {
+	var req Request
 	var buf bytes.Buffer
 
 	h := Header{4, T_HELLO, 8, 0}
 	h.Write(&buf)
 
-	req, err := ReadRequest(&buf)
+	err := req.Read(&buf)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -32,7 +32,6 @@ type Hijacker interface {
 
 type response struct {
 	conn *conn
-	req  *Request
 }
 
 func (w *response) Write(b []byte) (int, error) {
@@ -47,8 +46,10 @@ type conn struct {
 	rwc net.Conn
 	buf *bufio.ReadWriter
 
-	srv *Server
-	mu  sync.Mutex
+	rtimeout time.Duration
+	wtimeout time.Duration
+
+	mu sync.Mutex
 
 	hijackedv bool
 }
@@ -76,35 +77,41 @@ func (c *conn) hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return rwc, buf, nil
 }
 
-func (c *conn) read() (w *response, err error) {
+func (c *conn) read() (*Request, error) {
 	if c.hijacked() {
 		return nil, ErrHijacked
 	}
 
-	if d := c.srv.ReadTimeout; d != 0 {
+	if d := c.rtimeout; d != 0 {
 		c.rwc.SetReadDeadline(time.Now().Add(d))
 	}
 
-	if d := c.srv.WriteTimeout; d != 0 {
+	if d := c.wtimeout; d != 0 {
 		defer func() {
 			c.rwc.SetWriteDeadline(time.Now().Add(d))
 		}()
 	}
 
-	req, err := ReadRequest(c.buf)
+	var req Request
+
+	err := req.Read(c.buf)
 	if err != nil {
 		return nil, err
 	}
 
-	return &response{c, req}, nil
+	return &req, nil
 }
 
 func (c *conn) write(b []byte) (int, error) {
+	if c.hijacked() {
+		return 0, ErrHijacked
+	}
+
 	defer c.buf.Flush()
 	return c.buf.Write(b)
 }
 
-func (c *conn) serve() {
+func (c *conn) serve(h Handler) {
 	origconn := c.rwc
 	defer func() {
 		if !c.hijacked() {
@@ -113,12 +120,12 @@ func (c *conn) serve() {
 	}()
 
 	for {
-		w, err := c.read()
+		req, err := c.read()
 		if err != nil {
 			return
 		}
 
-		c.srv.Handler.Serve(w, w.req)
+		h.Serve(&response{c}, req)
 	}
 }
 
@@ -152,9 +159,13 @@ func (srv *Server) Serve(l net.Listener) error {
 		bw := bufio.NewWriter(rwc)
 
 		brw := bufio.NewReadWriter(br, bw)
-		c := &conn{rwc: rwc, srv: srv, buf: brw}
+		c := &conn{
+			rwc: rwc, buf: brw,
+			rtimeout: srv.ReadTimeout,
+			wtimeout: srv.WriteTimeout,
+		}
 
-		go c.serve()
+		go c.serve(srv.Handler)
 	}
 }
 
@@ -186,7 +197,7 @@ func (mux *ServeMux) Handle(t Type, handler Handler) {
 	mux.m[t] = handler
 }
 
-func (mux *ServeMux) HandlerFunc(t Type, f func(ResponseWriter, *Request)) {
+func (mux *ServeMux) HandleFunc(t Type, f func(ResponseWriter, *Request)) {
 	mux.Handle(t, HandlerFunc(f))
 }
 

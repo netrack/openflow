@@ -2,14 +2,11 @@ package openflow
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"net"
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/netrack/openflow/ofp13"
 )
 
 type dummyAddr string
@@ -84,21 +81,12 @@ func (l *dummyListener) Addr() net.Addr {
 	return dummyAddr("dummy-address")
 }
 
-func TestSample(t *testing.T) {
-	var b bytes.Buffer
-
-	hello := &ofp13.Hello{}
-
-	e := hello.Write(&b)
-	fmt.Println(b.Len(), b.Bytes(), e)
-}
-
 func TestServerMux(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
 	mux := NewServeMux()
-	mux.HandlerFunc(T_HELLO, func(rw ResponseWriter, r *Request) {
+	mux.HandleFunc(T_HELLO, func(rw ResponseWriter, r *Request) {
 		rw.Write([]byte("response"))
 		wg.Done()
 	})
