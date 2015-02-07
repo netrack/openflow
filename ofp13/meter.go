@@ -27,7 +27,6 @@ const (
 type Meter uint32
 
 type MeterMod struct {
-	Header  Header
 	Command MeterModCommands
 	Flags   MeterFlags
 	MeterId Meter

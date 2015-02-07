@@ -176,15 +176,13 @@ const (
 type ErrorCode uint16
 
 type ErrorMsg struct {
-	Header Header
-	Type   ErrorType
-	Code   ErrorCode
-	Data   []byte
+	Type ErrorType
+	Code ErrorCode
+	Data []byte
 }
 
 type ErrorExperimenterMsg struct {
-	Header       Header
-	Type         Type
+	Type         ErrorType
 	ExpType      uint16
 	Experimenter uint32
 	Data         []byte

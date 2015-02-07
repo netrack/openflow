@@ -22,7 +22,6 @@ const (
 type ConfigFlags uint16
 
 type SwitchFeatures struct {
-	Header       Header
 	DatapathId   uint64
 	NumBuffers   uint32
 	NumTables    uint8
@@ -33,7 +32,6 @@ type SwitchFeatures struct {
 }
 
 type SwitchConfig struct {
-	Header         Header
 	Flags          ConfigFlags
 	MissSendLength uint16
 }

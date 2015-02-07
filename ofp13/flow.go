@@ -1,5 +1,10 @@
 package ofp13
 
+import (
+	"encoding/binary"
+	"io"
+)
+
 const (
 	MT_STANDARD MatchType = iota
 	MT_OXM
@@ -209,7 +214,6 @@ const (
 type FlowModFlags uint16
 
 type FlowMod struct {
-	Header      Header
 	Cookie      uint64
 	CookieMask  uint64
 	TableId     Table
@@ -224,6 +228,33 @@ type FlowMod struct {
 	Flags FlowModFlags
 	_     pad2
 	Match Match
+}
+
+func (f *FlowMod) Write(w io.Writer) error {
+	return binary.Write(w, binary.BigEndian, f)
+}
+
+const (
+	RR_IDLE_TIMEOUT FlowRemovedReason = iota
+	RR_HARD_TIMEOUT
+	RR_DELETE
+	RR_GROUP_DELETE
+)
+
+type FlowRemovedReason uint8
+
+type FlowRemoved struct {
+	Cookie       uint64
+	Priority     uint16
+	Reason       FlowRemovedReason
+	TableId      Table
+	DurationSec  uint32
+	DurationNSec uint32
+	IdleTimeout  uint16
+	HardTimeout  uint16
+	PacketCount  uint64
+	ByteCount    uint64
+	Match        Match
 }
 
 type FlowStatsRequest struct {

@@ -30,7 +30,6 @@ const (
 type Group uint32
 
 type GroupMod struct {
-	Header  Header
 	Command GroupModCommand
 	Type    GroupType
 	_       uint8

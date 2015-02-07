@@ -74,19 +74,17 @@ const (
 type MultipartReplyFlags uint16
 
 type MultipartRequest struct {
-	Header Header
-	Type   MultipartType
-	Flags  MultipartRequestFlags
-	_      pad4
-	Body   []byte
+	Type  MultipartType
+	Flags MultipartRequestFlags
+	_     pad4
+	Body  []byte
 }
 
 type MultipartReply struct {
-	Header Header
-	Type   MultipartType
-	Flags  MultipartReplyFlags
-	_      pad4
-	Body   []byte
+	Type  MultipartType
+	Flags MultipartReplyFlags
+	_     pad4
+	Body  []byte
 }
 
 type ExperimenterMultipartHeader struct {

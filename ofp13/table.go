@@ -16,7 +16,6 @@ const (
 type TableConfig uint32
 
 type TableMod struct {
-	Header  Header
 	TableId Table
 	_       pad3
 	Config  TableConfig

@@ -64,13 +64,11 @@ type QueueStatus struct {
 }
 
 type QueueGetConfigRequest struct {
-	Header Header
-	Port   PortNo
-	_      pad4
+	Port PortNo
+	_    pad4
 }
 
 type QueueGetConfigReply struct {
-	Header Header
 	Port   PortNo
 	_      pad4
 	Queues []PacketQueue

@@ -81,7 +81,6 @@ type Port struct {
 }
 
 type PortMod struct {
-	Header    Header
 	PortNo    PortNo
 	_         pad4
 	HWAddr    net.HardwareAddr
@@ -90,6 +89,20 @@ type PortMod struct {
 	Mask      PortConfig
 	Advertise PortFeatures
 	_         pad4
+}
+
+const (
+	PR_ADD PortReason = iota
+	PR_DELETE
+	PR_MODIFY
+)
+
+type PortReason uint8
+
+type PortStatus struct {
+	Reason PortReason
+	_      pad7
+	Desc   Port
 }
 
 type PortStatsRequest struct {
