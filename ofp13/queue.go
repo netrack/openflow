@@ -16,7 +16,7 @@ const (
 type Queue uint32
 
 type PacketQueue struct {
-	QueueId    Queue
+	QueueID    Queue
 	Port       PortNo
 	Length     uint16
 	_          pad6
@@ -50,12 +50,12 @@ type QueuePropExperimenter struct {
 
 type QueueStatsRequest struct {
 	PornNo  PortNo
-	QueueId Queue
+	QueueID Queue
 }
 
 type QueueStatus struct {
 	PortNo       PortNo
-	QueueId      Queue
+	QueueID      Queue
 	TxBytes      uint64
 	TxPackets    uint64
 	TxErrors     uint64

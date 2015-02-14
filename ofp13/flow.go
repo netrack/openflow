@@ -1,6 +1,7 @@
 package ofp13
 
 import (
+	"bytes"
 	"encoding/binary"
 	"io"
 )
@@ -66,55 +67,12 @@ const (
 
 type OXMClass uint16
 
-var (
-	OXM_OF_IN_PORT        = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_IN_PORT, false, 4}
-	OXM_OF_IN_PHY_PORT    = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_IN_PHY_PORT, false, 4}
-	OXM_OF_METADATA       = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_METADATA, false, 8}
-	OXM_OF_ETH_DST        = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_ETH_DST, false, 6}
-	OXM_OF_ETH_SRC        = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_ETH_SRC, false, 6}
-	OXM_OF_ETH_TYPE       = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_ETH_TYPE, false, 6}
-	OXM_OF_VLAN_VID       = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_VLAN_VID, false, 3}
-	OXM_OF_VLAN_PCP       = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_VLAN_PCP, false, 1}
-	OXM_OF_IP_DSCP        = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_IP_DSCP, false, 1}
-	OXM_OF_IP_ECN         = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_IP_ECN, false, 1}
-	OXM_OF_IP_PROTO       = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_IP_PROTO, false, 1}
-	OXM_OF_IPV4_SRC       = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_IPV4_SRC, false, 4}
-	OXM_OF_IPV4_DST       = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_IPV4_DST, false, 4}
-	OXM_OF_TCP_SRC        = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_TCP_SRC, false, 2}
-	OXM_OF_TCP_DST        = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_TCP_DST, false, 2}
-	OXM_OF_UDP_SRC        = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_UDP_SRC, false, 2}
-	OXM_OF_UDP_DST        = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_UDP_DST, false, 2}
-	OXM_OF_SCTP_SRC       = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_SCTP_SRC, false, 2}
-	OXM_OF_SCTP_DST       = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_SCTP_DST, false, 2}
-	OXM_OF_ICMPV4_TYPE    = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_ICMPV4_TYPE, false, 1}
-	OXM_OF_ICMPV4_CODE    = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_ICMPV4_CODE, false, 1}
-	OXM_OF_ARP_OP         = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_ARP_OP, false, 2}
-	OXM_OF_ARP_SPA        = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_ARP_SPA, false, 4}
-	OXM_OF_ARP_TPA        = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_ARP_TPA, false, 4}
-	OXM_OF_ARP_SHA        = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_ARP_SHA, false, 6}
-	OXM_OF_ARP_THA        = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_ARP_THA, false, 6}
-	OXM_OF_IPV6_SRC       = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_IPV6_SRC, false, 16}
-	OXM_OF_IPV6_DST       = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_IPV6_DST, false, 16}
-	OXM_OF_IPV6_FLABEL    = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_IPV6_FLABEL, false, 4}
-	OXM_OF_ICMPV6_TYPE    = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_ICMPV6_TYPE, false, 1}
-	OXM_OF_ICMPV6_CODE    = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_ICMPV6_CODE, false, 1}
-	OXM_OF_IPV6_ND_TARGET = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_IPV6_ND_TARGET, false, 16}
-	OXM_OF_IPV6_ND_SLL    = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_IPV6_ND_SLL, false, 6}
-	OXM_OF_IPV6_ND_TLL    = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_IPV6_ND_TLL, false, 6}
-	OXM_OF_MPLS_LABEL     = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_MPLS_LABEL, false, 3}
-	OXM_OF_MPLS_TC        = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_MPLS_TC, false, 1}
-	OXM_OF_MPLS_BOS       = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFP_MPLS_BOS, false, 1}
-	OXM_OF_PBB_ISID       = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_PBB_ISID, false, 3}
-	OXM_OF_TUNNEL_ID      = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_TUNNEL_ID, false, 8}
-	OXM_OF_IPV6_EXTHDR    = OXMHeader{XMC_OPENFLOW_BASIC, XMT_OFB_IPV6_EXTHDR, false, 2}
-)
-
 const (
-	VID_NONE    VlanId = iota << 12
-	VID_PRESENT VlanId = iota << 12
+	VID_NONE    VlanID = iota << 12
+	VID_PRESENT VlanID = iota << 12
 )
 
-type VlanId uint16
+type VlanID uint16
 
 const (
 	IEH_NONEXT IPv6ExtHdrFlags = 1 << iota
@@ -130,22 +88,91 @@ const (
 
 type IPv6ExtHdrFlags uint16
 
+// Fields to match against flows
 type Match struct {
-	Type   MatchType
-	Length uint16
-	//TODO: OXMFields OXMHeader
-	OXMHeader uint64
+	// Type indicates the match structure (set of fields that compose the match) in use.
+	// The match type is placed in the type field at the beginning of all match structures.
+	Type      MatchType
+	OXMFields []OXM
 }
 
-type OXMHeader struct {
-	Class   OXMClass
-	Field   OXMField
-	HasMask bool
-	Length  uint8
+func (m *Match) Read(r io.Reader) error {
+	err := binary.Read(r, binary.BigEndian, &m.Type)
+	if err != nil {
+		return err
+	}
+
+	var length uint16
+	err = binary.Read(r, binary.BigEndian, &length)
+	if err != nil {
+		return err
+	}
+
+	buf := make([]byte, length)
+	err = binary.Read(r, binary.BigEndian, &buf)
+	if err != nil {
+		return err
+	}
+
+	// TODO: invalid condition
+	rbuf := bytes.NewBuffer(buf)
+	for rbuf.Len() > 4 {
+		var oxm OXM
+
+		err = oxm.Read(rbuf)
+		if err != nil {
+			return err
+		}
+
+		m.OXMFields = append(m.OXMFields, oxm)
+	}
+
+	return nil
+}
+
+type OXM struct {
+	Class OXMClass
+	Field OXMField
+	Mask  []byte
+	Value []byte
+}
+
+func (oxm *OXM) Read(r io.Reader) error {
+	err := binary.Read(r, binary.BigEndian, &oxm.Class)
+	if err != nil {
+		return err
+	}
+
+	err = binary.Read(r, binary.BigEndian, &oxm.Field)
+	if err != nil {
+		return err
+	}
+
+	hasmask := oxm.Field&1 == 1
+	oxm.Field >>= 1
+
+	var length uint8
+	err = binary.Read(r, binary.BigEndian, &length)
+	if err != nil {
+		return err
+	}
+
+	if hasmask {
+		length /= 2
+		oxm.Mask = make([]byte, length)
+
+		err = binary.Read(r, binary.BigEndian, &oxm.Mask)
+		if err != nil {
+			return err
+		}
+	}
+
+	oxm.Value = make([]byte, length)
+	return binary.Read(r, binary.BigEndian, &oxm.Value)
 }
 
 type OXMExperimenterHeader struct {
-	OXMHeader    OXMHeader
+	OXM          OXM
 	Experimenter uint32
 }
 
@@ -164,7 +191,7 @@ type InstructionType uint16
 type InstrutionGotoTable struct {
 	Type    InstructionType
 	Length  uint16
-	TableId uint8
+	TableID uint8
 	_       pad3
 }
 
@@ -186,7 +213,7 @@ type InstructionActions struct {
 type InstructionMeter struct {
 	Type    InstructionType
 	Length  uint16
-	MeterId uint8
+	MeterID uint8
 }
 
 const (
@@ -217,12 +244,12 @@ type FlowModFlags uint16
 type FlowMod struct {
 	Cookie      uint64
 	CookieMask  uint64
-	TableId     Table
+	TableID     Table
 	Command     FlowModCommand
 	IdleTimeout uint16
 	HardTimeout uint16
 	Priority    uint16
-	BufferId    uint16
+	BufferID    uint16
 	OutPort     PortNo
 	OutGroup    Group
 
@@ -248,7 +275,7 @@ type FlowRemoved struct {
 	Cookie       uint64
 	Priority     uint16
 	Reason       FlowRemovedReason
-	TableId      Table
+	TableID      Table
 	DurationSec  uint32
 	DurationNSec uint32
 	IdleTimeout  uint16
@@ -259,7 +286,7 @@ type FlowRemoved struct {
 }
 
 type FlowStatsRequest struct {
-	TableId    Table
+	TableID    Table
 	_          pad3
 	OutPort    PortNo
 	OutGroup   Group
@@ -271,7 +298,7 @@ type FlowStatsRequest struct {
 
 type FlowStats struct {
 	Length       uint16
-	TableId      Table
+	TableID      Table
 	_            pad1
 	DurationSec  uint32
 	DurationNSec uint32

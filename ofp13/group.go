@@ -33,7 +33,7 @@ type GroupMod struct {
 	Command GroupModCommand
 	Type    GroupType
 	_       uint8
-	GroupId uint32
+	GroupID uint32
 	Buckets []Bucket
 }
 
@@ -47,13 +47,13 @@ type Bucket struct {
 }
 
 type GroupStatsRequest struct {
-	GroupId Group
+	GroupID Group
 }
 
 type GroupStats struct {
 	Length       uint16
 	_            pad2
-	GroupId      Group
+	GroupID      Group
 	RefCount     uint32
 	_            pad4
 	PacketCount  uint64
@@ -72,7 +72,7 @@ type GroupDescStats struct {
 	Length  uint16
 	Type    GroupType
 	_       pad1
-	GroupId Group
+	GroupID Group
 	Buckets []Bucket
 }
 

@@ -1,7 +1,7 @@
 package ofp13
 
 type AggregateStatsRequest struct {
-	TableId    Table
+	TableID    Table
 	_          pad3
 	OutPort    PortNo
 	OutGroup   Group

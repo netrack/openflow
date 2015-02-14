@@ -29,7 +29,7 @@ type Meter uint32
 type MeterMod struct {
 	Command MeterModCommands
 	Flags   MeterFlags
-	MeterId Meter
+	MeterID Meter
 	Bands   []MeterBandHeader
 }
 
@@ -65,12 +65,12 @@ type MeterBandExperimenter struct {
 }
 
 type MeterMultipartRequest struct {
-	MeterId Meter
+	MeterID Meter
 	_       pad4
 }
 
 type MeterStats struct {
-	MeterId       Meter
+	MeterID       Meter
 	Length        uint16
 	_             pad6
 	FlowCount     uint32
@@ -89,7 +89,7 @@ type MeterBandStats struct {
 type MeterConfig struct {
 	Length  uint16
 	Flags   MeterModCommands
-	MeterId Meter
+	MeterID Meter
 	Bands   []MeterBandHeader
 }
 

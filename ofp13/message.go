@@ -16,7 +16,7 @@ type Writer interface {
 }
 
 type PacketOut struct {
-	BufferId   uint32
+	BufferID   uint32
 	InPort     PortNo
 	ActionsLen uint16
 	_          pad6
@@ -35,7 +35,7 @@ type ControllerRole uint32
 type RoleRequest struct {
 	Role         ControllerRole
 	_            pad4
-	GenerationId uint64
+	GenerationID uint64
 }
 
 type AsyncConfig struct {
@@ -52,29 +52,57 @@ const (
 
 type PacketInReason uint8
 
-type packetin struct {
-	BufferId    uint32
-	TotalLength uint16
-	Reason      PacketInReason
-	TableId     Table
-	Cookie      uint64
-	Match       Match
-	_           pad2
-}
-
+// Packet received on port (datapath -> controller)
 type PacketIn struct {
-	packetin
-	Data []byte
+	// ID assigned by datapath
+	BufferID uint32
+	// Full length of frame
+	//TotalLength uint16
+	// Reason packet is being sent
+	Reason PacketInReason
+	// ID of the table that was looked up
+	TableID Table
+	// Cookie of the flow entry that was looked up
+	Cookie uint64
+	// Packet metadata. Variable size.
+	Match Match
+	// Followed by Link Layer packet frame
 }
 
 func (p *PacketIn) Read(r io.Reader) error {
-	err := binary.Read(r, binary.BigEndian, &p.packetin)
+	err := binary.Read(r, binary.BigEndian, &p.BufferID)
 	if err != nil {
 		return err
 	}
 
-	p.Data = make([]byte, p.TotalLength)
-	return binary.Read(r, binary.BigEndian, p.Data)
+	var length uint16
+	err = binary.Read(r, binary.BigEndian, &length)
+	if err != nil {
+		return err
+	}
+
+	err = binary.Read(r, binary.BigEndian, &p.Reason)
+	if err != nil {
+		return err
+	}
+
+	err = binary.Read(r, binary.BigEndian, &p.TableID)
+	if err != nil {
+		return err
+	}
+
+	err = binary.Read(r, binary.BigEndian, &p.Cookie)
+	if err != nil {
+		return err
+	}
+
+	err = p.Match.Read(r)
+	if err != nil {
+		return err
+	}
+
+	var padding pad2
+	return binary.Read(r, binary.BigEndian, &padding)
 }
 
 const (

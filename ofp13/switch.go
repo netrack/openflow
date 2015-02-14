@@ -22,10 +22,10 @@ const (
 type ConfigFlags uint16
 
 type SwitchFeatures struct {
-	DatapathId   uint64
+	DatapathID   uint64
 	NumBuffers   uint32
 	NumTables    uint8
-	AuxiliaryId  uint8
+	AuxiliaryID  uint8
 	_            uint16
 	Capabilities Capabilities
 	Reserved     uint32

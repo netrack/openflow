@@ -47,12 +47,12 @@ type ActionOutput struct {
 
 type ActionGroup struct {
 	ActionHeader
-	GroupId uint32
+	GroupID uint32
 }
 
 type ActionSetQueue struct {
 	ActionHeader
-	QueueId uint32
+	QueueID uint32
 }
 
 type ActionMPLSTTL struct {
@@ -81,7 +81,7 @@ type ActionPopMPLS struct {
 
 type ActionSetField struct {
 	ActionHeader
-	Fields []OXMHeader
+	Fields []OXM
 }
 
 type ActionExperimenterHeader struct {

@@ -2,11 +2,15 @@ package openflow
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net"
 	"sync"
 	"testing"
 	"time"
+
+	//"github.com/netrack/net/pkg"
+	//"github.com/netrack/openflow/ofp13"
 )
 
 type dummyAddr string
@@ -118,11 +122,12 @@ func TestServerMux(t *testing.T) {
  *            hello.Write(rw)
  *        case T_PACKET_IN:
  *            var packetin ofp13.PacketIn
- *            var eth p.EthernetII
+ *            var eth pkg.EthernetII
  *
  *            err1 := packetin.Read(r.Body)
- *            err2 := eth.Read(bytes.NewBuffer(packetin.Data))
- *            fmt.Println("GOT PACKET_IN:", err1, err2, eth, eth.HWDst())
+ *            err2 := eth.Read(r.Body)
+ *            fmt.Println(packetin)
+ *            fmt.Println("GOT PACKET_IN:", err1, err2, eth, eth.HWDst)
  *        case T_ERROR:
  *            fmt.Println("GOT ERROR:", r.Header)
  *        }

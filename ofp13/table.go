@@ -16,13 +16,13 @@ const (
 type TableConfig uint32
 
 type TableMod struct {
-	TableId Table
+	TableID Table
 	_       pad3
 	Config  TableConfig
 }
 
 type TableStats struct {
-	TableId      Table
+	TableID      Table
 	_            pad3
 	ActiveCount  uint32
 	LookupCount  uint64
@@ -31,7 +31,7 @@ type TableStats struct {
 
 type TableFeatures struct {
 	Length  uint16
-	TableId Table
+	TableID Table
 	_       pad5
 	name    [MAX_TABLE_NAME_LEN]byte
 
@@ -72,25 +72,25 @@ type TableFeaturePropHeader struct {
 type TableFeaturePropInstructions struct {
 	Type   TableFeaturePropType
 	Length uint16
-	//TODO: InstructionIds []Instruction
+	//TODO: InstructionID  []Instruction
 }
 
 type TableFeaturePropNextTables struct {
-	Type         TableFeaturePropType
-	Length       uint16
-	NextTableIds []Table
+	Type        TableFeaturePropType
+	Length      uint16
+	NextTableID []Table
 }
 
 type TableFeaturePropActions struct {
-	Type      TableFeaturePropType
-	Length    uint16
-	ActionIds []ActionHeader
+	Type     TableFeaturePropType
+	Length   uint16
+	ActionID []ActionHeader
 }
 
 type TableFeaturePropOXM struct {
 	Type   TableFeaturePropType
 	Length uint16
-	OXMIds []OXMHeader
+	OXMID  []OXM
 }
 
 type TableFeaturePropExperimenter struct {
