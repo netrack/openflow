@@ -9,10 +9,10 @@ func TestReadRequest(t *testing.T) {
 	var req Request
 	var buf bytes.Buffer
 
-	h := Header{4, T_HELLO, 8, 0}
-	h.Write(&buf)
+	h := header{4, T_HELLO, 8, 0}
+	h.WriteTo(&buf)
 
-	err := req.Read(&buf)
+	_, err := req.ReadFrom(&buf)
 	if err != nil {
 		t.Fatal(err)
 	}

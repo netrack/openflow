@@ -2,34 +2,38 @@ package openflow
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 )
 
 const headerlen = 8
 
 type Request struct {
-	Header Header
+	Header header
 	Body   io.Reader
 
 	ContentLength int
 }
 
-func (req *Request) Read(r io.Reader) error {
-	err := req.Header.Read(r)
+func (req *Request) ReadFrom(r io.Reader) (n int64, err error) {
+	n, err = req.Header.ReadFrom(r)
 	if err != nil {
-		return err
+		return
 	}
 
+	var nn int
 	contentlen := req.Header.Len() - headerlen
 
 	buf := make([]byte, contentlen)
+	nn, e := r.Read(buf)
+	n += int64(nn)
 
-	n, err := r.Read(buf)
-	if err != nil {
-		return err
-	}
+	fmt.Println("111", e, req.Header, contentlen, buf)
+	//if err != nil {
+	//return
+	//}
 
 	req.Body = bytes.NewBuffer(buf)
-	req.ContentLength = n
-	return nil
+	req.ContentLength = nn
+	return
 }

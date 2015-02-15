@@ -1,6 +1,7 @@
 package openflow
 
 import (
+	"errors"
 	"io"
 
 	"github.com/netrack/openflow/encoding/binary"
@@ -56,8 +57,25 @@ const (
 
 type Type uint8
 
+const (
+	VersionHeaderKey HeaderKey = iota
+	TypeHeaderKey
+	XIDHeaderKey
+)
+
+type HeaderKey int
+
+type Header interface {
+	io.WriterTo
+	io.ReaderFrom
+
+	Set(k HeaderKey, v interface{}) error
+	Get(k HeaderKey) interface{}
+	Len() int
+}
+
 // Each OpenFlow message begins with the OpenFlow header
-type Header struct {
+type header struct {
 	Version uint8
 	// One of the Type constants
 	Type Type
@@ -66,17 +84,60 @@ type Header struct {
 	// Transaction id associated with this packet.
 	// Replies use the same id as was in the request
 	// to facilitate pairing
-	Xid uint32
+	XID uint32
 }
 
-func (h *Header) Len() int {
+func (h *header) Set(k HeaderKey, v interface{}) error {
+	switch k {
+	case VersionHeaderKey:
+		version, ok := v.(uint8)
+		if !ok {
+			return errors.New("header: Version must be uint8")
+		}
+
+		h.Version = version
+	case TypeHeaderKey:
+		typ, ok := v.(Type)
+		if !ok {
+			return errors.New("header: Type must be uint8")
+		}
+
+		h.Type = Type(typ)
+	case XIDHeaderKey:
+		xid, ok := v.(uint32)
+		if !ok {
+			return errors.New("header: XID must be uint32")
+		}
+
+		h.XID = xid
+	default:
+		return errors.New("header: unsettable field")
+	}
+
+	return nil
+}
+
+func (h *header) Get(k HeaderKey) (v interface{}) {
+	switch k {
+	case VersionHeaderKey:
+		v = h.Version
+	case TypeHeaderKey:
+		v = h.Type
+	case XIDHeaderKey:
+		v = h.XID
+	}
+
+	return
+}
+
+func (h *header) Len() int {
 	return int(h.Length)
 }
 
-func (h *Header) Write(w io.Writer) error {
+func (h *header) WriteTo(w io.Writer) (int64, error) {
 	return binary.Write(w, binary.BigEndian, h)
 }
 
-func (h *Header) Read(r io.Reader) error {
+func (h *header) ReadFrom(r io.Reader) (int64, error) {
 	return binary.Read(r, binary.BigEndian, h)
 }

@@ -36,23 +36,29 @@ const (
 	CML_NO_BUFFER uint16 = 0xffff
 )
 
-// Action header that is common to all actions. The length includes the
-// header and any padding used to make the action 64-bit aligned.
-// NB: The length of an action *must* always be a multiple of eight.
-type action struct {
+type actionhdr struct {
 	Type ActionType
 	// Length of action, including this header. This is the length of action,
 	// including any padding to make it 64-bit aligned
 	Len uint16
 }
 
+type action interface {
+	io.WriterTo
+}
+
+type Actions []action
+
+// Action header that is common to all actions. The length includes the
+// header and any padding used to make the action 64-bit aligned.
+// NB: The length of an action *must* always be a multiple of eight.
 type Action struct {
 	Type ActionType
 }
 
-func (a *Action) Write(w io.Writer) error {
+func (a *Action) WriteTo(w io.Writer) (int64, error) {
 	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		action{a.Type, 8}, pad4{},
+		actionhdr{a.Type, 8}, pad4{},
 	})
 }
 
@@ -69,9 +75,9 @@ type ActionOutput struct {
 	MaxLen uint16
 }
 
-func (a ActionOutput) Write(w io.Writer) error {
+func (a ActionOutput) WriteTo(w io.Writer) (int64, error) {
 	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		action{AT_OUTPUT, 16}, a, pad6{},
+		actionhdr{AT_OUTPUT, 16}, a, pad6{},
 	})
 }
 
@@ -82,9 +88,9 @@ type ActionGroup struct {
 	GroupID uint32
 }
 
-func (a ActionGroup) Write(w io.Writer) error {
+func (a ActionGroup) WriteTo(w io.Writer) (int64, error) {
 	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		action{AT_GROUP, 8}, a,
+		actionhdr{AT_GROUP, 8}, a,
 	})
 }
 
@@ -98,9 +104,9 @@ type ActionSetQueue struct {
 	QueueID uint32
 }
 
-func (a ActionSetQueue) Write(w io.Writer) error {
+func (a ActionSetQueue) WriteTo(w io.Writer) (int64, error) {
 	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		action{AT_SET_QUEUE, 8}, a,
+		actionhdr{AT_SET_QUEUE, 8}, a,
 	})
 }
 
@@ -110,9 +116,9 @@ type ActionMPLSTTL struct {
 	TTL uint8
 }
 
-func (a ActionMPLSTTL) Write(w io.Writer) error {
+func (a ActionMPLSTTL) WriteTo(w io.Writer) (int64, error) {
 	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		action{AT_SET_MPLS_TTL, 8}, a, pad3{},
+		actionhdr{AT_SET_MPLS_TTL, 8}, a, pad3{},
 	})
 }
 
@@ -122,9 +128,9 @@ type ActionSetNetworkTTL struct {
 	TTL uint8
 }
 
-func (a ActionSetNetworkTTL) Write(w io.Writer) error {
+func (a ActionSetNetworkTTL) WriteTo(w io.Writer) (int64, error) {
 	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		action{AT_SET_NW_TTL, 8}, a, pad3{},
+		actionhdr{AT_SET_NW_TTL, 8}, a, pad3{},
 	})
 }
 
@@ -138,9 +144,9 @@ type ActionPush struct {
 	EtherType uint16
 }
 
-func (a ActionPush) Write(w io.Writer) error {
+func (a ActionPush) WriteTo(w io.Writer) (int64, error) {
 	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		action{a.Type, 8}, a.EtherType, pad2{},
+		actionhdr{a.Type, 8}, a.EtherType, pad2{},
 	})
 }
 
@@ -150,9 +156,9 @@ type ActionPopMPLS struct {
 	EtherType uint16
 }
 
-func (a ActionPopMPLS) Write(w io.Writer) error {
+func (a ActionPopMPLS) WriteTo(w io.Writer) (int64, error) {
 	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		action{AT_POP_MPLS, 8}, a, pad2{},
+		actionhdr{AT_POP_MPLS, 8}, a, pad2{},
 	})
 }
 
@@ -166,8 +172,8 @@ type ActionExperimenter struct {
 	Experimenter uint32
 }
 
-func (a *ActionExperimenter) Write(w io.Writer) error {
+func (a *ActionExperimenter) WriteTo(w io.Writer) (int64, error) {
 	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		action{AT_EXPERIMENTER, 8}, a,
+		actionhdr{AT_EXPERIMENTER, 8}, a,
 	})
 }

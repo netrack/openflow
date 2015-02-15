@@ -97,20 +97,24 @@ type Match struct {
 	OXMFields []OXM
 }
 
-func (m *Match) Read(r io.Reader) error {
+func (m *Match) ReadFrom(r io.Reader) (n int64, err error) {
 	var length uint16
-	err := binary.ReadSlice(r, binary.BigEndian, []interface{}{
+	n, err = binary.ReadSlice(r, binary.BigEndian, []interface{}{
 		&m.Type, &length,
 	})
 
 	if err != nil {
-		return err
+		return
 	}
 
+	var nn int64
+
 	buf := make([]byte, length)
-	err = binary.Read(r, binary.BigEndian, &buf)
+	nn, err = binary.Read(r, binary.BigEndian, &buf)
+	n += nn
+
 	if err != nil {
-		return err
+		return
 	}
 
 	// TODO: invalid condition
@@ -118,15 +122,17 @@ func (m *Match) Read(r io.Reader) error {
 	for rbuf.Len() > 4 {
 		var oxm OXM
 
-		err = oxm.Read(rbuf)
+		nn, err = oxm.ReadFrom(rbuf)
+		n += nn
+
 		if err != nil {
-			return err
+			return
 		}
 
 		m.OXMFields = append(m.OXMFields, oxm)
 	}
 
-	return nil
+	return
 }
 
 type OXM struct {
@@ -136,32 +142,37 @@ type OXM struct {
 	Value []byte
 }
 
-func (oxm *OXM) Read(r io.Reader) error {
+func (oxm *OXM) ReadFrom(r io.Reader) (n int64, err error) {
 	var length uint8
 
-	err := binary.ReadSlice(r, binary.BigEndian, []interface{}{
+	n, err = binary.ReadSlice(r, binary.BigEndian, []interface{}{
 		&oxm.Class, &oxm.Field, &length,
 	})
 
 	if err != nil {
-		return err
+		return
 	}
 
 	hasmask := oxm.Field&1 == 1
 	oxm.Field >>= 1
 
+	var m int64
+
 	if hasmask {
 		length /= 2
 		oxm.Mask = make([]byte, length)
 
-		err = binary.Read(r, binary.BigEndian, &oxm.Mask)
+		m, err = binary.Read(r, binary.BigEndian, &oxm.Mask)
+		n += m
+
 		if err != nil {
-			return err
+			return
 		}
 	}
 
 	oxm.Value = make([]byte, length)
-	return binary.Read(r, binary.BigEndian, &oxm.Value)
+	m, err = binary.Read(r, binary.BigEndian, &oxm.Value)
+	return n + m, err
 }
 
 type OXMExperimenterHeader struct {
@@ -251,7 +262,7 @@ type FlowMod struct {
 	Match Match
 }
 
-func (f *FlowMod) Write(w io.Writer) error {
+func (f *FlowMod) WriteTo(w io.Writer) (int64, error) {
 	return binary.Write(w, binary.BigEndian, f)
 }
 

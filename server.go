@@ -2,18 +2,33 @@ package openflow
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
+	"fmt"
 	"net"
 	"sync"
 	"time"
 )
 
 var (
-	ErrHijacked = errors.New("openflow: Connection has been hijacked")
+	ErrHijacked = errors.New("conn: Connection has been hijacked")
 )
 
+// A ResponseWriter interface is used by an OpenFlow handler to
+// construct an OpenFlow response.
 type ResponseWriter interface {
+	// Header returns the Header interface that will be sent by
+	// WriteHeader. Changing the header after a call to WriteHeader
+	// (or Write) has no effect
+	Header() Header
+	// Write writes the data to the connection as part of an OpenFlow reply.
+	// If WriteHeader has not yet been called, Write calls WriteHeader()
+	// before writing the data.
 	Write([]byte) (int, error)
+	// WriteHeader sends an response header. If WriteHeader is not
+	// called explicitly, the first call to Write will trigger an
+	// implicit WriteHeader()
+	WriteHeader()
 }
 
 type Handler interface {
@@ -35,11 +50,53 @@ type Hijacker interface {
 }
 
 type response struct {
-	conn *conn
+	header header
+	conn   *conn
+
+	wroteHeader bool // header has been written
 }
 
-func (w *response) Write(b []byte) (int, error) {
-	return w.conn.write(b)
+func (w *response) Header() Header {
+	return &w.header
+}
+
+func (w *response) Write(b []byte) (n int, err error) {
+	var buf bytes.Buffer
+
+	_, err = buf.Write(b)
+	if err != nil {
+		return
+	}
+
+	w.header.Length = headerlen + uint16(buf.Len())
+
+	if !w.wroteHeader {
+		w.WriteHeader()
+	}
+
+	return w.conn.write(buf.Bytes())
+}
+
+func (w *response) WriteHeader() {
+	var buf bytes.Buffer
+
+	if w.wroteHeader {
+		return
+	}
+
+	w.wroteHeader = true
+
+	if w.header.Length == 0 {
+		w.header.Length = headerlen
+	}
+
+	_, err := w.header.WriteTo(&buf)
+	fmt.Println("222:", err, buf.Bytes())
+	if err != nil {
+		return
+	}
+
+	w.conn.write(buf.Bytes())
 }
 
 func (w *response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
@@ -98,7 +155,7 @@ func (c *conn) read() (*Request, error) {
 
 	var req Request
 
-	err := req.Read(c.buf)
+	_, err := req.ReadFrom(c.buf)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +168,6 @@ func (c *conn) write(b []byte) (int, error) {
 		return 0, ErrHijacked
 	}
 
-	defer c.buf.Flush()
 	return c.buf.Write(b)
 }
 
@@ -129,7 +185,11 @@ func (c *conn) serve(h Handler) {
 			return
 		}
 
-		h.Serve(&response{c}, req)
+		resp := &response{conn: c}
+		h.Serve(resp, req)
+
+		c.buf.Flush()
+		fmt.Println("FLUSH")
 	}
 }
 
@@ -191,11 +251,11 @@ func (mux *ServeMux) Handle(t Type, handler Handler) {
 	defer mux.mu.Unlock()
 
 	if handler == nil {
-		panic("openflow: nil handler")
+		panic("mux: nil handler")
 	}
 
 	if _, dup := mux.m[t]; dup {
-		panic("openflow: multiple registrations")
+		panic("mux: multiple registrations")
 	}
 
 	mux.m[t] = handler

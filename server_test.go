@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	//"github.com/netrack/net/pkg"
-	//ofp "github.com/netrack/openflow/ofp13"
+	"github.com/netrack/net/pkg"
+	ofp "github.com/netrack/openflow/ofp13"
 )
 
 type dummyAddr string
@@ -91,7 +91,8 @@ func TestServerMux(t *testing.T) {
 
 	mux := NewServeMux()
 	mux.HandleFunc(T_HELLO, func(rw ResponseWriter, r *Request) {
-		rw.Write([]byte("response"))
+		rw.Header().Set(VersionHeaderKey, uint8(4))
+		rw.Write([]byte{0, 0, 0, 0})
 		wg.Done()
 	})
 
@@ -107,50 +108,44 @@ func TestServerMux(t *testing.T) {
 
 	wg.Wait()
 
-	if conn.w.String() != "response" {
-		t.Fatal("Invalid data returned:", conn.w.String())
+	returned := fmt.Sprintf("%x", conn.w.Bytes())
+	if returned != "0400000c0000000000000000" {
+		t.Fatal("Invalid data returned: ", returned)
 	}
 }
 
-/*
- *func TestServer(t *testing.T) {
- *    handler := HandlerFunc(func(rw ResponseWriter, r *Request) {
- *        switch r.Header.Type {
- *        case T_HELLO:
- *            fmt.Println("GOT HELLO:", r.Header)
- *            hello := Header{r.Header.Version, T_HELLO, 8, r.Header.Xid}
- *            hello.Write(rw)
- *        case T_PACKET_IN:
- *            var pin ofp.PacketIn
- *            var eth pkg.EthernetII
- *
- *            err1 := pin.Read(r.Body)
- *            err2 := eth.Read(r.Body)
- *            fmt.Println(pin)
- *            fmt.Println("GOT PACKET_IN:", err1, err2, eth, eth.HWDst)
- *
- *            pout := &ofp.PacketOut{
- *                BufferID: pin.BufferID,
- *                Actions: []interface {
- *                    Write(io.Writer) error
- *                }{
- *                    ofp.ActionOutput{ofp.P_FLOOD, 0},
- *                },
- *            }
- *
- *            var buf bytes.Buffer
- *            err := pout.Write(&buf)
- *
- *            header := Header{r.Header.Version, T_PACKET_OUT, 8 + uint16(buf.Len()), r.Header.Xid}
- *            header.Write(rw)
- *            rw.Write(buf.Bytes())
- *            fmt.Println("PACKET_OUT:", err, buf.Bytes())
- *        case T_ERROR:
- *            fmt.Println("GOT ERROR:", r.Header)
- *        }
- *    })
- *
- *    s := Server{Addr: "0.0.0.0:6633", Handler: handler}
- *    s.ListenAndServe()
- *}
- */
+func TestServer(t *testing.T) {
+	handler := HandlerFunc(func(rw ResponseWriter, r *Request) {
+		switch r.Header.Type {
+		case T_HELLO:
+			fmt.Println("GOT HELLO:", r.Header)
+			rw.Header().Set(TypeHeaderKey, T_HELLO)
+			rw.Header().Set(VersionHeaderKey, ofp.VERSION)
+			rw.WriteHeader()
+		case T_PACKET_IN:
+			fmt.Println("here")
+			var pin ofp.PacketIn
+			var eth pkg.EthernetII
+
+			_, err1 := pin.ReadFrom(r.Body)
+			err2 := eth.Read(r.Body)
+			fmt.Println("GOT PACKET_IN:", err1, err2, eth)
+
+			pout := &ofp.PacketOut{
+				BufferID: pin.BufferID,
+				Actions:  ofp.Actions{ofp.ActionOutput{ofp.P_FLOOD, 0}},
+			}
+
+			rw.Header().Set(TypeHeaderKey, T_PACKET_OUT)
+			rw.Header().Set(VersionHeaderKey, ofp.VERSION)
+
+			_, err3 := rw.Write(pout.Bytes())
+			fmt.Println("PACKET_OUT:", err3)
+		case T_ERROR:
+			fmt.Println("GOT ERROR:", r.Header)
+		}
+	})
+
+	s := Server{Addr: "0.0.0.0:6633", Handler: handler}
+	s.ListenAndServe()
+}
