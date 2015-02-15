@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -91,7 +90,6 @@ func (w *response) WriteHeader() {
 	}
 
 	_, err := w.header.WriteTo(&buf)
-	fmt.Println("222:", err, buf.Bytes())
 	if err != nil {
 		return
 	}
@@ -189,7 +187,6 @@ func (c *conn) serve(h Handler) {
 		h.Serve(resp, req)
 
 		c.buf.Flush()
-		fmt.Println("FLUSH")
 	}
 }
 

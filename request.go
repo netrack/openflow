@@ -2,7 +2,6 @@ package openflow
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 )
 
@@ -25,13 +24,12 @@ func (req *Request) ReadFrom(r io.Reader) (n int64, err error) {
 	contentlen := req.Header.Len() - headerlen
 
 	buf := make([]byte, contentlen)
-	nn, e := r.Read(buf)
+	nn, err = r.Read(buf)
 	n += int64(nn)
 
-	fmt.Println("111", e, req.Header, contentlen, buf)
-	//if err != nil {
-	//return
-	//}
+	if err != nil {
+		return
+	}
 
 	req.Body = bytes.NewBuffer(buf)
 	req.ContentLength = nn
