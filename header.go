@@ -1,8 +1,9 @@
 package openflow
 
 import (
-	"encoding/binary"
 	"io"
+
+	"github.com/netrack/openflow/encoding/binary"
 )
 
 const (

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	//"github.com/netrack/net/pkg"
-	//"github.com/netrack/openflow/ofp13"
+	//ofp "github.com/netrack/openflow/ofp13"
 )
 
 type dummyAddr string
@@ -121,13 +121,30 @@ func TestServerMux(t *testing.T) {
  *            hello := Header{r.Header.Version, T_HELLO, 8, r.Header.Xid}
  *            hello.Write(rw)
  *        case T_PACKET_IN:
- *            var packetin ofp13.PacketIn
+ *            var pin ofp.PacketIn
  *            var eth pkg.EthernetII
  *
- *            err1 := packetin.Read(r.Body)
+ *            err1 := pin.Read(r.Body)
  *            err2 := eth.Read(r.Body)
- *            fmt.Println(packetin)
+ *            fmt.Println(pin)
  *            fmt.Println("GOT PACKET_IN:", err1, err2, eth, eth.HWDst)
+ *
+ *            pout := &ofp.PacketOut{
+ *                BufferID: pin.BufferID,
+ *                Actions: []interface {
+ *                    Write(io.Writer) error
+ *                }{
+ *                    ofp.ActionOutput{ofp.P_FLOOD, 0},
+ *                },
+ *            }
+ *
+ *            var buf bytes.Buffer
+ *            err := pout.Write(&buf)
+ *
+ *            header := Header{r.Header.Version, T_PACKET_OUT, 8 + uint16(buf.Len()), r.Header.Xid}
+ *            header.Write(rw)
+ *            rw.Write(buf.Bytes())
+ *            fmt.Println("PACKET_OUT:", err, buf.Bytes())
  *        case T_ERROR:
  *            fmt.Println("GOT ERROR:", r.Header)
  *        }

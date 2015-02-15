@@ -84,7 +84,7 @@ type TableFeaturePropNextTables struct {
 type TableFeaturePropActions struct {
 	Type     TableFeaturePropType
 	Length   uint16
-	ActionID []ActionHeader
+	ActionID []interface{}
 }
 
 type TableFeaturePropOXM struct {

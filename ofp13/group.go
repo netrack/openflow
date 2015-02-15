@@ -43,7 +43,7 @@ type Bucket struct {
 	WatchPort  uint32
 	WatchGroup uint32
 	_          pad4
-	Actions    []ActionHeader
+	Actions    []interface{}
 }
 
 type GroupStatsRequest struct {

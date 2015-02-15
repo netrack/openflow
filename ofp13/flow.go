@@ -2,8 +2,9 @@ package ofp13
 
 import (
 	"bytes"
-	"encoding/binary"
 	"io"
+
+	"github.com/netrack/openflow/encoding/binary"
 )
 
 const (
@@ -97,13 +98,11 @@ type Match struct {
 }
 
 func (m *Match) Read(r io.Reader) error {
-	err := binary.Read(r, binary.BigEndian, &m.Type)
-	if err != nil {
-		return err
-	}
-
 	var length uint16
-	err = binary.Read(r, binary.BigEndian, &length)
+	err := binary.ReadSlice(r, binary.BigEndian, []interface{}{
+		&m.Type, &length,
+	})
+
 	if err != nil {
 		return err
 	}
@@ -138,24 +137,18 @@ type OXM struct {
 }
 
 func (oxm *OXM) Read(r io.Reader) error {
-	err := binary.Read(r, binary.BigEndian, &oxm.Class)
-	if err != nil {
-		return err
-	}
+	var length uint8
 
-	err = binary.Read(r, binary.BigEndian, &oxm.Field)
+	err := binary.ReadSlice(r, binary.BigEndian, []interface{}{
+		&oxm.Class, &oxm.Field, &length,
+	})
+
 	if err != nil {
 		return err
 	}
 
 	hasmask := oxm.Field&1 == 1
 	oxm.Field >>= 1
-
-	var length uint8
-	err = binary.Read(r, binary.BigEndian, &length)
-	if err != nil {
-		return err
-	}
 
 	if hasmask {
 		length /= 2
@@ -207,7 +200,7 @@ type InstructionActions struct {
 	Type    InstructionType
 	Length  uint16
 	_       pad4
-	Actions []ActionHeader
+	Actions []interface{}
 }
 
 type InstructionMeter struct {

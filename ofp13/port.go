@@ -44,9 +44,6 @@ const (
 type PortState uint32
 
 const (
-	// Maximum number of physical and logical switch ports
-	P_MAX PortNo = 0xffffff00
-
 	// Send the packet out the input port. This reserved port must be
 	// explicitly used in order to send back out of the input port.
 	P_IN_PORT    PortNo = 0xfffffff8 + iota
@@ -57,6 +54,9 @@ const (
 	P_CONTROLLER PortNo = 0xfffffff8 + iota
 	P_LOCAL      PortNo = 0xfffffff8 + iota
 	P_ANY        PortNo = 0xffffffff
+
+	// Maximum number of physical and logical switch ports
+	P_MAX PortNo = 0xffffff00
 )
 
 type PortNo uint32

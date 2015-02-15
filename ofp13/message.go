@@ -1,26 +1,47 @@
 package ofp13
 
 import (
-	"encoding/binary"
+	"bytes"
+	"fmt"
 	"io"
+
+	"github.com/netrack/openflow/encoding/binary"
 )
 
 const VERSION uint8 = 0x04
 
-type Reader interface {
-	Read(io.Reader) error
+const (
+	HET_VERSIONBITMAP HelloElemType = 1
+)
+
+type HelloElemType uint16
+
+type Hello struct {
+	Elements []HelloElemHeader
 }
 
-type Writer interface {
-	Write(io.Writer) error
+func (h *Hello) Write(w io.Writer) error {
+	return binary.Write(w, binary.BigEndian, h.Elements)
 }
 
-type PacketOut struct {
-	BufferID   uint32
-	InPort     PortNo
-	ActionsLen uint16
-	_          pad6
-	Actions    []ActionHeader
+func (h *Hello) Read(r io.Reader) error {
+	return binary.Read(r, binary.BigEndian, &h.Elements)
+}
+
+type HelloElemHeader struct {
+	Type   HelloElemType
+	Length uint16
+}
+
+type HelloElemVersionBitmap struct {
+	Type    HelloElemType
+	Length  uint16
+	Bitmaps []uint32
+}
+
+type ExperimenterHeader struct {
+	Experimenter uint32
+	ExpType      uint32
 }
 
 const (
@@ -56,8 +77,6 @@ type PacketInReason uint8
 type PacketIn struct {
 	// ID assigned by datapath
 	BufferID uint32
-	// Full length of frame
-	//TotalLength uint16
 	// Reason packet is being sent
 	Reason PacketInReason
 	// ID of the table that was looked up
@@ -70,28 +89,12 @@ type PacketIn struct {
 }
 
 func (p *PacketIn) Read(r io.Reader) error {
-	err := binary.Read(r, binary.BigEndian, &p.BufferID)
-	if err != nil {
-		return err
-	}
-
 	var length uint16
-	err = binary.Read(r, binary.BigEndian, &length)
-	if err != nil {
-		return err
-	}
 
-	err = binary.Read(r, binary.BigEndian, &p.Reason)
-	if err != nil {
-		return err
-	}
+	err := binary.ReadSlice(r, binary.BigEndian, []interface{}{
+		&p.BufferID, &length, &p.Reason, &p.TableID, &p.Cookie,
+	})
 
-	err = binary.Read(r, binary.BigEndian, &p.TableID)
-	if err != nil {
-		return err
-	}
-
-	err = binary.Read(r, binary.BigEndian, &p.Cookie)
 	if err != nil {
 		return err
 	}
@@ -105,36 +108,33 @@ func (p *PacketIn) Read(r io.Reader) error {
 	return binary.Read(r, binary.BigEndian, &padding)
 }
 
-const (
-	HET_VERSIONBITMAP HelloElemType = 1
-)
+// Send packet (controller -> datapath)
+type PacketOut struct {
+	// ID assigned by datapath (NO_BUFFER if none).
+	// The BufferID is the same given in the PacketIn message.
+	BufferID uint32
+	// Packet's input port or OFPP_CONTROLLER
+	InPort PortNo
+	// Action list
 
-type HelloElemType uint16
-
-type Hello struct {
-	Elements []HelloElemHeader
+	// TODO: modify interface type
+	Actions []interface {
+		Write(io.Writer) error
+	}
 }
 
-func (h *Hello) Write(w io.Writer) error {
-	return binary.Write(w, binary.BigEndian, h.Elements)
-}
+func (p *PacketOut) Write(w io.Writer) error {
+	var buf bytes.Buffer
 
-func (h *Hello) Read(r io.Reader) error {
-	return binary.Read(r, binary.BigEndian, &h.Elements)
-}
+	for _, action := range p.Actions {
+		err := action.Write(&buf)
+		fmt.Println("here!!!", err)
+		if err != nil {
+			return err
+		}
+	}
 
-type HelloElemHeader struct {
-	Type   HelloElemType
-	Length uint16
-}
-
-type HelloElemVersionBitmap struct {
-	Type    HelloElemType
-	Length  uint16
-	Bitmaps []uint32
-}
-
-type ExperimenterHeader struct {
-	Experimenter uint32
-	ExpType      uint32
+	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
+		p.BufferID, p.InPort, uint16(buf.Len()), pad6{}, buf.Bytes(),
+	})
 }
