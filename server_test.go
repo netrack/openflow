@@ -131,16 +131,28 @@ func TestServerMux(t *testing.T) {
  *            err2 := eth.Read(r.Body)
  *            fmt.Println("GOT PACKET_IN:", err1, err2, eth)
  *
- *            pout := &ofp.PacketOut{
- *                BufferID: pin.BufferID,
- *                Actions:  ofp.Actions{ofp.ActionOutput{ofp.P_FLOOD, 0}},
+ *            instr := ofp.Instructions{ofp.InstructionActions{
+ *                ofp.IT_APPLY_ACTIONS,
+ *                ofp.Actions{ofp.ActionOutput{ofp.P_FLOOD, 0}},
+ *            }}
+ *
+ *            fmod := &ofp.FlowMod{
+ *                Command:      ofp.FC_ADD,
+ *                BufferID:     pin.BufferID,
+ *                Match:        pin.Match,
+ *                Instructions: instr,
  *            }
  *
- *            rw.Header().Set(TypeHeaderKey, T_PACKET_OUT)
+ *            //pout := &ofp.PacketOut{
+ *            //BufferID: pin.BufferID,
+ *            //Actions:  ofp.Actions{ofp.ActionOutput{ofp.P_FLOOD, 0}},
+ *            //}
+ *
+ *            rw.Header().Set(TypeHeaderKey, T_FLOW_MOD)
  *            rw.Header().Set(VersionHeaderKey, ofp.VERSION)
  *
- *            _, err3 := rw.Write(pout.Bytes())
- *            fmt.Println("PACKET_OUT:", err3)
+ *            _, err3 := rw.Write(fmod.Bytes())
+ *            fmt.Println("FLOW_MOD:", err3)
  *        case T_ERROR:
  *            fmt.Println("GOT ERROR:", r.Header)
  *        }

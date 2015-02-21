@@ -1,13 +1,26 @@
 package ofp13
 
+import (
+	"io"
+
+	"github.com/netrack/openflow/encoding/binary"
+)
+
 const (
-	C_FLOW_STATS   Capabilities = 1 << iota
-	C_TABLE_STATS  Capabilities = 1 << iota
-	C_PORT_STATS   Capabilities = 1 << iota
-	C_GROUP_STATS  Capabilities = 1 << iota
-	C_IP_REASM     Capabilities = 1 << iota
-	C_QUEUE_STATS  Capabilities = 1 << iota
-	C_PORT_BLOCKED Capabilities = 1 << iota
+	// Flow statistics
+	C_FLOW_STATS Capabilities = 1 << iota
+	// Table statistics
+	C_TABLE_STATS Capabilities = 1 << iota
+	// Port statistics
+	C_PORT_STATS Capabilities = 1 << iota
+	// Group statistics
+	C_GROUP_STATS Capabilities = 1 << iota
+	// Can reassemble IP fragments
+	C_IP_REASM Capabilities = 1 << iota
+	// Queue statistics
+	C_QUEUE_STATS Capabilities = 1 << iota
+	// Switch will block looping ports
+	C_PORT_BLOCKED Capabilities = 1 << 8
 )
 
 type Capabilities uint32
@@ -21,14 +34,49 @@ const (
 
 type ConfigFlags uint16
 
+// Switch features.
 type SwitchFeatures struct {
-	DatapathID   uint64
-	NumBuffers   uint32
-	NumTables    uint8
-	AuxiliaryID  uint8
-	_            uint16
+	// Datapath unique ID. The lower 48-bits are for a MAC address,
+	// while the upper 16-bits are implementer-defined
+	DatapathID uint64
+
+	// Max packets buffered at once
+	NumBuffers uint32
+
+	// Number of tables supported by datapath
+	NumTables uint8
+
+	// Identify auxiliary connections
+	AuxiliaryID uint8
+
+	// Bitmap of support Capabilities
 	Capabilities Capabilities
-	Reserved     uint32
+
+	Reserved uint32
+}
+
+func (s *SwitchFeatures) WriteTo(w io.Writer) (int64, error) {
+	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
+		s.DatapathID,
+		s.NumBuffers,
+		s.NumTables,
+		s.AuxiliaryID,
+		pad2{},
+		s.Capabilities,
+		s.Reserved,
+	})
+}
+
+func (s *SwitchFeatures) ReadFrom(r io.Reader) (int64, error) {
+	return binary.ReadSlice(r, binary.BigEndian, []interface{}{
+		&s.DatapathID,
+		&s.NumBuffers,
+		&s.NumTables,
+		&s.AuxiliaryID,
+		&pad2{},
+		&s.Capabilities,
+		&s.Reserved,
+	})
 }
 
 type SwitchConfig struct {

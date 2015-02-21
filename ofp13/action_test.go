@@ -15,12 +15,12 @@ func TestActionOutput(t *testing.T) {
 
 	_, err := a.WriteTo(&buf)
 	if err != nil {
-		t.Fatal("Failed to marshal action:", err.Error())
+		t.Fatal("Failed to marshal action:", err)
 	}
 
 	hexstr := fmt.Sprintf("%x", buf.Bytes())
 	if hexstr != "00000010fffffffb0000000000000000" {
-		t.Fatal("Failed to marshal action")
+		t.Fatal("Marshaled action data is incorrect:", hexstr)
 	}
 }
 

@@ -1,6 +1,7 @@
 package ofp13
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/netrack/openflow/encoding/binary"
@@ -48,6 +49,19 @@ type action interface {
 }
 
 type Actions []action
+
+func (a Actions) WriteTo(w io.Writer) (n int64, err error) {
+	var buf bytes.Buffer
+
+	for _, action := range a {
+		_, err = action.WriteTo(&buf)
+		if err != nil {
+			return
+		}
+	}
+
+	return binary.Write(w, binary.BigEndian, buf.Bytes())
+}
 
 // Action header that is common to all actions. The length includes the
 // header and any padding used to make the action 64-bit aligned.

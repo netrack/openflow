@@ -139,11 +139,9 @@ func (p *PacketOut) Bytes() (b []byte) { return Bytes(p) }
 func (p *PacketOut) WriteTo(w io.Writer) (n int64, err error) {
 	var buf bytes.Buffer
 
-	for _, action := range p.Actions {
-		n, err = action.WriteTo(&buf)
-		if err != nil {
-			return
-		}
+	_, err = p.Actions.WriteTo(&buf)
+	if err != nil {
+		return
 	}
 
 	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
