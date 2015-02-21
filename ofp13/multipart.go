@@ -1,5 +1,12 @@
 package ofp13
 
+import (
+	"bytes"
+	"io"
+
+	"github.com/netrack/openflow/encoding/binary"
+)
+
 const (
 	// Description of this OpenFlow switch.
 	// The request body is empty.
@@ -87,18 +94,44 @@ const (
 
 type MultipartReplyFlags uint16
 
+// While the system is running, the controller may request
+// state from the datapath using the T_MULTIPART_REQUEST message
 type MultipartRequest struct {
 	Type  MultipartType
 	Flags MultipartRequestFlags
-	_     pad4
-	Body  []byte
+	Body  io.WriterTo
 }
 
+func (m *MultipartRequest) Bytes() []byte {
+	return Bytes(m)
+}
+
+func (m *MultipartRequest) WriteTo(w io.Writer) (n int64, err error) {
+	var buf bytes.Buffer
+
+	if m.Body != nil {
+		_, err = m.Body.WriteTo(&buf)
+		if err != nil {
+			return
+		}
+	}
+
+	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
+		m.Type, m.Flags, pad4{}, buf.Bytes(),
+	})
+}
+
+// The switch responds on T_MULTIPART_REQUEST with one
+// or more T_MULTIPART_REPLY messages
 type MultipartReply struct {
 	Type  MultipartType
 	Flags MultipartReplyFlags
-	_     pad4
-	Body  []byte
+}
+
+func (m *MultipartReply) ReadFrom(r io.Reader) (int64, error) {
+	return binary.ReadSlice(r, binary.BigEndian, []interface{}{
+		&m.Type, &m.Flags, &pad4{},
+	})
 }
 
 type ExperimenterMultipartHeader struct {

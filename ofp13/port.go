@@ -1,7 +1,10 @@
 package ofp13
 
 import (
+	"io"
 	"net"
+
+	"github.com/netrack/openflow/encoding/binary"
 )
 
 const (
@@ -61,23 +64,54 @@ const (
 
 type PortNo uint32
 
+const MAX_PORT_NAME_LEN = 16
+
+// The port description request MP_PORT_DESCRIPTION enables the
+// controller to get a description of all the ports in the system
+// that support OpenFlow. The request body is empty. The reply
+// body consists of an array of the Port
 type Port struct {
 	PortNo PortNo
-	_      pad4
 	HWAddr net.HardwareAddr
-	_      pad2
-	Name   string
+	Name   []byte
 
 	Config PortConfig
 	State  PortState
 
-	Curr       PortFeatures
+	// Current features
+	Curr PortFeatures
+	// Features being advertised by the port
 	Advertised PortFeatures
-	Supported  PortFeatures
-	Peer       PortFeatures
+	// Features supported by the port
+	Supported PortFeatures
+	// Features advertised by peer
+	Peer PortFeatures
 
+	// Current port bitrate in kbps
 	CurrSpeed uint32
-	MaxSpeed  uint32
+	// Max port bitrate in kbps
+	MaxSpeed uint32
+}
+
+func (p *Port) ReadFrom(r io.Reader) (int64, error) {
+	p.HWAddr = make(net.HardwareAddr, 6)
+	p.Name = make([]byte, MAX_PORT_NAME_LEN)
+
+	return binary.ReadSlice(r, binary.BigEndian, []interface{}{
+		&p.PortNo,
+		&pad4{},
+		&p.HWAddr,
+		&pad2{},
+		&p.Name,
+		&p.Config,
+		&p.State,
+		&p.Curr,
+		&p.Advertised,
+		&p.Supported,
+		&p.Peer,
+		&p.CurrSpeed,
+		&p.MaxSpeed,
+	})
 }
 
 type PortMod struct {

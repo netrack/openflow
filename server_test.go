@@ -143,11 +143,6 @@ func TestServerMux(t *testing.T) {
  *                Instructions: instr,
  *            }
  *
- *            //pout := &ofp.PacketOut{
- *            //BufferID: pin.BufferID,
- *            //Actions:  ofp.Actions{ofp.ActionOutput{ofp.P_FLOOD, 0}},
- *            //}
- *
  *            rw.Header().Set(TypeHeaderKey, T_FLOW_MOD)
  *            rw.Header().Set(VersionHeaderKey, ofp.VERSION)
  *
@@ -155,6 +150,26 @@ func TestServerMux(t *testing.T) {
  *            fmt.Println("FLOW_MOD:", err3)
  *        case T_ERROR:
  *            fmt.Println("GOT ERROR:", r.Header)
+ *        case T_ECHO_REQUEST:
+ *            mr := &ofp.MultipartRequest{Type: ofp.MP_PORT_DESC}
+ *
+ *            rw.Header().Set(TypeHeaderKey, T_MULTIPART_REQUEST)
+ *            rw.Header().Set(VersionHeaderKey, ofp.VERSION)
+ *
+ *            _, err := rw.Write(mr.Bytes())
+ *            fmt.Println("MULTIPART:", err)
+ *        case T_MULTIPART_REPLY:
+ *            var mr ofp.MultipartReply
+ *
+ *            _, err1 := mr.ReadFrom(r.Body)
+ *
+ *            var port ofp.Port
+ *            var err error
+ *            for err = nil; err == nil; _, err = port.ReadFrom(r.Body) {
+ *                fmt.Println("PORT ", string(port.Name))
+ *            }
+ *
+ *            fmt.Println("MULTIPART REPLY:", err1)
  *        }
  *    })
  *
