@@ -3,6 +3,7 @@ package ofp13
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 
 	"github.com/netrack/openflow/encoding/binary"
 )
@@ -76,11 +77,17 @@ type AsyncConfig struct {
 }
 
 const (
+	// No matching flow (table-miss flow entry)
 	R_NO_MATCH PacketInReason = iota
+
+	// Action explicitly output to controller.
 	R_ACTION
+
+	// Packet has invalid TTL
 	R_INVALID_TTL
 )
 
+// Why is this packet being to the controller
 type PacketInReason uint8
 
 // Packet received on port (datapath -> controller)
@@ -147,4 +154,45 @@ func (p *PacketOut) WriteTo(w io.Writer) (n int64, err error) {
 	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
 		p.BufferID, p.InPort, uint16(buf.Len()), pad6{}, buf.Bytes(),
 	})
+}
+
+// EchoRequest message consists of an OpenFlow header
+// plus an arbitrary-length data field. The data field
+// might be a message timestamp to check latency, various
+// lengths to measure bandwidth, or zero-size to verify
+// liveness between the switch and controller.
+type EchoRequest struct {
+	Data []byte
+}
+
+func (er *EchoRequest) WriteTo(w io.Writer) (int64, error) {
+	return binary.Write(w, binary.BigEndian, er.Data)
+}
+
+func (er *EchoRequest) ReadFrom(r io.Reader) (n int64, err error) {
+	er.Data, err = ioutil.ReadAll(r)
+	if err != nil {
+		return
+	}
+
+	return int64(len(er.Data)), nil
+}
+
+// EchoReply message consists of an OpenFlow header
+// plus the unmodified data field of an echo request message.
+type EchoReply struct {
+	Data []byte
+}
+
+func (er *EchoReply) WriteTo(w io.Writer) (int64, error) {
+	return binary.Write(w, binary.BigEndian, er.Data)
+}
+
+func (er *EchoReply) ReadFrom(r io.Reader) (n int64, err error) {
+	er.Data, err = ioutil.ReadAll(r)
+	if err != nil {
+		return
+	}
+
+	return int64(len(er.Data)), nil
 }

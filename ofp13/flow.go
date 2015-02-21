@@ -504,26 +504,68 @@ func (f *FlowMod) WriteTo(w io.Writer) (n int64, err error) {
 }
 
 const (
+	// Flow idle time exceeded IdleTimeout
 	RR_IDLE_TIMEOUT FlowRemovedReason = iota
+
+	// Time exceeded HardTimeout
 	RR_HARD_TIMEOUT
+
+	// Evicted by a DELETE flow mod
 	RR_DELETE
+
+	// Group was removed
 	RR_GROUP_DELETE
 )
 
+// Why was this flow removed
 type FlowRemovedReason uint8
 
+// If the controller has requested to be notified when
+// flow entries time out or are deleted from tables, the
+// datapath does this with the T_FLOW_REMOVED message
 type FlowRemoved struct {
-	Cookie       uint64
-	Priority     uint16
-	Reason       FlowRemovedReason
-	TableID      Table
-	DurationSec  uint32
+	// Opaque controller-issued identifier
+	Cookie uint64
+	// Priority level of flow entry
+	Priority uint16
+	// One of FlowRemovedReason
+	Reason FlowRemovedReason
+	// ID of the table
+	TableID Table
+	// Time flow was alive in seconds
+	DurationSec uint32
+	// Time flow was alive in nanoseconds beyond DurationSec
 	DurationNSec uint32
-	IdleTimeout  uint16
-	HardTimeout  uint16
-	PacketCount  uint64
-	ByteCount    uint64
-	Match        Match
+	// Idle timeout from original flow mod
+	IdleTimeout uint16
+	// Hard timeout from original flow mod
+	HardTimeout uint16
+	PacketCount uint64
+	ByteCount   uint64
+	// Description of fields
+	Match Match
+}
+
+func (f *FlowRemoved) ReadFrom(r io.Reader) (n int64, err error) {
+	n, err = binary.ReadSlice(r, binary.BigEndian, []interface{}{
+		&f.Cookie,
+		&f.Priority,
+		&f.Reason,
+		&f.TableID,
+		&f.DurationSec,
+		&f.DurationNSec,
+		&f.IdleTimeout,
+		&f.HardTimeout,
+		&f.PacketCount,
+		&f.ByteCount,
+	})
+
+	if err != nil {
+		return
+	}
+
+	nn, err := f.Match.ReadFrom(r)
+	return n + nn, err
 }
 
 type FlowStatsRequest struct {

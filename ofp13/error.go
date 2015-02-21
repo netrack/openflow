@@ -1,5 +1,12 @@
 package ofp13
 
+import (
+	"io"
+	"io/ioutil"
+
+	"github.com/netrack/openflow/encoding/binary"
+)
+
 const (
 	ET_HELLO_FAILED ErrorType = iota
 	ET_BAD_REQUEST
@@ -175,10 +182,43 @@ const (
 
 type ErrorCode uint16
 
+// There are times that the switch needs to notify the controller
+// of a problem. This is done with the T_ERROR_MSG message
 type ErrorMsg struct {
+	// Type value indicates the high-level type of error.
 	Type ErrorType
+
+	// Code value is interpreted based on the type.
 	Code ErrorCode
+
+	// Data is variable length and interpreted based
+	// on the type and code. Unless specified otherwise,
+	// the data field contains at least 64 bytes of the
+	// failed request that caused the error message to
+	// be generated, if the failed request is shorter
+	// than 64 bytes it should be the full request without any padding.
 	Data []byte
+}
+
+func (e *ErrorMsg) ReadFrom(r io.Reader) (n int64, err error) {
+	n, err = binary.ReadSlice(r, binary.BigEndian, []interface{}{
+		&e.Type, &e.Code,
+	})
+
+	if err != nil {
+		return
+	}
+
+	e.Data, err = ioutil.ReadAll(r)
+	if err != nil {
+		return
+	}
+
+	return n + int64(len(e.Data)), nil
+}
+
+func (e *ErrorMsg) WriteTo(w io.Writer) (int64, error) {
+	return binary.Write(w, binary.BigEndian, e)
 }
 
 type ErrorExperimenterMsg struct {
