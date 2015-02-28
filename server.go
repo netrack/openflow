@@ -28,6 +28,7 @@ type ResponseWriter interface {
 	// called explicitly, the first call to Write will trigger an
 	// implicit WriteHeader()
 	WriteHeader()
+	Close() error
 }
 
 type Handler interface {
@@ -95,6 +96,10 @@ func (w *response) WriteHeader() {
 	}
 
 	w.conn.write(buf.Bytes())
+}
+
+func (w *response) Close() error {
+	return w.Close()
 }
 
 func (w *response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
