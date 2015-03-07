@@ -8,15 +8,12 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	//"github.com/netrack/net/pkg"
-	//ofp "github.com/netrack/openflow/ofp13"
 )
 
 type dummyAddr string
 
 func (a dummyAddr) Network() string {
-	return string(a)
+	return "dummy"
 }
 
 func (a dummyAddr) String() string {
@@ -113,67 +110,3 @@ func TestServerMux(t *testing.T) {
 		t.Fatal("Invalid data returned: ", returned)
 	}
 }
-
-/*
- *func TestServer(t *testing.T) {
- *    handler := HandlerFunc(func(rw ResponseWriter, r *Request) {
- *        switch r.Header.Type {
- *        case T_HELLO:
- *            fmt.Println("GOT HELLO:", r.Header)
- *            rw.Header().Set(TypeHeaderKey, T_HELLO)
- *            rw.Header().Set(VersionHeaderKey, ofp.VERSION)
- *            rw.WriteHeader()
- *        case T_PACKET_IN:
- *            var pin ofp.PacketIn
- *            var eth pkg.EthernetII
- *
- *            _, err1 := pin.ReadFrom(r.Body)
- *            err2 := eth.Read(r.Body)
- *            fmt.Println("GOT PACKET_IN:", err1, err2, eth)
- *
- *            instr := ofp.Instructions{ofp.InstructionActions{
- *                ofp.IT_APPLY_ACTIONS,
- *                ofp.Actions{ofp.ActionOutput{ofp.P_FLOOD, 0}},
- *            }}
- *
- *            fmod := &ofp.FlowMod{
- *                Command:      ofp.FC_ADD,
- *                BufferID:     pin.BufferID,
- *                Match:        pin.Match,
- *                Instructions: instr,
- *            }
- *
- *            rw.Header().Set(TypeHeaderKey, T_FLOW_MOD)
- *            rw.Header().Set(VersionHeaderKey, ofp.VERSION)
- *
- *            _, err3 := rw.Write(fmod.Bytes())
- *            fmt.Println("FLOW_MOD:", err3)
- *        case T_ERROR:
- *            fmt.Println("GOT ERROR:", r.Header)
- *        case T_ECHO_REQUEST:
- *            mr := &ofp.MultipartRequest{Type: ofp.MP_PORT_DESC}
- *
- *            rw.Header().Set(TypeHeaderKey, T_MULTIPART_REQUEST)
- *            rw.Header().Set(VersionHeaderKey, ofp.VERSION)
- *
- *            _, err := rw.Write(mr.Bytes())
- *            fmt.Println("MULTIPART:", err)
- *        case T_MULTIPART_REPLY:
- *            var mr ofp.MultipartReply
- *
- *            _, err1 := mr.ReadFrom(r.Body)
- *
- *            var port ofp.Port
- *            var err error
- *            for err = nil; err == nil; _, err = port.ReadFrom(r.Body) {
- *                fmt.Println("PORT ", string(port.Name))
- *            }
- *
- *            fmt.Println("MULTIPART REPLY:", err1)
- *        }
- *    })
- *
- *    s := Server{Addr: "0.0.0.0:6633", Handler: handler}
- *    s.ListenAndServe()
- *}
- */

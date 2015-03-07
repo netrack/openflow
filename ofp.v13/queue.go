@@ -1,4 +1,4 @@
-package ofp13
+package ofp
 
 const (
 	QT_MIN_RATE     QueueProperties = iota

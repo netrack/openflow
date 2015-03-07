@@ -1,4 +1,4 @@
-package ofp13
+package ofp
 
 import (
 	"io"

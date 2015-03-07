@@ -1,4 +1,4 @@
-package ofp13
+package ofp
 
 const (
 	DESC_STR_LEN   = 256

@@ -13,9 +13,14 @@ var (
 	ErrHijacked = errors.New("conn: Connection has been hijacked")
 )
 
+type Hijacker interface {
+	Hijack() (net.Conn, *bufio.ReadWriter, error)
+}
+
 // A ResponseWriter interface is used by an OpenFlow handler to
 // construct an OpenFlow response.
 type ResponseWriter interface {
+	Hijacker
 	// Header returns the Header interface that will be sent by
 	// WriteHeader. Changing the header after a call to WriteHeader
 	// (or Write) has no effect
@@ -28,6 +33,7 @@ type ResponseWriter interface {
 	// called explicitly, the first call to Write will trigger an
 	// implicit WriteHeader()
 	WriteHeader()
+	// Close closes connection
 	Close() error
 }
 
@@ -44,10 +50,6 @@ func (h HandlerFunc) Serve(rw ResponseWriter, r *Request) {
 func Discard(rw ResponseWriter, r *Request) {}
 
 var DiscardHandler = HandlerFunc(Discard)
-
-type Hijacker interface {
-	Hijack() (net.Conn, *bufio.ReadWriter, error)
-}
 
 type response struct {
 	header header
@@ -195,6 +197,15 @@ func (c *conn) serve(h Handler) {
 	}
 }
 
+var DefaultServer = Server{
+	Addr:    "0.0.0.0:6633",
+	Handler: DefaultServeMux,
+}
+
+func ListenAndServe() error {
+	return DefaultServer.ListenAndServe()
+}
+
 type Server struct {
 	Addr    string
 	Handler Handler
@@ -236,6 +247,14 @@ func (srv *Server) Serve(l net.Listener) error {
 }
 
 var DefaultServeMux = NewServeMux()
+
+func Handle(t Type, handler Handler) {
+	DefaultServeMux.Handle(t, handler)
+}
+
+func HandleFunc(t Type, f func(ResponseWriter, *Request)) {
+	DefaultServeMux.HandleFunc(t, f)
+}
 
 type ServeMux struct {
 	mu sync.RWMutex

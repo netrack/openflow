@@ -1,4 +1,4 @@
-package ofp13
+package ofp
 
 type AggregateStatsRequest struct {
 	TableID    Table
