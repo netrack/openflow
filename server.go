@@ -1,4 +1,4 @@
-package openflow
+package of
 
 import (
 	"bufio"
@@ -160,7 +160,7 @@ func (srv *Server) serve(c *Conn, h Handler) {
 	}()
 
 	for {
-		req, err := c.Recv()
+		req, err := c.Receive()
 		if err != nil {
 			return
 		}

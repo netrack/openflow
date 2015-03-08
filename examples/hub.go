@@ -4,21 +4,21 @@ import (
 	"log"
 
 	"github.com/netrack/net/pkg"
-	flow "github.com/netrack/openflow"
+	"github.com/netrack/openflow"
 	"github.com/netrack/openflow/ofp.v13"
 )
 
 func main() {
-	flow.HandleFunc(flow.T_HELLO, func(rw flow.ResponseWriter, r *flow.Request) {
+	of.HandleFunc(of.T_HELLO, func(rw of.ResponseWriter, r *of.Request) {
 		log.Println("RECV ofp_hello:", r.Header)
-		rw.Header().Set(flow.TypeHeaderKey, flow.T_HELLO)
-		rw.Header().Set(flow.VersionHeaderKey, ofp.VERSION)
+		rw.Header().Set(of.TypeHeaderKey, of.T_HELLO)
+		rw.Header().Set(of.VersionHeaderKey, ofp.VERSION)
 		rw.WriteHeader()
 
 		log.Println("SEND ofp_hello:", rw.Header())
 	})
 
-	flow.HandleFunc(flow.T_PACKET_IN, func(rw flow.ResponseWriter, r *flow.Request) {
+	of.HandleFunc(of.T_PACKET_IN, func(rw of.ResponseWriter, r *of.Request) {
 		var p ofp.PacketIn
 		var eth pkg.EthernetII
 
@@ -40,21 +40,21 @@ func main() {
 			Instructions: instr,
 		}
 
-		rw.Header().Set(flow.TypeHeaderKey, flow.T_FLOW_MOD)
-		rw.Header().Set(flow.VersionHeaderKey, ofp.VERSION)
+		rw.Header().Set(of.TypeHeaderKey, of.T_FLOW_MOD)
+		rw.Header().Set(of.VersionHeaderKey, ofp.VERSION)
 
 		rw.Write(fmod.Bytes())
-		log.Println("SEND ofp_flow_mod:", rw.Header())
+		log.Println("SEND ofp_of_mod:", rw.Header())
 	})
 
-	flow.HandleFunc(flow.T_ECHO_REQUEST, func(rw flow.ResponseWriter, r *flow.Request) {
+	of.HandleFunc(of.T_ECHO_REQUEST, func(rw of.ResponseWriter, r *of.Request) {
 		log.Println("RECV ofp_echo_request:", r.Header)
-		rw.Header().Set(flow.TypeHeaderKey, flow.T_ECHO_REPLY)
-		rw.Header().Set(flow.VersionHeaderKey, ofp.VERSION)
+		rw.Header().Set(of.TypeHeaderKey, of.T_ECHO_REPLY)
+		rw.Header().Set(of.VersionHeaderKey, ofp.VERSION)
 		rw.WriteHeader()
 		log.Println("SEND ofp_echo_reply:", rw.Header())
 	})
 
 	log.Println("started listening...")
-	flow.ListenAndServe()
+	of.ListenAndServe()
 }

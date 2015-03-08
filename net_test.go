@@ -1,4 +1,4 @@
-package openflow
+package of
 
 import (
 	"bytes"
@@ -135,7 +135,7 @@ func TestDial(t *testing.T) {
 		t.Fatal("Failed to send request:", err)
 	}
 
-	r, err = cconn.Recv()
+	r, err = cconn.Receive()
 	if err != nil {
 		t.Fatal("Failed to receive request:", err)
 	}

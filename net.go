@@ -1,4 +1,4 @@
-package openflow
+package of
 
 import (
 	"bufio"
@@ -58,7 +58,7 @@ func (c *Conn) Read(b []byte) (int, error) {
 	return c.buf.Read(b)
 }
 
-func (c *Conn) Recv() (*Request, error) {
+func (c *Conn) Receive() (*Request, error) {
 	if c.hijacked() {
 		return nil, ErrHijacked
 	}
