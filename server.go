@@ -53,7 +53,7 @@ var DiscardHandler = HandlerFunc(Discard)
 
 type response struct {
 	header header
-	conn   *conn
+	conn   *Conn
 
 	wroteHeader bool // header has been written
 }
@@ -76,7 +76,7 @@ func (w *response) Write(b []byte) (n int, err error) {
 		w.WriteHeader()
 	}
 
-	return w.conn.write(buf.Bytes())
+	return w.conn.Write(buf.Bytes())
 }
 
 func (w *response) WriteHeader() {
@@ -97,7 +97,7 @@ func (w *response) WriteHeader() {
 		return
 	}
 
-	w.conn.write(buf.Bytes())
+	w.conn.Write(buf.Bytes())
 }
 
 func (w *response) Close() error {
@@ -105,96 +105,7 @@ func (w *response) Close() error {
 }
 
 func (w *response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	return w.conn.hijack()
-}
-
-type conn struct {
-	rwc net.Conn
-	buf *bufio.ReadWriter
-
-	rtimeout time.Duration
-	wtimeout time.Duration
-
-	mu sync.Mutex
-
-	hijackedv bool
-}
-
-func (c *conn) hijacked() bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.hijackedv
-}
-
-func (c *conn) hijack() (net.Conn, *bufio.ReadWriter, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if c.hijackedv {
-		return nil, nil, ErrHijacked
-	}
-
-	c.hijackedv = true
-	rwc := c.rwc
-	buf := c.buf
-
-	c.rwc = nil
-	c.buf = nil
-	return rwc, buf, nil
-}
-
-func (c *conn) read() (*Request, error) {
-	if c.hijacked() {
-		return nil, ErrHijacked
-	}
-
-	if d := c.rtimeout; d != 0 {
-		c.rwc.SetReadDeadline(time.Now().Add(d))
-	}
-
-	if d := c.wtimeout; d != 0 {
-		defer func() {
-			c.rwc.SetWriteDeadline(time.Now().Add(d))
-		}()
-	}
-
-	var req Request
-
-	_, err := req.ReadFrom(c.buf)
-	if err != nil {
-		return nil, err
-	}
-
-	return &req, nil
-}
-
-func (c *conn) write(b []byte) (int, error) {
-	if c.hijacked() {
-		return 0, ErrHijacked
-	}
-
-	return c.buf.Write(b)
-}
-
-func (c *conn) serve(h Handler) {
-	origconn := c.rwc
-	defer func() {
-		if !c.hijacked() {
-			origconn.Close()
-		}
-	}()
-
-	for {
-		req, err := c.read()
-		if err != nil {
-			return
-		}
-
-		resp := &response{conn: c}
-		h.Serve(resp, req)
-
-		c.buf.Flush()
-	}
+	return w.conn.Hijack()
 }
 
 var DefaultServer = Server{
@@ -232,17 +143,32 @@ func (srv *Server) Serve(l net.Listener) error {
 			return err
 		}
 
-		br := bufio.NewReader(rwc)
-		bw := bufio.NewWriter(rwc)
+		c := newConn(rwc)
+		c.ReadTimeout = srv.ReadTimeout
+		c.WriteTimeout = srv.WriteTimeout
 
-		brw := bufio.NewReadWriter(br, bw)
-		c := &conn{
-			rwc: rwc, buf: brw,
-			rtimeout: srv.ReadTimeout,
-			wtimeout: srv.WriteTimeout,
+		go srv.serve(c, srv.Handler)
+	}
+}
+
+func (srv *Server) serve(c *Conn, h Handler) {
+	origconn := c.rwc
+	defer func() {
+		if !c.hijacked() {
+			origconn.Close()
+		}
+	}()
+
+	for {
+		req, err := c.Recv()
+		if err != nil {
+			return
 		}
 
-		go c.serve(srv.Handler)
+		resp := &response{conn: c}
+		h.Serve(resp, req)
+
+		c.buf.Flush()
 	}
 }
 

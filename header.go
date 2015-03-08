@@ -90,30 +90,45 @@ type header struct {
 func (h *header) Set(k HeaderKey, v interface{}) error {
 	switch k {
 	case VersionHeaderKey:
-		version, ok := v.(uint8)
-		if !ok {
-			return errors.New("header: Version must be uint8")
-		}
-
-		h.Version = version
+		return h.setVersion(v)
 	case TypeHeaderKey:
-		typ, ok := v.(Type)
-		if !ok {
-			return errors.New("header: Type must be uint8")
-		}
-
-		h.Type = Type(typ)
+		return h.setType(v)
 	case XIDHeaderKey:
-		xid, ok := v.(uint32)
-		if !ok {
-			return errors.New("header: XID must be uint32")
-		}
-
-		h.XID = xid
+		return h.setXID(v)
 	default:
 		return errors.New("header: unsettable field")
 	}
 
+	return nil
+}
+
+func (h *header) setVersion(v interface{}) error {
+	version, ok := v.(uint8)
+	if !ok {
+		return errors.New("header: Version must be uint8")
+	}
+
+	h.Version = version
+	return nil
+}
+
+func (h *header) setType(v interface{}) error {
+	typ, ok := v.(Type)
+	if !ok {
+		return errors.New("header: Type must be uint8")
+	}
+
+	h.Type = Type(typ)
+	return nil
+}
+
+func (h *header) setXID(v interface{}) error {
+	xid, ok := v.(uint32)
+	if !ok {
+		return errors.New("header: XID must be uint32")
+	}
+
+	h.XID = xid
 	return nil
 }
 
