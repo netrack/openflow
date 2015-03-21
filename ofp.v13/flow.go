@@ -18,6 +18,7 @@ const (
 type MatchType uint16
 
 const (
+	// Switch input port
 	XMT_OFB_IN_PORT OXMField = iota
 	XMT_OFB_IN_PHY_PORT
 	XMT_OFB_METADATA
@@ -29,15 +30,35 @@ const (
 	XMT_OFB_IP_DSCP
 	XMT_OFB_IP_ECN
 	XMT_OFB_IP_PROTO
+
+	// IPv4 source address
 	XMT_OFB_IPV4_SRC
+
+	// IPv4 destination address
 	XMT_OFB_IPV4_DST
+
+	// TCP source port
 	XMT_OFB_TCP_SRC
+
+	// TCP destination port
 	XMT_OFB_TCP_DST
+
+	// UDP source port
 	XMT_OFB_UDP_SRC
+
+	// UDP destination port
 	XMT_OFB_UDP_DST
+
+	// SCTP source port
 	XMT_OFB_SCTP_SRC
+
+	// SCTP destination port
 	XMT_OFB_SCTP_DST
+
+	// ICMPv4 type
 	XMT_OFB_ICMPV4_TYPE
+
+	// ICMPv4 code
 	XMT_OFB_ICMPV4_CODE
 	XMT_OFB_ARP_OP
 	XMT_OFB_ARP_SPA
@@ -138,9 +159,7 @@ func (m *Match) ReadFrom(r io.Reader) (n int64, err error) {
 	for rbuf.Len() > 7 {
 		var oxm OXM
 
-		nn, err = oxm.ReadFrom(rbuf)
-		n += nn
-
+		_, err = oxm.ReadFrom(rbuf)
 		if err != nil {
 			return
 		}

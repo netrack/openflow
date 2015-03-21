@@ -98,8 +98,8 @@ func TestListener(t *testing.T) {
 		t.Fatal("Failed to accept a new connection:", err)
 	}
 
-	if conn.rwc != dconn {
-		t.Fatal("Faile to create OFP connection")
+	if conn.(*Conn).rwc != dconn {
+		t.Fatal("Failed to create OFP connection")
 	}
 }
 

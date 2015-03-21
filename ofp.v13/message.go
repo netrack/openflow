@@ -8,7 +8,13 @@ import (
 	"github.com/netrack/openflow/encoding/binary"
 )
 
-const VERSION uint8 = 0x04
+const (
+	VERSION uint8 = 0x04
+
+	// If no buffered packet is associated with the message,
+	// BufferID it must be set to NO_BUFFER.
+	NO_BUFFER uint32 = 0xffffffff
+)
 
 const (
 	// Bitmap of version supported
@@ -135,10 +141,16 @@ type PacketOut struct {
 	// ID assigned by datapath (NO_BUFFER if none).
 	// The BufferID is the same given in the PacketIn message.
 	BufferID uint32
-	// Packet's input port or OFPP_CONTROLLER
+	// The InPort field is the ingress port that must be associated
+	// with the packet for OpenFlow processing. It must be set to either
+	// a valid standard switch port or P_CONTROLLER.
 	InPort PortNo
-	// Action list
+	// The action field is an action list defining how the packet should
+	// be processed by the switch. It may include packet modification,
+	// group processing and an output port.
 	Actions Actions
+	// Followed by packet data. The length is inferred
+	// from the length field in the header.
 }
 
 func (p *PacketOut) Bytes() (b []byte) { return Bytes(p) }

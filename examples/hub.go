@@ -20,13 +20,13 @@ func main() {
 
 	of.HandleFunc(of.T_PACKET_IN, func(rw of.ResponseWriter, r *of.Request) {
 		var p ofp.PacketIn
-		var eth pkg.EthernetII
+		var e pkg.EthernetII
 
 		p.ReadFrom(r.Body)
-		eth.Read(r.Body)
+		e.ReadFrom(r.Body)
 
 		log.Println("RECV ofp_packet_in:", r.Header)
-		log.Println("RECV ofp_packet_in:", eth.HWDst, eth.HWSrc)
+		log.Println("RECV ofp_packet_in:", e.HWDst, e.HWSrc)
 
 		instr := ofp.Instructions{ofp.InstructionActions{
 			ofp.IT_APPLY_ACTIONS,
@@ -44,6 +44,7 @@ func main() {
 		rw.Header().Set(of.VersionHeaderKey, ofp.VERSION)
 
 		rw.Write(fmod.Bytes())
+		rw.WriteHeader()
 		log.Println("SEND ofp_of_mod:", rw.Header())
 	})
 

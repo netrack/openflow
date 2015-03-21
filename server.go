@@ -26,13 +26,9 @@ type ResponseWriter interface {
 	// (or Write) has no effect
 	Header() Header
 	// Write writes the data to the connection as part of an OpenFlow reply.
-	// If WriteHeader has not yet been called, Write calls WriteHeader()
-	// before writing the data.
 	Write([]byte) (int, error)
-	// WriteHeader sends an response header. If WriteHeader is not
-	// called explicitly, the first call to Write will trigger an
-	// implicit WriteHeader()
-	WriteHeader()
+	// WriteHeader sends an response header as part of an OpenFlow reply.
+	WriteHeader() error
 	// Close closes connection
 	Close() error
 }
@@ -54,8 +50,7 @@ var DiscardHandler = HandlerFunc(Discard)
 type response struct {
 	header header
 	conn   *Conn
-
-	wroteHeader bool // header has been written
+	buf    bytes.Buffer
 }
 
 func (w *response) Header() Header {
@@ -63,41 +58,27 @@ func (w *response) Header() Header {
 }
 
 func (w *response) Write(b []byte) (n int, err error) {
-	var buf bytes.Buffer
-
-	_, err = buf.Write(b)
-	if err != nil {
-		return
-	}
-
-	w.header.Length = headerlen + uint16(buf.Len())
-
-	if !w.wroteHeader {
-		w.WriteHeader()
-	}
-
-	return w.conn.Write(buf.Bytes())
+	return w.buf.Write(b)
 }
 
-func (w *response) WriteHeader() {
+func (w *response) WriteHeader() (err error) {
 	var buf bytes.Buffer
 
-	if w.wroteHeader {
-		return
-	}
+	w.header.Length = headerlen + uint16(w.buf.Len())
+	defer w.buf.Reset()
 
-	w.wroteHeader = true
-
-	if w.header.Length == 0 {
-		w.header.Length = headerlen
-	}
-
-	_, err := w.header.WriteTo(&buf)
+	_, err = w.header.WriteTo(&buf)
 	if err != nil {
 		return
 	}
 
-	w.conn.Write(buf.Bytes())
+	_, err = w.buf.WriteTo(&buf)
+	if err != nil {
+		return
+	}
+
+	_, err = w.conn.Write(buf.Bytes())
+	return err
 }
 
 func (w *response) Close() error {
@@ -143,7 +124,7 @@ func (srv *Server) Serve(l net.Listener) error {
 			return err
 		}
 
-		c := newConn(rwc)
+		c := NewConn(rwc)
 		c.ReadTimeout = srv.ReadTimeout
 		c.WriteTimeout = srv.WriteTimeout
 

@@ -17,7 +17,7 @@ type Request struct {
 	Proto string
 	Addr  net.Addr
 
-	ContentLength int
+	ContentLength int64
 }
 
 // NewRequest returns a new Request given a type, address, and optional body
@@ -82,6 +82,6 @@ func (r *Request) ReadFrom(rd io.Reader) (n int64, err error) {
 	}
 
 	r.Body = bytes.NewBuffer(buf)
-	r.ContentLength = nn
+	r.ContentLength = int64(nn)
 	return
 }

@@ -7,6 +7,20 @@ import (
 	"time"
 )
 
+type OFPConn interface {
+	net.Conn
+
+	Hijack() (net.Conn, *bufio.ReadWriter, error)
+
+	// Receive receives message from input buffer
+	Receive() (*Request, error)
+
+	// Send writes message to output buffer
+	Send(*Request) error
+
+	Flush() error
+}
+
 type Conn struct {
 	rwc net.Conn
 	buf *bufio.ReadWriter
@@ -19,7 +33,7 @@ type Conn struct {
 	hijackedv bool
 }
 
-func newConn(conn net.Conn) *Conn {
+func NewConn(conn net.Conn) *Conn {
 	br := bufio.NewReader(conn)
 	bw := bufio.NewWriter(conn)
 
@@ -84,6 +98,10 @@ func (c *Conn) Write(b []byte) (int, error) {
 	return c.buf.Write(b)
 }
 
+func (c *Conn) Flush() error {
+	return c.buf.Flush()
+}
+
 func (c *Conn) Send(r *Request) error {
 	if c.hijacked() {
 		return ErrHijacked
@@ -127,16 +145,16 @@ func (c *Conn) SetWriteDeadline(t time.Time) error {
 	return c.rwc.SetWriteDeadline(t)
 }
 
-func Dial(network, addr string) (*Conn, error) {
+func Dial(network, addr string) (OFPConn, error) {
 	conn, err := net.Dial(network, addr)
 	if err != nil {
 		return nil, err
 	}
 
-	return newConn(conn), nil
+	return NewConn(conn), nil
 }
 
-func DialTLS(network, addr string) (*Conn, error) {
+func DialTLS(network, addr string) (OFPConn, error) {
 	panic("PANIC PANIC PANIC")
 }
 
@@ -148,13 +166,13 @@ func (l *Listener) Accept() (net.Conn, error) {
 	return l.AcceptOFP()
 }
 
-func (l *Listener) AcceptOFP() (*Conn, error) {
+func (l *Listener) AcceptOFP() (OFPConn, error) {
 	conn, err := l.ln.Accept()
 	if err != nil {
 		return nil, err
 	}
 
-	return newConn(conn), nil
+	return NewConn(conn), nil
 }
 
 func (l *Listener) Close() error {
