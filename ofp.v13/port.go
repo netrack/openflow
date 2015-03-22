@@ -145,8 +145,13 @@ type PortMod struct {
 }
 
 const (
+	// The port was added
 	PR_ADD PortReason = iota
+
+	// The port was removed
 	PR_DELETE
+
+	// Some attribute of the port has changed
 	PR_MODIFY
 )
 

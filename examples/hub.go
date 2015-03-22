@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/netrack/net/pkg"
+	"github.com/netrack/net/l2"
 	"github.com/netrack/openflow"
 	"github.com/netrack/openflow/ofp.v13"
 )
@@ -20,7 +20,7 @@ func main() {
 
 	of.HandleFunc(of.T_PACKET_IN, func(rw of.ResponseWriter, r *of.Request) {
 		var p ofp.PacketIn
-		var e pkg.EthernetII
+		var e l2.EthernetII
 
 		p.ReadFrom(r.Body)
 		e.ReadFrom(r.Body)

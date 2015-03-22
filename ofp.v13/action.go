@@ -71,7 +71,7 @@ type Action struct {
 	Type ActionType
 }
 
-func (a *Action) WriteTo(w io.Writer) (int64, error) {
+func (a Action) WriteTo(w io.Writer) (int64, error) {
 	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
 		actionhdr{a.Type, 8}, pad4{},
 	})
