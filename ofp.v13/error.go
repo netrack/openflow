@@ -81,17 +81,42 @@ const (
 )
 
 const (
+	// Unsupported match type specified by the match
 	BMC_BAD_TYPE ErrorCode = iota
+
+	// Length problem in match
 	BMC_BAD_LEN
+
+	// Match uses an unsupported tag/encap
 	BMC_BAD_TAG
+
+	// Unsupported datalink addr mask - switch does not support
+	// arbitrary datalink address mask
 	BMC_BAD_DL_ADDR_MASK
+
+	// Unsupported network addr mask - switch does not support
+	// arbitrary network address mask
 	BMC_BAD_NW_ADDR_MASK
+
+	// Unsupported combination of fields masked or omitted in the match.
 	BMC_BAD_WILDCARDS
+
+	// Unsupported field type in the match
 	BMC_BAD_FIELD
+
+	// Unsupported value in a match field
 	BMC_BAD_VALUE
+
+	// Unsupported mask specified in the match
 	BMC_BAD_MASK
+
+	// A prerequisite was not met
 	BMC_BAD_PREREQ
+
+	// A field type was duplicated
 	BMC_DUP_FIELD
+
+	// Permissions error
 	BMC_EPERM
 )
 

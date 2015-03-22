@@ -32,6 +32,7 @@ type ActionType uint16
 const (
 	// Maximum MaxLength value which can be used to request a specific byte Length.
 	CML_MAX uint16 = 0xffe5
+
 	// Indicates that no buffering should be applied and
 	// the whole packet is to be sent to the controller.
 	CML_NO_BUFFER uint16 = 0xffff

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"io/ioutil"
 	"net"
 	"sync"
 	"time"
@@ -165,15 +166,14 @@ func HandleFunc(t Type, f func(ResponseWriter, *Request)) {
 
 type ServeMux struct {
 	mu sync.RWMutex
-	m  map[Type]Handler
+	m  map[Type][]Handler
 }
 
 func NewServeMux() *ServeMux {
-	return &ServeMux{m: make(map[Type]Handler)}
+	return &ServeMux{m: make(map[Type][]Handler)}
 }
 
 // Handle registers the handler for the given message type.
-// If a handler already exists for pattern, Handle panics.
 func (mux *ServeMux) Handle(t Type, handler Handler) {
 	mux.mu.Lock()
 	defer mux.mu.Unlock()
@@ -182,11 +182,7 @@ func (mux *ServeMux) Handle(t Type, handler Handler) {
 		panic("mux: nil handler")
 	}
 
-	if _, dup := mux.m[t]; dup {
-		panic("mux: multiple registrations")
-	}
-
-	mux.m[t] = handler
+	mux.m[t] = append(mux.m[t], handler)
 }
 
 func (mux *ServeMux) HandleFunc(t Type, f func(ResponseWriter, *Request)) {
@@ -197,10 +193,22 @@ func (mux *ServeMux) Handler(r *Request) (Handler, Type) {
 	mux.mu.RLock()
 	defer mux.mu.RUnlock()
 
-	h, ok := mux.m[r.Header.Type]
+	handlers, ok := mux.m[r.Header.Type]
 	if !ok {
-		h = DiscardHandler
+		handlers = append(handlers, DiscardHandler)
 	}
+
+	h := HandlerFunc(func(rw ResponseWriter, r *Request) {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return
+		}
+
+		for _, handler := range handlers {
+			r.Body = bytes.NewBuffer(body)
+			handler.Serve(rw, r)
+		}
+	})
 
 	return h, r.Header.Type
 }

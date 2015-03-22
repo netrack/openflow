@@ -8,7 +8,10 @@ import (
 )
 
 const (
+	// OpenFlow 1.1 match type MT_STANDARD is deprecated
 	MT_STANDARD MatchType = iota
+
+	// OpenFlow Extensible Match
 	MT_OXM
 )
 
@@ -20,15 +23,35 @@ type MatchType uint16
 const (
 	// Switch input port
 	XMT_OFB_IN_PORT OXMField = iota
+
+	// Switch physical input port
 	XMT_OFB_IN_PHY_PORT
+
+	// Metadata passed between tables
 	XMT_OFB_METADATA
+
+	// Ethernet destination address
 	XMT_OFB_ETH_DST
+
+	// Ethernet source address
 	XMT_OFB_ETH_SRC
+
+	// Ethernet frame type
 	XMT_OFB_ETH_TYPE
+
+	// VLAN identificator
 	XMT_OFB_VLAN_VID
+
+	// VLAN priority
 	XMT_OFB_VLAN_PCP
+
+	// IP DSCP (6 bits in ToS field)
 	XMT_OFB_IP_DSCP
+
+	// IP ECN (2 bits in ToS field)
 	XMT_OFB_IP_ECN
+
+	// IP protocol
 	XMT_OFB_IP_PROTO
 
 	// IPv4 source address
@@ -60,24 +83,62 @@ const (
 
 	// ICMPv4 code
 	XMT_OFB_ICMPV4_CODE
+
+	// ARP opcode
 	XMT_OFB_ARP_OP
+
+	// ARP source IPv4 address
 	XMT_OFB_ARP_SPA
+
+	// ARP target IPv4 address
 	XMT_OFB_ARP_TPA
+
+	// ARP source hardware address
 	XMT_OFB_ARP_SHA
+
+	// ARP target hardware address
 	XMT_OFB_ARP_THA
+
+	// IPv6 source address
 	XMT_OFB_IPV6_SRC
+
+	// IPv6 destination address
 	XMT_OFB_IPV6_DST
+
+	// IPv6 Flow Label
 	XMT_OFB_IPV6_FLABEL
+
+	// ICMPv6 type
 	XMT_OFB_ICMPV6_TYPE
+
+	// ICMPv6 code
 	XMT_OFB_ICMPV6_CODE
+
+	// Target address for ND
 	XMT_OFB_IPV6_ND_TARGET
+
+	// Source link-layer for ND
 	XMT_OFB_IPV6_ND_SLL
+
+	// Target link-layer for ND
 	XMT_OFB_IPV6_ND_TLL
+
+	// MPLS label
 	XMT_OFB_MPLS_LABEL
+
+	// MPLS TC
 	XMT_OFB_MPLS_TC
+
+	// MPLS BoS bit
 	XMT_OFP_MPLS_BOS
+
+	// PBB I-SID
 	XMT_OFB_PBB_ISID
+
+	// Logical Port Metadata
 	XMT_OFB_TUNNEL_ID
+
+	// IPv6 Extension Header pseudo-field
 	XMT_OFB_IPV6_EXTHDR
 )
 
@@ -135,6 +196,16 @@ type Match struct {
 	OXMFields []OXM
 }
 
+func (m *Match) Field(field OXMField) *OXM {
+	for _, oxm := range m.OXMFields {
+		if oxm.Field == field {
+			return &oxm
+		}
+	}
+
+	return nil
+}
+
 func (m *Match) ReadFrom(r io.Reader) (n int64, err error) {
 	var length uint16
 	n, err = binary.ReadSlice(r, binary.BigEndian, []interface{}{
@@ -182,9 +253,11 @@ func (m *Match) WriteTo(w io.Writer) (n int64, err error) {
 
 	length := buf.Len() + 4
 
-	_, err = buf.Write(make([]byte, 8-length%8))
-	if err != nil {
-		return
+	if length%8 != 0 {
+		_, err = buf.Write(make([]byte, 8-length%8))
+		if err != nil {
+			return
+		}
 	}
 
 	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
@@ -200,8 +273,8 @@ type OXM struct {
 	// Class-specific value, identifying one of the
 	// match types within the match class.
 	Field OXMField
-	Mask  []byte
-	Value []byte
+	Value OXMValue
+	Mask  OXMValue
 }
 
 func (oxm *OXM) ReadFrom(r io.Reader) (n int64, err error) {
@@ -220,9 +293,13 @@ func (oxm *OXM) ReadFrom(r io.Reader) (n int64, err error) {
 
 	var m int64
 
+	oxm.Value = make(OXMValue, length)
+	m, err = binary.Read(r, binary.BigEndian, &oxm.Value)
+	n += m
+
 	if hasmask {
 		length /= 2
-		oxm.Mask = make([]byte, length)
+		oxm.Mask = make(OXMValue, length)
 
 		m, err = binary.Read(r, binary.BigEndian, &oxm.Mask)
 		n += m
@@ -232,17 +309,42 @@ func (oxm *OXM) ReadFrom(r io.Reader) (n int64, err error) {
 		}
 	}
 
-	oxm.Value = make([]byte, length)
-	m, err = binary.Read(r, binary.BigEndian, &oxm.Value)
-	return n + m, err
+	return
 }
 
 func (oxm *OXM) WriteTo(w io.Writer) (int64, error) {
-	field := oxm.Field | (OXMField(len(oxm.Mask)) & 1)
+	var hasmask OXMField
+	if len(oxm.Mask) > 0 {
+		hasmask = 1
+	}
+
+	field := (oxm.Field << 1) | hasmask
 
 	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		oxm.Class, field, uint8(len(oxm.Mask) + len(oxm.Value)), oxm.Mask, oxm.Value,
+		oxm.Class, field, uint8(len(oxm.Mask) + len(oxm.Value)), oxm.Value, oxm.Mask,
 	})
+}
+
+type OXMValue []byte
+
+func (val OXMValue) PortNo() (n PortNo) {
+	binary.Read(bytes.NewBuffer(val), binary.BigEndian, &n)
+	return
+}
+
+func (val OXMValue) UInt32() (v uint32) {
+	binary.Read(bytes.NewBuffer(val), binary.BigEndian, &v)
+	return
+}
+
+func (val OXMValue) UInt16() (v uint16) {
+	binary.Read(bytes.NewBuffer(val), binary.BigEndian, &v)
+	return
+}
+
+func (val OXMValue) UInt8() (v uint8) {
+	binary.Read(bytes.NewBuffer(val), binary.BigEndian, &v)
+	return
 }
 
 type OXMExperimenterHeader struct {
@@ -545,22 +647,32 @@ type FlowRemovedReason uint8
 type FlowRemoved struct {
 	// Opaque controller-issued identifier
 	Cookie uint64
+
 	// Priority level of flow entry
 	Priority uint16
+
 	// One of FlowRemovedReason
 	Reason FlowRemovedReason
+
 	// ID of the table
 	TableID Table
+
 	// Time flow was alive in seconds
 	DurationSec uint32
+
 	// Time flow was alive in nanoseconds beyond DurationSec
 	DurationNSec uint32
+
 	// Idle timeout from original flow mod
 	IdleTimeout uint16
+
 	// Hard timeout from original flow mod
 	HardTimeout uint16
+
 	PacketCount uint64
-	ByteCount   uint64
+
+	ByteCount uint64
+
 	// Description of fields
 	Match Match
 }
