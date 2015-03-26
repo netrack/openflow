@@ -251,10 +251,11 @@ func (m *Match) WriteTo(w io.Writer) (n int64, err error) {
 		}
 	}
 
+	// Length of Match (excluding padding)
 	length := buf.Len() + 4
 
 	if length%8 != 0 {
-		_, err = buf.Write(make([]byte, 8-length%8))
+		_, err = buf.Write(make(pad, 8-length%8))
 		if err != nil {
 			return
 		}

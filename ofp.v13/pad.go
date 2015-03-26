@@ -1,5 +1,6 @@
 package ofp
 
+type pad []byte
 type pad1 [1]uint8
 type pad2 [2]uint8
 type pad3 [3]uint8

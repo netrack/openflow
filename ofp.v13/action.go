@@ -177,8 +177,35 @@ func (a ActionPopMPLS) WriteTo(w io.Writer) (int64, error) {
 	})
 }
 
+// Action structure for PAT_SET_FIELD
 type ActionSetField struct {
+	// Field contains a header field described
+	// using a single OXM TLV structure.
 	Fields []OXM
+}
+
+func (a ActionSetField) WriteTo(w io.Writer) (int64, error) {
+	var buf bytes.Buffer
+
+	for _, oxm := range a.Fields {
+		_, err := oxm.WriteTo(&buf)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	length := buf.Len() + 4
+
+	if length%8 != 0 {
+		_, err := buf.Write(make(pad, 8-length%8))
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
+		actionhdr{AT_SET_FIELD, uint16(buf.Len() + 4)}, buf.Bytes(),
+	})
 }
 
 // Action header for PAT_EXPERIMENTER.
