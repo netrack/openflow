@@ -100,15 +100,20 @@ type PacketInReason uint8
 type PacketIn struct {
 	// ID assigned by datapath
 	BufferID uint32
+
 	// Reason packet is being sent
 	Reason PacketInReason
+
 	// ID of the table that was looked up
 	TableID Table
+
 	// Cookie of the flow entry that was looked up
 	Cookie uint64
+
 	// Packet metadata. Variable size.
 	Match Match
-	// Followed by Link Layer packet frame
+
+	// Followed by Link Layer frame
 }
 
 func (p *PacketIn) ReadFrom(r io.Reader) (n int64, err error) {

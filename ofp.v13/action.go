@@ -194,6 +194,7 @@ func (a ActionSetField) WriteTo(w io.Writer) (int64, error) {
 		}
 	}
 
+	// Length is padded to 64 bits
 	length := buf.Len() + 4
 
 	if length%8 != 0 {

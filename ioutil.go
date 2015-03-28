@@ -7,15 +7,23 @@ import (
 	"github.com/netrack/openflow/encoding/binary"
 )
 
-func NewReader(w io.WriterTo) (io.Reader, error) {
+type ReaderFunc func([]byte) (int, error)
+
+func (fn ReaderFunc) Read(b []byte) (int, error) {
+	return fn(b)
+}
+
+func NewReader(w io.WriterTo) io.Reader {
 	var buf bytes.Buffer
-
 	_, err := w.WriteTo(&buf)
-	if err != nil {
-		return nil, err
-	}
 
-	return &buf, nil
+	return ReaderFunc(func(b []byte) (int, error) {
+		if err != nil {
+			return 0, err
+		}
+
+		return buf.Read(b)
+	})
 }
 
 func Bytes(v interface{}) []byte {

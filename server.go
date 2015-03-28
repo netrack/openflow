@@ -19,7 +19,7 @@ type Hijacker interface {
 }
 
 // A ResponseWriter interface is used by an OpenFlow handler to
-// construct an OpenFlow response.
+// construct an OpenFlow Response.
 type ResponseWriter interface {
 	Hijacker
 	// Header returns the Header interface that will be sent by
@@ -28,7 +28,7 @@ type ResponseWriter interface {
 	Header() Header
 	// Write writes the data to the connection as part of an OpenFlow reply.
 	Write([]byte) (int, error)
-	// WriteHeader sends an response header as part of an OpenFlow reply.
+	// WriteHeader sends an Response header as part of an OpenFlow reply.
 	WriteHeader() error
 	// Close closes connection
 	Close() error
@@ -48,21 +48,21 @@ func Discard(rw ResponseWriter, r *Request) {}
 
 var DiscardHandler = HandlerFunc(Discard)
 
-type response struct {
+type Response struct {
+	Conn   OFPConn
 	header header
-	conn   *Conn
 	buf    bytes.Buffer
 }
 
-func (w *response) Header() Header {
+func (w *Response) Header() Header {
 	return &w.header
 }
 
-func (w *response) Write(b []byte) (n int, err error) {
+func (w *Response) Write(b []byte) (n int, err error) {
 	return w.buf.Write(b)
 }
 
-func (w *response) WriteHeader() (err error) {
+func (w *Response) WriteHeader() (err error) {
 	var buf bytes.Buffer
 
 	w.header.Length = headerlen + uint16(w.buf.Len())
@@ -78,16 +78,20 @@ func (w *response) WriteHeader() (err error) {
 		return
 	}
 
-	_, err = w.conn.Write(buf.Bytes())
-	return err
+	_, err = w.Conn.Write(buf.Bytes())
+	if err != nil {
+		return err
+	}
+
+	return w.Conn.Flush()
 }
 
-func (w *response) Close() error {
+func (w *Response) Close() error {
 	return w.Close()
 }
 
-func (w *response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	return w.conn.Hijack()
+func (w *Response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return w.Conn.Hijack()
 }
 
 var DefaultServer = Server{
@@ -147,7 +151,7 @@ func (srv *Server) serve(c *Conn, h Handler) {
 			return
 		}
 
-		resp := &response{conn: c}
+		resp := &Response{Conn: c}
 		h.Serve(resp, req)
 
 		c.buf.Flush()
