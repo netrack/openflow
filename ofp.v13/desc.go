@@ -12,3 +12,5 @@ type Desc struct {
 	SerialNum    string
 	Datapath     string
 }
+
+//func (d *Desc) ReadFrom

@@ -10,7 +10,7 @@ import (
 const (
 	// Description of this OpenFlow switch.
 	// The request body is empty.
-	// The reply body is struct desc.
+	// The reply body is struct Desc.
 	MP_DESC MultipartType = iota
 
 	// Individual flow statistics.

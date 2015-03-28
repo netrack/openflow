@@ -39,11 +39,20 @@ const (
 type PortConfig uint32
 
 const (
+	// PS_LINK_DOWN bit indicates that the physical link is not present.
 	PS_LINK_DOWN PortState = 1 << iota
-	PS_BLOCKED   PortState = 1 << iota
-	PS_LIVE      PortState = 1 << iota
+
+	// PS_BLOCKED bit indicates that a switch protocol outside
+	// of OpenFlow, such as 802.1D Spanning Tree, is preventing
+	// the use of that port with OFPP_FLOOD.
+	PS_BLOCKED PortState = 1 << iota
+
+	// PS_LIVE indicates that port available for live for Fast Failover Group
+	PS_LIVE PortState = 1 << iota
 )
 
+// Current state of the physical port. These are
+// not configurable from the controller
 type PortState uint32
 
 const (
@@ -131,6 +140,27 @@ func (p *Port) ReadFrom(r io.Reader) (int64, error) {
 		&p.CurrSpeed,
 		&p.MaxSpeed,
 	})
+}
+
+type Ports []Port
+
+func (p *Ports) ReadFrom(r io.Reader) (n int64, err error) {
+	var nn int64
+
+	for err == nil {
+		var port Port
+		nn, err = port.ReadFrom(r)
+		n += nn
+
+		if err == io.EOF {
+			err = nil
+			return
+		}
+
+		*p = append(*p, port)
+	}
+
+	return
 }
 
 type PortMod struct {
