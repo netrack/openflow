@@ -80,7 +80,7 @@ func (w *Response) WriteHeader() (err error) {
 
 	_, err = w.Conn.Write(buf.Bytes())
 	if err != nil {
-		return err
+		return
 	}
 
 	return w.Conn.Flush()

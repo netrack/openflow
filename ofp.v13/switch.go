@@ -58,14 +58,19 @@ type SwitchFeatures struct {
 	// Datapath unique ID. The lower 48-bits are for a MAC address,
 	// while the upper 16-bits are implementer-defined
 	DatapathID uint64
+
 	// Max packets buffered at once
 	NumBuffers uint32
+
 	// Number of tables supported by datapath
 	NumTables uint8
+
 	// Identify auxiliary connections
 	AuxiliaryID uint8
+
 	// Bitmap of support Capabilities
 	Capabilities Capabilities
+
 	// Reserved
 	Reserved uint32
 }

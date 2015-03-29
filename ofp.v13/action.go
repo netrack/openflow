@@ -181,17 +181,15 @@ func (a ActionPopMPLS) WriteTo(w io.Writer) (int64, error) {
 type ActionSetField struct {
 	// Field contains a header field described
 	// using a single OXM TLV structure.
-	Fields []OXM
+	Field OXM
 }
 
 func (a ActionSetField) WriteTo(w io.Writer) (int64, error) {
 	var buf bytes.Buffer
 
-	for _, oxm := range a.Fields {
-		_, err := oxm.WriteTo(&buf)
-		if err != nil {
-			return 0, err
-		}
+	_, err := a.Field.WriteTo(&buf)
+	if err != nil {
+		return 0, err
 	}
 
 	// Length is padded to 64 bits

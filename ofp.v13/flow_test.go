@@ -34,3 +34,20 @@ func TestMatchWrite(t *testing.T) {
 
 func TestFlowModWrite(t *testing.T) {
 }
+
+func TestOXMValue(t *testing.T) {
+	value := OXMValue{0xef}
+	if value.UInt8() != 0xef {
+		t.Fatal("Failed to return right uint8 value:", value.UInt8())
+	}
+
+	value = OXMValue{0x10, 0xab}
+	if value.UInt16() != 0x10ab {
+		t.Fatal("Failed to return right uin16 value:", value.UInt16())
+	}
+
+	value = OXMValue{0xde, 0x12, 0x15, 0x70}
+	if value.UInt32() != 0xde121570 {
+		t.Fatal("Failed to return right uin32 value:", value.UInt32())
+	}
+}
