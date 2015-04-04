@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ErrHijacked = errors.New("conn: Connection has been hijacked")
+	ErrHijacked = errors.New("openflow: Connection has been hijacked")
 )
 
 type Hijacker interface {

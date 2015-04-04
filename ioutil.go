@@ -18,7 +18,7 @@ func NewReader(w ...io.WriterTo) io.Reader {
 	var err error
 
 	for _, wt := range w {
-		if _, err = w.WriteTo(&buf); err != nil {
+		if _, err = wt.WriteTo(&buf); err != nil {
 			break
 		}
 	}

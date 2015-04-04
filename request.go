@@ -3,32 +3,58 @@ package of
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"net"
+)
+
+var (
+	ErrUnknownVersion = errors.New("openflow: Unknown version passed")
+	ErrBodyTooLong    = errors.New("openflow: Request body is too long")
 )
 
 const headerlen = 8
 
 type Request struct {
 	Header header
-	Body   io.Reader
 
-	Proto string
-	Addr  net.Addr
+	// Body is the request's body. For client requests a nil
+	// body means the request has no body, such as a echo requests.
+	//
+	// For server requests the Request Body is always non-nil
+	// but will return EOF immediately when no body is present.
+	Body io.Reader
 
+	// The protocol version for incoming requests.
+	// Client requests always use OFP/1.3.
+	Proto      string
+	ProtoMajor int
+	ProtoMinor int
+
+	Addr net.Addr
+
+	// ContentLength records the length of the associated content.
+	// Values >= 0 indicate that the given number of bytes may
+	// be read from Body.
 	ContentLength int64
 }
 
 // NewRequest returns a new Request given a type, address, and optional body
 func NewRequest(t Type, body io.Reader) (*Request, error) {
-	req := &Request{Body: body, Proto: "ofp1.3"}
+	req := &Request{Body: body, Proto: "OFP/1.3", ProtoMajor: 1, ProtoMinor: 3}
+
+	req.Header.Version = uint8(req.ProtoMajor + req.ProtoMinor)
 	req.Header.Type = t
 
-	//TODO: allow proto modification
-	req.Header.Version = 0x4
-
 	return req, nil
+}
+
+// ProtoAtLeast reports whether the OpenFlow protocol used
+// in the request is at least major.minor.
+func (r *Request) ProtoAtLeast(major, minor int) bool {
+	return r.ProtoMajor > major ||
+		r.ProtoMajor == major && r.ProtoMinor >= minor
 }
 
 func (r *Request) WriteTo(w io.Writer) (n int64, err error) {
@@ -45,7 +71,7 @@ func (r *Request) WriteTo(w io.Writer) (n int64, err error) {
 	}
 
 	if n > math.MaxUint16 {
-		return 0, errors.New("openflow: body too long")
+		return 0, ErrBodyTooLong
 	}
 
 	r.Header.Length += uint16(buf.Len())
@@ -69,6 +95,12 @@ func (r *Request) ReadFrom(rd io.Reader) (n int64, err error) {
 	if err != nil {
 		return
 	}
+
+	r.ProtoMajor = 1
+	r.ProtoMinor = int(r.Header.Version - 1)
+
+	//FIXME: wrong for version 2
+	r.Proto = fmt.Sprintf("OFP/1.%d", r.ProtoMinor)
 
 	var nn int
 	contentlen := r.Header.Len() - headerlen
