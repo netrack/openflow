@@ -114,11 +114,7 @@ func (c *Conn) Send(r *Request) error {
 	}
 
 	_, err := r.WriteTo(c.buf)
-	if err != nil {
-		return err
-	}
-
-	return c.buf.Flush()
+	return err
 }
 
 func (c *Conn) Close() error {
