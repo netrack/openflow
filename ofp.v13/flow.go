@@ -410,7 +410,7 @@ func (i Instructions) WriteTo(w io.Writer) (n int64, err error) {
 // Instruction structure for IT_GOTO_TABLE
 type InstructionGotoTable struct {
 	// TableID indicates the next table in the packet processing pipeline.
-	TableID uint8
+	TableID Table
 }
 
 func (i InstructionGotoTable) WriteTo(w io.Writer) (int64, error) {
