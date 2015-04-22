@@ -2,6 +2,7 @@ package of
 
 import (
 	"bufio"
+	"crypto/tls"
 	"net"
 	"sync"
 	"time"
@@ -150,8 +151,13 @@ func Dial(network, addr string) (OFPConn, error) {
 	return NewConn(conn), nil
 }
 
-func DialTLS(network, addr string) (OFPConn, error) {
-	panic("PANIC PANIC PANIC")
+func DialTLS(network, addr string, config *tls.Config) (OFPConn, error) {
+	conn, err := tls.Dial(network, addr, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewConn(conn), nil
 }
 
 type Listener struct {
