@@ -591,6 +591,16 @@ type FlowMod struct {
 	Instructions Instructions
 }
 
+// Cookies implements CookieJar and returns FlowMod cookies
+func (f *FlowMod) Cookies() uint64 {
+	return f.Cookie
+}
+
+// Cookies implements CookieJar and sets cookies to FlowMod message
+func (f *FlowMod) SetCookies(cookies uint64) {
+	f.Cookie = cookies
+}
+
 func (f *FlowMod) Bytes() []byte {
 	return Bytes(f)
 }

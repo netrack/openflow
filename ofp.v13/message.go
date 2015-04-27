@@ -116,6 +116,14 @@ type PacketIn struct {
 	// Followed by Link Layer frame
 }
 
+func (p *PacketIn) Cookies() uint64 {
+	return p.Cookie
+}
+
+func (p *PacketIn) SetCookies(cookies uint64) {
+	p.Cookie = cookies
+}
+
 func (p *PacketIn) ReadFrom(r io.Reader) (n int64, err error) {
 	var length uint16
 
