@@ -2,6 +2,7 @@ package of
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/tls"
 	"net"
 	"sync"
@@ -140,6 +141,22 @@ func (c *Conn) SetReadDeadline(t time.Time) error {
 
 func (c *Conn) SetWriteDeadline(t time.Time) error {
 	return c.rwc.SetWriteDeadline(t)
+}
+
+func Send(c OFPConn, requests ...*Request) error {
+	var buf bytes.Buffer
+
+	for _, request := range requests {
+		if _, err := request.WriteTo(&buf); err != nil {
+			return err
+		}
+	}
+
+	if _, err := buf.WriteTo(c); err != nil {
+		return err
+	}
+
+	return c.Flush()
 }
 
 func Dial(network, addr string) (OFPConn, error) {

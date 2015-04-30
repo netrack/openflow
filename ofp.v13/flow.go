@@ -525,7 +525,7 @@ type FlowMod struct {
 	// statistics, flow modification and flow deletion
 	Cookie uint64
 
-	// If the CookieMast field is non-zero, it is used with the
+	// If the CookieMask field is non-zero, it is used with the
 	// cookie field to restrict flow matching while modifying or
 	// deleting flow entries. This field is ignored by FC_ADD messages.
 	// A value of 0 indicates no restriction
@@ -569,12 +569,12 @@ type FlowMod struct {
 	BufferID uint32
 
 	// For FC_DELETE* commands, require matching entries to
-	// include this as an output port. A value of PP_ANY
+	// include this as an output port. A value of P_ANY
 	// indicates no restriction
 	OutPort PortNo
 
 	// For FC_DELETE* commands, require matching entries to
-	// include this as an output group. A value of PG_ANY
+	// include this as an output group. A value of G_ANY
 	// indicates no restriction.
 	OutGroup Group
 
