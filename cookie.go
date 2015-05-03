@@ -85,7 +85,8 @@ func (m *CookieFilter) Serve(rw ResponseWriter, r *Request) {
 		delete(m.handlers, jar.Cookies())
 	}
 
+	m.lock.RUnlock()
+
 	r.Body = bytes.NewBuffer(body)
 	entry.handler.Serve(rw, r)
-
 }
