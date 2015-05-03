@@ -688,6 +688,14 @@ type FlowRemoved struct {
 	Match Match
 }
 
+func (f *FlowRemoved) Cookies() uint64 {
+	return f.Cookie
+}
+
+func (f *FlowRemoved) SetCookies(cookies uint64) {
+	f.Cookie = cookies
+}
+
 func (f *FlowRemoved) ReadFrom(r io.Reader) (n int64, err error) {
 	n, err = binary.ReadSlice(r, binary.BigEndian, []interface{}{
 		&f.Cookie,

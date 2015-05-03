@@ -61,6 +61,13 @@ func (m *CookieFilter) FilterFunc(jar CookieJar, handler HandlerFunc) {
 	m.Filter(jar, handler)
 }
 
+func (m *CookieFilter) Release(jar CookieJar) {
+	m.lock.Lock()
+	defer m.lock.Lock()
+
+	delete(m.handlers, jar.Cookies())
+}
+
 func (m *CookieFilter) Serve(rw ResponseWriter, r *Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
