@@ -63,7 +63,7 @@ func (m *CookieFilter) FilterFunc(jar CookieJar, handler HandlerFunc) {
 
 func (m *CookieFilter) Release(jar CookieJar) {
 	m.lock.Lock()
-	defer m.lock.Lock()
+	defer m.lock.Unlock()
 
 	delete(m.handlers, jar.Cookies())
 }
@@ -80,19 +80,16 @@ func (m *CookieFilter) Serve(rw ResponseWriter, r *Request) {
 	}
 
 	m.lock.RLock()
+	defer m.lock.RUnlock()
 
 	entry, ok := m.handlers[jar.Cookies()]
 	if !ok {
-		m.lock.RUnlock()
 		return
 	}
 
 	if entry.evictable {
-		m.lock.RUnlock()
 		delete(m.handlers, jar.Cookies())
 	}
-
-	m.lock.RUnlock()
 
 	r.Body = bytes.NewBuffer(body)
 	entry.handler.Serve(rw, r)
