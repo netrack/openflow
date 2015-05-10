@@ -3,6 +3,7 @@ package ofp
 import (
 	"io"
 	"net"
+	"strings"
 
 	"github.com/netrack/openflow/encoding/binary"
 )
@@ -29,14 +30,96 @@ const (
 
 type PortFeatures uint32
 
+func (f PortFeatures) String() string {
+	// 10Mbps full-duplex copper
+	var repr string
+
+	switch {
+	case f&PF_10MB_HD != 0:
+		repr = "10Mbps half-duplex"
+	case f&PF_10MB_FD != 0:
+		repr = "10Mbps full-duplex"
+	case f&PF_100MB_HD != 0:
+		repr = "100Mbps half-duplex"
+	case f&PF_100MB_FD != 0:
+		repr = "100Mbps full-duplex"
+	case f&PF_1GB_HD != 0:
+		repr = "1Gbps half-duplex"
+	case f&PF_1GB_FD != 0:
+		repr = "1Gbps full-duplex"
+	case f&PF_10GB_FD != 0:
+		repr = "10Gbps full-duplex"
+	case f&PF_40GB_FD != 0:
+		repr = "40Gbps full-duplex"
+	case f&PF_100GB_FD != 0:
+		repr = "100Gbps full-duplex"
+	case f&PF_1TB_FD != 0:
+		repr = "1Tbps full-duplex"
+	case f&PF_OTHER != 0:
+		repr = "other"
+	default:
+		repr = "unknown"
+	}
+
+	switch {
+	case f&PF_COPPER != 0:
+		repr += " copper"
+	case f&PF_FIBER != 0:
+		repr += " fiber"
+	case f&PF_AUTONEG != 0:
+		repr += " autoneg"
+	case f&PF_PAUSE != 0:
+		repr += " pause"
+	case f&PF_PAUSE_ASYM != 0:
+		repr += " pause asym"
+	default:
+		repr += " unknown"
+	}
+
+	return repr
+}
+
 const (
-	PC_PORT_DOWN    PortConfig = 1 << iota
-	PC_NO_RCV       PortConfig = 1 << iota
-	PC_NO_FWD       PortConfig = 1 << iota
+	// Port is administratively down
+	PC_PORT_DOWN PortConfig = 1 << iota
+
+	// Drop all packets received by port
+	PC_NO_RCV PortConfig = 1 << iota
+
+	// Drop packets forwarded to port
+	PC_NO_FWD PortConfig = 1 << iota
+
+	// Do not send packet-in msgs for port
 	PC_NO_PACKET_IN PortConfig = 1 << iota
 )
 
 type PortConfig uint32
+
+func (c PortConfig) String() string {
+	var repr []string
+
+	if c&PC_PORT_DOWN != 0 {
+		repr = append(repr, "DOWN")
+	}
+
+	if c&PC_NO_RCV != 0 {
+		repr = append(repr, "NO_RCV")
+	}
+
+	if c&PC_NO_FWD != 0 {
+		repr = append(repr, "NO_FWD")
+	}
+
+	if c&PC_NO_PACKET_IN != 0 {
+		repr = append(repr, "NO_PACKET_IN")
+	}
+
+	if len(repr) == 0 {
+		repr = append(repr, "UP")
+	}
+
+	return strings.Join(repr, ",")
+}
 
 const (
 	// PS_LINK_DOWN bit indicates that the physical link is not present.
@@ -54,6 +137,28 @@ const (
 // Current state of the physical port. These are
 // not configurable from the controller
 type PortState uint32
+
+func (s PortState) String() string {
+	var repr []string
+
+	if s&PS_LINK_DOWN != 0 {
+		repr = append(repr, "LINK_DOWN")
+	}
+
+	if s&PS_BLOCKED != 0 {
+		repr = append(repr, "BLOCKED")
+	}
+
+	if s&PS_LIVE != 0 {
+		repr = append(repr, "LIVE")
+	}
+
+	if len(repr) == 0 {
+		repr = append(repr, "LINK_UP")
+	}
+
+	return strings.Join(repr, ",")
+}
 
 const (
 	// Send the packet out the input port. This reserved

@@ -170,15 +170,19 @@ func HandleFunc(t Type, f func(ResponseWriter, *Request)) {
 
 type ServeMux struct {
 	mu sync.RWMutex
-	m  map[Type][]Handler
+	m  map[Type][]*muxEntry
+}
+
+type muxEntry struct {
+	h Handler
 }
 
 func NewServeMux() *ServeMux {
-	return &ServeMux{m: make(map[Type][]Handler)}
+	return &ServeMux{m: make(map[Type][]*muxEntry)}
 }
 
 // Handle registers the handler for the given message type.
-func (mux *ServeMux) Handle(t Type, handler Handler) {
+func (mux *ServeMux) Handle(t Type, handler Handler) *muxEntry {
 	mux.mu.Lock()
 	defer mux.mu.Unlock()
 
@@ -186,20 +190,44 @@ func (mux *ServeMux) Handle(t Type, handler Handler) {
 		panic("mux: nil handler")
 	}
 
-	mux.m[t] = append(mux.m[t], handler)
+	entry := &muxEntry{h: handler}
+	mux.m[t] = append(mux.m[t], entry)
+	return entry
 }
 
-func (mux *ServeMux) HandleFunc(t Type, f func(ResponseWriter, *Request)) {
-	mux.Handle(t, HandlerFunc(f))
+func (mux *ServeMux) HandleFunc(t Type, f HandlerFunc) *muxEntry {
+	return mux.Handle(t, f)
+}
+
+func (mux *ServeMux) Unhandle(t Type, entry *muxEntry) {
+	mux.mu.Lock()
+	defer mux.mu.Unlock()
+
+	typeEntries, ok := mux.m[t]
+	if !ok {
+		return
+	}
+
+	var entries []*muxEntry
+	for _, e := range typeEntries {
+		// Remove all of them
+		if e == entry {
+			continue
+		}
+
+		entries = append(entries, e)
+	}
+
+	mux.m[t] = entries
 }
 
 func (mux *ServeMux) Handler(r *Request) (Handler, Type) {
 	mux.mu.RLock()
 	defer mux.mu.RUnlock()
 
-	handlers, ok := mux.m[r.Header.Type]
+	entries, ok := mux.m[r.Header.Type]
 	if !ok {
-		handlers = append(handlers, DiscardHandler)
+		entries = append(entries, &muxEntry{h: DiscardHandler})
 	}
 
 	h := HandlerFunc(func(rw ResponseWriter, r *Request) {
@@ -208,9 +236,9 @@ func (mux *ServeMux) Handler(r *Request) (Handler, Type) {
 			return
 		}
 
-		for _, handler := range handlers {
+		for _, entry := range entries {
 			r.Body = bytes.NewBuffer(body)
-			handler.Serve(rw, r)
+			entry.h.Serve(rw, r)
 		}
 	})
 
@@ -220,4 +248,39 @@ func (mux *ServeMux) Handler(r *Request) (Handler, Type) {
 func (mux *ServeMux) Serve(rw ResponseWriter, r *Request) {
 	h, _ := mux.Handler(r)
 	h.Serve(rw, r)
+}
+
+type ServeFilter struct {
+	Mux *ServeMux
+
+	entries map[Type][]*muxEntry
+}
+
+func NewServeFilter() *ServeFilter {
+	return &ServeFilter{entries: make(map[Type][]*muxEntry)}
+}
+
+func (s *ServeFilter) init() {
+	if s.entries == nil {
+		s.entries = make(map[Type][]*muxEntry)
+	}
+}
+
+func (s *ServeFilter) Handle(t Type, h Handler) {
+	s.init()
+	s.entries[t] = append(s.entries[t], s.Mux.Handle(t, h))
+}
+
+func (s *ServeFilter) HandleFunc(t Type, h HandlerFunc) {
+	s.Handle(t, h)
+}
+
+func (s *ServeFilter) Unhandle() {
+	s.init()
+
+	for t, entries := range s.entries {
+		for _, entry := range entries {
+			s.Mux.Unhandle(t, entry)
+		}
+	}
 }
