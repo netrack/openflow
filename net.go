@@ -215,3 +215,12 @@ func Listen(network, laddr string) (*Listener, error) {
 
 	return &Listener{ln}, err
 }
+
+func ListenTLS(network, laddr string, config *tls.Config) (*Listener, error) {
+	ln, err := tls.Listen(network, laddr, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Listener{ln}, err
+}
