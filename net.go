@@ -66,6 +66,7 @@ func (c *Conn) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return rwc, buf, nil
 }
 
+// Read reads data from the connection.
 func (c *Conn) Read(b []byte) (int, error) {
 	if c.hijacked() {
 		return 0, ErrHijacked
@@ -74,6 +75,7 @@ func (c *Conn) Read(b []byte) (int, error) {
 	return c.buf.Read(b)
 }
 
+// Receive reads OpenFlow data from the connection.
 func (c *Conn) Receive() (*Request, error) {
 	if c.hijacked() {
 		return nil, ErrHijacked
@@ -92,6 +94,7 @@ func (c *Conn) Receive() (*Request, error) {
 	return r, nil
 }
 
+// Write writes data to the connection. Write can be made to time out.
 func (c *Conn) Write(b []byte) (int, error) {
 	if c.hijacked() {
 		return 0, ErrHijacked
@@ -100,10 +103,12 @@ func (c *Conn) Write(b []byte) (int, error) {
 	return c.buf.Write(b)
 }
 
+// Flush writes any buffered data to the connection.
 func (c *Conn) Flush() error {
 	return c.buf.Flush()
 }
 
+// Send writes OpenFlow data to the connection.
 func (c *Conn) Send(r *Request) error {
 	if c.hijacked() {
 		return ErrHijacked
@@ -119,26 +124,38 @@ func (c *Conn) Send(r *Request) error {
 	return err
 }
 
+// Close closes the connection. Any blocked Read or Write operations will
+// be unblocked and return errors.
 func (c *Conn) Close() error {
 	return c.rwc.Close()
 }
 
+// LocalAddr returns the local network address.
 func (c *Conn) LocalAddr() net.Addr {
 	return c.rwc.LocalAddr()
 }
 
+// RemoteAddr returns the remote network address.
 func (c *Conn) RemoteAddr() net.Addr {
 	return c.rwc.RemoteAddr()
 }
 
+// SetDeadline sets the read and write deadlines associated with the
+// connection.
 func (c *Conn) SetDeadline(t time.Time) error {
 	return c.rwc.SetDeadline(t)
 }
 
+// SetReadDeadline sets the deadline for the future Receive calls. If the
+// deadline is reached, Receive will fail with a timeout (see type Error)
+// instead of blocking.
 func (c *Conn) SetReadDeadline(t time.Time) error {
 	return c.rwc.SetReadDeadline(t)
 }
 
+// SetWriteDeadLine sets the deadline for the future Send calls. If the
+// deadline is reached, Send will fail with a timeout (see type Error)
+// instead of blocking.
 func (c *Conn) SetWriteDeadline(t time.Time) error {
 	return c.rwc.SetWriteDeadline(t)
 }
