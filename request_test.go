@@ -9,7 +9,7 @@ func TestReadRequest(t *testing.T) {
 	var req Request
 	var buf bytes.Buffer
 
-	h := header{4, T_HELLO, 8, 0}
+	h := header{4, TypeHello, 8, 0}
 	h.WriteTo(&buf)
 
 	_, err := req.ReadFrom(&buf)
@@ -21,7 +21,7 @@ func TestReadRequest(t *testing.T) {
 		t.Fatal("Wrong content length:", req.ContentLength)
 	}
 
-	if req.Header.Type != T_HELLO {
+	if req.Header.Type != TypeHello {
 		t.Fatal("Wrong header type:", req.Header.Type)
 	}
 

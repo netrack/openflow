@@ -124,7 +124,7 @@ func TestDial(t *testing.T) {
 	// Put into the read buffer of the defined connection
 	// a single OpenFlow Hello request, so we could ensure
 	// that data is read from the connection correctly.
-	r, _ := NewRequest(T_HELLO, nil)
+	r, _ := NewRequest(TypeHello, nil)
 	r.WriteTo(&serverConn.r)
 
 	// Perform the actual connection replacement.
@@ -149,7 +149,7 @@ func TestDial(t *testing.T) {
 
 	// Define a new OpenFlow Hello message and send it into
 	// the client connection.
-	r, _ = NewRequest(T_HELLO, nil)
+	r, _ = NewRequest(TypeHello, nil)
 	err = rwc.Send(r)
 	if err != nil {
 		t.Fatal("Failed to send request:", err)
@@ -166,7 +166,7 @@ func TestDial(t *testing.T) {
 
 	// Validate attributes of the retrieved OpenFlow request.
 	// At first, it certainly should be a Hello message.
-	if r.Header.Type != T_HELLO {
+	if r.Header.Type != TypeHello {
 		t.Fatal("Wrong message type returned:", r.Header.Type)
 	}
 

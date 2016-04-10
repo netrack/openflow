@@ -8,51 +8,51 @@ import (
 )
 
 const (
-	// Immutable messages
-	T_HELLO Type = iota
-	T_ERROR
-	T_ECHO_REQUEST
-	T_ECHO_REPLY
-	T_EXPERIMENTER
+	// Immutable messages.
+	TypeHello Type = iota
+	TypeError
+	TypeEchoRequest
+	TypeEchoReply
+	TypeExperiment
 
-	// Switch configuration messages
-	T_FEATURES_REQUEST
-	T_FEATURES_REPLY
-	T_GET_CONFIG_REQUEST
-	T_GET_CONFIG_REPLY
-	T_SET_CONFIG
+	// Switch configuration messages.
+	TypeFeaturesRequest
+	TypeFeaturesReply
+	TypeGetConfigRequest
+	TypeGetConfigReply
+	TypeSetConfig
 
-	// Asynchronous messages
-	T_PACKET_IN
-	T_FLOW_REMOVED
-	T_PORT_STATUS
+	// Asynchronous messages.
+	TypePacketIn
+	TypeFlowRemoved
+	TypePortStatus
 
-	// Controller command messages
-	T_PACKET_OUT
-	T_FLOW_MOD
-	T_GROUP_MOD
-	T_PORT_MOD
-	T_TABLE_MOD
+	// Controller command messages.
+	TypePacketOut
+	TypeFlowMod
+	TypeGroupMod
+	TypePortMod
+	TypeTableMod
 
 	// Multipart messages
-	T_MULTIPART_REQUEST
-	T_MULTIPART_REPLY
+	TypeMultipartRequest
+	TypeMultipartReply
 
-	// Queue configuration messages
-	T_QUEUE_GET_CONFIG_REQUEST
-	T_QUEUE_GET_CONFIG_REPLY
+	// Queue configuration messages.
+	TypeQueueGetConfigRequest
+	TypeQueueGetConfigReply
 
-	// Controller role change request messages
-	T_ROLE_REQUEST
-	T_ROLE_REPLY
+	// Controller role change request messages.
+	TypeRoleRequest
+	TypeRoleReply
 
-	// Asynchronous message configuration
-	T_ASYNC_REQUEST
-	T_ASYNC_REPLY
-	T_SET_ASYNC
+	// Asynchronous message configuration.
+	TypeAsynchRequest
+	TypeAsyncReply
+	TypeSetAsync
 
-	// Meters and rate limiters configuration messages
-	T_METER_MOD
+	// Meters and rate limiters configuration messages.
+	TypeMeterMod
 )
 
 type Type uint8

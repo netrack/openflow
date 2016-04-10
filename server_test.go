@@ -13,7 +13,7 @@ func TestServerMux(t *testing.T) {
 	wg.Add(1)
 
 	mux := NewServeMux()
-	mux.HandleFunc(T_HELLO, func(rw ResponseWriter, r *Request) {
+	mux.HandleFunc(TypeHello, func(rw ResponseWriter, r *Request) {
 		rw.Header().Set(VersionHeaderKey, uint8(4))
 		rw.Write([]byte{0, 0, 0, 0})
 		rw.WriteHeader()

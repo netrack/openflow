@@ -16,12 +16,12 @@ func TestHeaderSet(t *testing.T) {
 		t.Fatalf("Wrong header version: ", hdr.Version)
 	}
 
-	err = hdr.Set(TypeHeaderKey, T_HELLO)
+	err = hdr.Set(TypeHeaderKey, TypeHello)
 	if err != nil {
 		t.Fatal("Failed to set type: ", err.Error())
 	}
 
-	if hdr.Type != T_HELLO {
+	if hdr.Type != TypeHello {
 		t.Fatal("Wrong header type: ", hdr.Type)
 	}
 

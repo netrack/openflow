@@ -9,16 +9,16 @@ import (
 )
 
 func main() {
-	of.HandleFunc(of.T_HELLO, func(rw of.ResponseWriter, r *of.Request) {
+	of.HandleFunc(of.TypeHello, func(rw of.ResponseWriter, r *of.Request) {
 		log.Println("RECV ofp_hello:", r.Header)
-		rw.Header().Set(of.TypeHeaderKey, of.T_HELLO)
+		rw.Header().Set(of.TypeHeaderKey, of.TypeHello)
 		rw.Header().Set(of.VersionHeaderKey, ofp.VERSION)
 		rw.WriteHeader()
 
 		log.Println("SEND ofp_hello:", rw.Header())
 	})
 
-	of.HandleFunc(of.T_PACKET_IN, func(rw of.ResponseWriter, r *of.Request) {
+	of.HandleFunc(of.TypePacketIn, func(rw of.ResponseWriter, r *of.Request) {
 		var p ofp.PacketIn
 		var e l2.EthernetII
 
@@ -40,7 +40,7 @@ func main() {
 			Instructions: instr,
 		}
 
-		rw.Header().Set(of.TypeHeaderKey, of.T_FLOW_MOD)
+		rw.Header().Set(of.TypeHeaderKey, of.TypeFlowMod)
 		rw.Header().Set(of.VersionHeaderKey, ofp.VERSION)
 
 		rw.Write(fmod.Bytes())
@@ -48,9 +48,9 @@ func main() {
 		log.Println("SEND ofp_of_mod:", rw.Header())
 	})
 
-	of.HandleFunc(of.T_ECHO_REQUEST, func(rw of.ResponseWriter, r *of.Request) {
+	of.HandleFunc(of.TypeEchoRequest, func(rw of.ResponseWriter, r *of.Request) {
 		log.Println("RECV ofp_echo_request:", r.Header)
-		rw.Header().Set(of.TypeHeaderKey, of.T_ECHO_REPLY)
+		rw.Header().Set(of.TypeHeaderKey, of.TypeEchoReply)
 		rw.Header().Set(of.VersionHeaderKey, ofp.VERSION)
 		rw.WriteHeader()
 		log.Println("SEND ofp_echo_reply:", rw.Header())
