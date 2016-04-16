@@ -18,8 +18,8 @@ type Hijacker interface {
 	Hijack() (net.Conn, *bufio.ReadWriter, error)
 }
 
-// A ResponseWriter interface is used by an OpenFlow handler to
-// construct an OpenFlow Response.
+// A ResponseWriter interface is used by an OpenFlow handler to construct
+// an OpenFlow Response.
 type ResponseWriter interface {
 	Hijacker
 	// Header returns the Header interface that will be sent by
@@ -34,6 +34,8 @@ type ResponseWriter interface {
 	Close() error
 }
 
+// A Handler responds to an OpenFlow request.
+//
 type Handler interface {
 	Serve(ResponseWriter, *Request)
 }
@@ -139,6 +141,7 @@ func (srv *Server) Serve(l net.Listener) error {
 
 func (srv *Server) serve(c *Conn, h Handler) {
 	origconn := c.rwc
+	// Define a deferred function to close the connection.
 	defer func() {
 		if !c.hijacked() {
 			origconn.Close()
@@ -146,14 +149,25 @@ func (srv *Server) serve(c *Conn, h Handler) {
 	}()
 
 	for {
+		// Wait for the new request from either the Switch or
+		// the Controller.
 		req, err := c.Receive()
 		if err != nil {
 			return
 		}
 
-		resp := &Response{Conn: c}
+		// Define a response version from the request version, so
+		// it will potentially reduce the amount of additional
+		// header configurations.
+		header := header{Version: req.Header.Version}
+
+		// Construct a new response instance with some default
+		// attributes and execute respective handler for it.
+		resp := &Response{Conn: c, header: header}
 		h.Serve(resp, req)
 
+		// Write the buffer content to the connection, so the
+		// pending messages will written.
 		c.buf.Flush()
 	}
 }

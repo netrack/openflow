@@ -36,7 +36,7 @@ type Request struct {
 	// Client requests always use OFP/1.3.
 	Proto      string
 	ProtoMajor int // 1
-	ProtoMinor int // 4
+	ProtoMinor int // 3
 
 	Addr net.Addr
 
