@@ -16,7 +16,6 @@ The usage is pretty similar to the handling HTTP request, but instead of routes 
 // Define the OpenFlow handler for hello messages.
 of.HandleFunc(of.TypeHello, func(rw of.ResponseWriter, r *of.Request) {
     rw.Header().Set(of.TypeHeaderKey, of.TypeHello)
-    rw.Header().Set(of.VersionHeaderKey, ofp.VERSION)
     rw.WriteHeader()
 })
 
