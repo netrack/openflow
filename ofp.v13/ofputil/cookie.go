@@ -7,8 +7,8 @@ import (
 	"github.com/netrack/openflow/ofp.v13"
 )
 
-func PacketInBaker() of.Baker {
-	return of.BakerFunc(func(r io.Reader) (of.CookieJar, error) {
+func PacketInCookieReader() of.CookieReader {
+	return of.CookieReaderFunc(func(r io.Reader) (of.CookieJar, error) {
 		var packetIn ofp.PacketIn
 
 		if _, err := packetIn.ReadFrom(r); err != nil {

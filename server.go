@@ -35,7 +35,6 @@ type ResponseWriter interface {
 }
 
 // A Handler responds to an OpenFlow request.
-//
 type Handler interface {
 	Serve(ResponseWriter, *Request)
 }
@@ -262,39 +261,4 @@ func (mux *ServeMux) Handler(r *Request) (Handler, Type) {
 func (mux *ServeMux) Serve(rw ResponseWriter, r *Request) {
 	h, _ := mux.Handler(r)
 	h.Serve(rw, r)
-}
-
-type ServeFilter struct {
-	Mux *ServeMux
-
-	entries map[Type][]*muxEntry
-}
-
-func NewServeFilter() *ServeFilter {
-	return &ServeFilter{entries: make(map[Type][]*muxEntry)}
-}
-
-func (s *ServeFilter) init() {
-	if s.entries == nil {
-		s.entries = make(map[Type][]*muxEntry)
-	}
-}
-
-func (s *ServeFilter) Handle(t Type, h Handler) {
-	s.init()
-	s.entries[t] = append(s.entries[t], s.Mux.Handle(t, h))
-}
-
-func (s *ServeFilter) HandleFunc(t Type, h HandlerFunc) {
-	s.Handle(t, h)
-}
-
-func (s *ServeFilter) Unhandle() {
-	s.init()
-
-	for t, entries := range s.entries {
-		for _, entry := range entries {
-			s.Mux.Unhandle(t, entry)
-		}
-	}
 }
