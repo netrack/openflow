@@ -41,14 +41,21 @@ type filterEntry struct {
 // opaque randomly created data. Handler is safe for concurrent use by
 // multiple goroutines.
 type CookieHandler struct {
+	// Reader is an OpenFlow message unmarshaler. CookieHandler will use the
+	// it to access the request cookie value. If the cookie matches, the
+	// registered handler will be called to process the request. Otherwise
+	// the request will be skipped.
 	Reader CookieReader
 
 	rand *rand.Rand
 
 	handlers map[uint64]*filterEntry
-	lock     sync.RWMutex
+	// A lock to access the handlers from multiple concurrent goroutines.
+	lock sync.RWMutex
 }
 
+// NewCookieHandler returns a new CookieHandler. The CookieHandler suitable
+// for use as a OpenFlow request handler.
 func NewCookieHandler() *CookieHandler {
 	seed := time.Now().UTC().UnixNano()
 
@@ -58,6 +65,11 @@ func NewCookieHandler() *CookieHandler {
 	}
 }
 
+// Handle registers the handler for the given cookie pattern.
+//
+// Cookie of each incoming request will compared to the given cookie jar
+// cookie. If the request cookie matches the registered one, the given
+// handler will be used to process the request.
 func (h *CookieHandler) Handle(jar CookieJar, handler Handler) {
 	cookies := uint64(h.rand.Int63())
 	jar.SetCookies(cookies)
@@ -68,10 +80,12 @@ func (h *CookieHandler) Handle(jar CookieJar, handler Handler) {
 	h.handlers[cookies] = &filterEntry{handler, false}
 }
 
+// Handle registers the handler function for the given cookie pattern.
 func (h *CookieHandler) HandleFunc(jar CookieJar, handler HandlerFunc) {
 	h.Handle(jar, handler)
 }
 
+// Unhandle removes the handler for the given cookie pattern.
 func (h *CookieHandler) Unhandle(jar CookieJar) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
@@ -87,6 +101,7 @@ func (h *CookieHandler) Serve(rw ResponseWriter, r *Request) {
 		return
 	}
 
+	// Parse the incoming request to access the cookies.
 	jar, err := h.Reader.ReadCookie(bytes.NewBuffer(body))
 	if err != nil {
 		return
@@ -95,6 +110,7 @@ func (h *CookieHandler) Serve(rw ResponseWriter, r *Request) {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 
+	// Search handler for the cookie.
 	entry, ok := h.handlers[jar.Cookies()]
 	if !ok {
 		return
