@@ -9,7 +9,7 @@ func TestReadRequest(t *testing.T) {
 	var req Request
 	var buf bytes.Buffer
 
-	h := header{4, TypeHello, 8, 0}
+	h := Header{4, TypeHello, 8, 0}
 	h.WriteTo(&buf)
 
 	_, err := req.ReadFrom(&buf)

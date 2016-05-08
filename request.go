@@ -23,7 +23,7 @@ const headerlen = 8
 type Request struct {
 	// Header contains the request header fields either received by
 	// the server or sent by the client.
-	Header header
+	Header Header
 
 	// Body is the request's body. For client requests a nil
 	// body means the request has no body, such as a echo requests.

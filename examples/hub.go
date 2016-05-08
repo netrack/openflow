@@ -11,7 +11,7 @@ import (
 func main() {
 	of.HandleFunc(of.TypeHello, func(rw of.ResponseWriter, r *of.Request) {
 		log.Println("RECV ofp_hello:", r.Header)
-		rw.Header().Set(of.TypeHeaderKey, of.TypeHello)
+		rw.Header().Type = of.TypeHello
 		rw.WriteHeader()
 
 		log.Println("SEND ofp_hello:", rw.Header())
@@ -39,7 +39,7 @@ func main() {
 			Instructions: instr,
 		}
 
-		rw.Header().Set(of.TypeHeaderKey, of.TypeFlowMod)
+		rw.Header().Type = of.TypeFlowMod
 
 		rw.Write(fmod.Bytes())
 		rw.WriteHeader()
@@ -48,7 +48,7 @@ func main() {
 
 	of.HandleFunc(of.TypeEchoRequest, func(rw of.ResponseWriter, r *of.Request) {
 		log.Println("RECV ofp_echo_request:", r.Header)
-		rw.Header().Set(of.TypeHeaderKey, of.TypeEchoReply)
+		rw.Header().Type = of.TypeEchoReply
 		rw.WriteHeader()
 		log.Println("SEND ofp_echo_reply:", rw.Header())
 	})

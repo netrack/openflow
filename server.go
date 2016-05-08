@@ -22,40 +22,62 @@ type Hijacker interface {
 // an OpenFlow Response.
 type ResponseWriter interface {
 	Hijacker
+
 	// Header returns the Header interface that will be sent by
 	// WriteHeader. Changing the header after a call to WriteHeader
-	// (or Write) has no effect
-	Header() Header
+	// (or Write) has no effect.
+	Header() *Header
+
 	// Write writes the data to the connection as part of an OpenFlow reply.
 	Write([]byte) (int, error)
+
 	// WriteHeader sends an Response header as part of an OpenFlow reply.
 	WriteHeader() error
-	// Close closes connection
+
+	// Close closes connection.
 	Close() error
 }
 
 // A Handler responds to an OpenFlow request.
+//
+// Serve should write the reply headers and the payload to the
+// ResponseWriter and then return. Returning signals that the request is
+// finished.
 type Handler interface {
 	Serve(ResponseWriter, *Request)
 }
 
+// The HandlerFunc type is an adapter to allow use of ordinary functions
+// as OpenFlow handlers.
 type HandlerFunc func(ResponseWriter, *Request)
 
+// Serve calls f(rw, r).
 func (h HandlerFunc) Serve(rw ResponseWriter, r *Request) {
 	h(rw, r)
 }
 
-func Discard(rw ResponseWriter, r *Request) {}
+// DiscardHandler is a Handler instance to discard the remote OpenFlow
+// requests.
+var DiscardHandler = HandlerFunc(func(rw ResponseWriter, r *Request) {})
 
-var DiscardHandler = HandlerFunc(Discard)
-
+// Response implements ResponseWriter interface and represents the
+// response from an OpenFlow request.
 type Response struct {
-	Conn   OFPConn
-	header header
-	buf    bytes.Buffer
+	// Conn is an OpenFlow connection instance.
+	Conn OFPConn
+
+	// The Header is a response header. It contains the negotiated
+	// version of the OpenFlow, a type and length of the message.
+	header Header
+
+	// The buf is a response message buffer. We use this buffer
+	// to calculate the length of the payload.
+	buf bytes.Buffer
 }
 
-func (w *Response) Header() Header {
+// Header returs the Header instance of an OpenFlow response, it
+// may be used to adjust the response attributes.
+func (w *Response) Header() *Header {
 	return &w.header
 }
 
@@ -158,7 +180,7 @@ func (srv *Server) serve(c *Conn, h Handler) {
 		// Define a response version from the request version, so
 		// it will potentially reduce the amount of additional
 		// header configurations.
-		header := header{Version: req.Header.Version}
+		header := Header{Version: req.Header.Version}
 
 		// Construct a new response instance with some default
 		// attributes and execute respective handler for it.

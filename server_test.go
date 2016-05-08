@@ -14,7 +14,6 @@ func TestServerMux(t *testing.T) {
 
 	mux := NewServeMux()
 	mux.HandleFunc(TypeHello, func(rw ResponseWriter, r *Request) {
-		rw.Header().Set(VersionHeaderKey, uint8(4))
 		rw.Write([]byte{0, 0, 0, 0})
 		rw.WriteHeader()
 		wg.Done()
