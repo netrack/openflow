@@ -101,7 +101,7 @@ func TestListener(t *testing.T) {
 		t.Fatal("Failed to accept a new connection:", err)
 	}
 
-	if conn.(*Conn).rwc != dconn {
+	if conn.rwc != dconn {
 		t.Fatal("Failed to create OFP connection")
 	}
 }
@@ -140,7 +140,7 @@ func TestDial(t *testing.T) {
 	// Replace the client connection with a dummy one,
 	// so we could perform damn simple unit test.
 	clientConn := &dummyConn{}
-	rwc.(*Conn).rwc = clientConn
+	rwc.(*OFPConn).rwc = clientConn
 
 	cconn, err := ln.AcceptOFP()
 	if err != nil {

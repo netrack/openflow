@@ -15,12 +15,17 @@ var (
 )
 
 type Hijacker interface {
+	// Hijack lets the caller take over the connection.
+	//
+	// After a call to Hijack(), the OFP server library will not do
+	// anything else with a connection.
 	Hijack() (net.Conn, *bufio.ReadWriter, error)
 }
 
 // A ResponseWriter interface is used by an OpenFlow handler to construct
 // an OpenFlow Response.
 type ResponseWriter interface {
+	// Hijack lets the caller take over the connection.
 	Hijacker
 
 	// Header returns the Header interface that will be sent by
@@ -64,7 +69,7 @@ var DiscardHandler = HandlerFunc(func(rw ResponseWriter, r *Request) {})
 // response from an OpenFlow request.
 type Response struct {
 	// Conn is an OpenFlow connection instance.
-	Conn OFPConn
+	Conn Conn
 
 	// The Header is a response header. It contains the negotiated
 	// version of the OpenFlow, a type and length of the message.
@@ -75,16 +80,18 @@ type Response struct {
 	buf bytes.Buffer
 }
 
-// Header returs the Header instance of an OpenFlow response, it
+// Header returns the Header instance of an OpenFlow response, it
 // may be used to adjust the response attributes.
 func (w *Response) Header() *Header {
 	return &w.header
 }
 
+// Write writes the given byte slice to the output buffer.
 func (w *Response) Write(b []byte) (n int, err error) {
 	return w.buf.Write(b)
 }
 
+// WriteHeader sends an OpenFlow response.
 func (w *Response) WriteHeader() (err error) {
 	var buf bytes.Buffer
 
@@ -109,31 +116,44 @@ func (w *Response) WriteHeader() (err error) {
 	return w.Conn.Flush()
 }
 
+// Close closes connection.
 func (w *Response) Close() error {
 	return w.Close()
 }
 
+// Hijack lets the caller take over the connection.
 func (w *Response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return w.Conn.Hijack()
 }
 
+// DefaultServer is a default OpenFlow server.
 var DefaultServer = Server{
 	Addr:    "0.0.0.0:6633",
 	Handler: DefaultServeMux,
 }
 
+// ListenAndServe starts default OpenFlow server.
 func ListenAndServe() error {
 	return DefaultServer.ListenAndServe()
 }
 
+// A Server defines parameters for running OpenFlow server.
 type Server struct {
-	Addr    string
+	// Addr is an address to listen on.
+	Addr string
+
+	// Handler to invoke on the incoming requests.
 	Handler Handler
 
-	ReadTimeout  time.Duration
+	// Maximum duration before timing out the read of the request.
+	ReadTimeout time.Duration
+
+	// Maximum duration before timing out the write of the response.
 	WriteTimeout time.Duration
 }
 
+// ListenAndServe listens on the network address and then calls Serve
+// to handle requests on the incoming connections.
 func (srv *Server) ListenAndServe() error {
 	ln, err := net.Listen("tcp", srv.Addr)
 	if err != nil {
@@ -143,6 +163,8 @@ func (srv *Server) ListenAndServe() error {
 	return srv.Serve(ln)
 }
 
+// Serve accepts incoming connections on the Listener l, creating a
+// new service goroutine for each.
 func (srv *Server) Serve(l net.Listener) error {
 	defer l.Close()
 
@@ -160,7 +182,7 @@ func (srv *Server) Serve(l net.Listener) error {
 	}
 }
 
-func (srv *Server) serve(c *Conn, h Handler) {
+func (srv *Server) serve(c *OFPConn, h Handler) {
 	origconn := c.rwc
 	// Define a deferred function to close the connection.
 	defer func() {
@@ -193,25 +215,35 @@ func (srv *Server) serve(c *Conn, h Handler) {
 	}
 }
 
+// DefaultServeMux is the default ServeMux used by Serve.
 var DefaultServeMux = NewServeMux()
 
+// Handle registers the handler on the given type of the OpenFlow
+// message in the DefaultServeMux.
 func Handle(t Type, handler Handler) {
 	DefaultServeMux.Handle(t, handler)
 }
 
+// HandleFunc registers the handler function on the given type of
+// the OpenFlow message in the DefaultServeMux.
 func HandleFunc(t Type, f func(ResponseWriter, *Request)) {
 	DefaultServeMux.HandleFunc(t, f)
 }
 
+// ServeMux is an OpenFlow request multiplexer. It matches the type
+// of the OpenFlow message against a list of registered handlers and
+// calls the marching handler.
 type ServeMux struct {
 	mu sync.RWMutex
 	m  map[Type][]*muxEntry
 }
 
+// muxEntry in an entry of the ServeMux handlers list.
 type muxEntry struct {
 	h Handler
 }
 
+// NewServeMux allocates a new instance of the ServeMux.
 func NewServeMux() *ServeMux {
 	return &ServeMux{m: make(map[Type][]*muxEntry)}
 }
@@ -230,32 +262,23 @@ func (mux *ServeMux) Handle(t Type, handler Handler) *muxEntry {
 	return entry
 }
 
+// Handler registers handler function on the given OpenFlow
+// message type.
 func (mux *ServeMux) HandleFunc(t Type, f HandlerFunc) *muxEntry {
 	return mux.Handle(t, f)
 }
 
-func (mux *ServeMux) Unhandle(t Type, entry *muxEntry) {
+// Unhandle deletes all the handler registrations for the given
+// OpenFlow message type.
+func (mux *ServeMux) Unhandle(t Type) {
 	mux.mu.Lock()
 	defer mux.mu.Unlock()
 
-	typeEntries, ok := mux.m[t]
-	if !ok {
-		return
-	}
-
-	var entries []*muxEntry
-	for _, e := range typeEntries {
-		// Remove all of them
-		if e == entry {
-			continue
-		}
-
-		entries = append(entries, e)
-	}
-
-	mux.m[t] = entries
+	// Remove all handlers from the registration map.
+	delete(mux.m, t)
 }
 
+// Handler returns a Handler instance for the given OpenFlow request.
 func (mux *ServeMux) Handler(r *Request) (Handler, Type) {
 	mux.mu.RLock()
 	defer mux.mu.RUnlock()
@@ -280,6 +303,7 @@ func (mux *ServeMux) Handler(r *Request) (Handler, Type) {
 	return h, r.Header.Type
 }
 
+// Serve dispatches OpenFlow requests to the registered handlers.
 func (mux *ServeMux) Serve(rw ResponseWriter, r *Request) {
 	h, _ := mux.Handler(r)
 	h.Serve(rw, r)

@@ -9,10 +9,14 @@ import (
 	"time"
 )
 
-type OFPConn interface {
+// Conn is an generic OpenFlow connection.
+//
+// Multiple goroutines may invoke methods on OFPConn simultaneously.
+type Conn interface {
 	net.Conn
 
-	Hijack() (net.Conn, *bufio.ReadWriter, error)
+	// Hijack lets the caller take over the connection.
+	Hijacker
 
 	// Receive receives message from input buffer
 	Receive() (*Request, error)
@@ -20,43 +24,56 @@ type OFPConn interface {
 	// Send writes message to output buffer
 	Send(*Request) error
 
+	// Flush writes the messages from output buffer to the connection.
 	Flush() error
 }
 
-type Conn struct {
+// OFPConn is an OpenFlow protocol connection.
+type OFPConn struct {
+	// A read-write connection.
 	rwc net.Conn
-	buf *bufio.ReadWriter
 
-	ReadTimeout  time.Duration
+	// An input and output buffer.
+	buf *bufio.ReadWriter
+	// Maximum duration before timing out the read of the request.
+	ReadTimeout time.Duration
+
+	// Maximum duration before timing out the write of the response.
 	WriteTimeout time.Duration
 
-	mu sync.Mutex
-
+	// A mutex to access the hijack-ed flag
+	mu sync.RWMutex
+	// A flag set when the connection hijacked.
 	hijackedv bool
 }
 
-func NewConn(conn net.Conn) *Conn {
+// NewConn creates a new OpenFlow protocol connection.
+func NewConn(conn net.Conn) *OFPConn {
 	br := bufio.NewReader(conn)
 	bw := bufio.NewWriter(conn)
 
 	brw := bufio.NewReadWriter(br, bw)
-	return &Conn{rwc: conn, buf: brw}
+	return &OFPConn{rwc: conn, buf: brw}
 }
 
-func (c *Conn) hijacked() bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+// Returns true when the connection hijacked.
+func (c *OFPConn) hijacked() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return c.hijackedv
 }
 
-func (c *Conn) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+// Hijack takes over the connection.
+func (c *OFPConn) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	// Return an error, when connection already hijacked.
 	if c.hijackedv {
 		return nil, nil, ErrHijacked
 	}
 
+	// Mark the connection hijacked.
 	c.hijackedv = true
 	rwc := c.rwc
 	buf := c.buf
@@ -67,7 +84,7 @@ func (c *Conn) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 }
 
 // Read reads data from the connection.
-func (c *Conn) Read(b []byte) (int, error) {
+func (c *OFPConn) Read(b []byte) (int, error) {
 	if c.hijacked() {
 		return 0, ErrHijacked
 	}
@@ -76,7 +93,7 @@ func (c *Conn) Read(b []byte) (int, error) {
 }
 
 // Receive reads OpenFlow data from the connection.
-func (c *Conn) Receive() (*Request, error) {
+func (c *OFPConn) Receive() (*Request, error) {
 	if c.hijacked() {
 		return nil, ErrHijacked
 	}
@@ -95,7 +112,7 @@ func (c *Conn) Receive() (*Request, error) {
 }
 
 // Write writes data to the connection. Write can be made to time out.
-func (c *Conn) Write(b []byte) (int, error) {
+func (c *OFPConn) Write(b []byte) (int, error) {
 	if c.hijacked() {
 		return 0, ErrHijacked
 	}
@@ -104,12 +121,12 @@ func (c *Conn) Write(b []byte) (int, error) {
 }
 
 // Flush writes any buffered data to the connection.
-func (c *Conn) Flush() error {
+func (c *OFPConn) Flush() error {
 	return c.buf.Flush()
 }
 
 // Send writes OpenFlow data to the connection.
-func (c *Conn) Send(r *Request) error {
+func (c *OFPConn) Send(r *Request) error {
 	if c.hijacked() {
 		return ErrHijacked
 	}
@@ -126,41 +143,48 @@ func (c *Conn) Send(r *Request) error {
 
 // Close closes the connection. Any blocked Read or Write operations will
 // be unblocked and return errors.
-func (c *Conn) Close() error {
+func (c *OFPConn) Close() error {
 	return c.rwc.Close()
 }
 
 // LocalAddr returns the local network address.
-func (c *Conn) LocalAddr() net.Addr {
+func (c *OFPConn) LocalAddr() net.Addr {
 	return c.rwc.LocalAddr()
 }
 
 // RemoteAddr returns the remote network address.
-func (c *Conn) RemoteAddr() net.Addr {
+func (c *OFPConn) RemoteAddr() net.Addr {
 	return c.rwc.RemoteAddr()
 }
 
 // SetDeadline sets the read and write deadlines associated with the
 // connection.
-func (c *Conn) SetDeadline(t time.Time) error {
+func (c *OFPConn) SetDeadline(t time.Time) error {
 	return c.rwc.SetDeadline(t)
 }
 
 // SetReadDeadline sets the deadline for the future Receive calls. If the
 // deadline is reached, Receive will fail with a timeout (see type Error)
 // instead of blocking.
-func (c *Conn) SetReadDeadline(t time.Time) error {
+func (c *OFPConn) SetReadDeadline(t time.Time) error {
 	return c.rwc.SetReadDeadline(t)
 }
 
 // SetWriteDeadLine sets the deadline for the future Send calls. If the
 // deadline is reached, Send will fail with a timeout (see type Error)
 // instead of blocking.
-func (c *Conn) SetWriteDeadline(t time.Time) error {
+func (c *OFPConn) SetWriteDeadline(t time.Time) error {
 	return c.rwc.SetWriteDeadline(t)
 }
 
-func Send(c OFPConn, requests ...*Request) error {
+// Send allows to send multiple requests at once to the connection.
+//
+// The requests will be written to the per-call buffer. If the
+// serialization of all given requests succeeded it will be flushed
+// to the OpenFlow connection.
+//
+// No data will be written when any of the request failed.
+func Send(c Conn, requests ...*Request) error {
 	var buf bytes.Buffer
 
 	for _, request := range requests {
@@ -176,7 +200,9 @@ func Send(c OFPConn, requests ...*Request) error {
 	return c.Flush()
 }
 
-func Dial(network, addr string) (OFPConn, error) {
+// Dial establishes the remote connection to the address on the
+// given network.
+func Dial(network, addr string) (Conn, error) {
 	conn, err := net.Dial(network, addr)
 	if err != nil {
 		return nil, err
@@ -185,7 +211,10 @@ func Dial(network, addr string) (OFPConn, error) {
 	return NewConn(conn), nil
 }
 
-func DialTLS(network, addr string, config *tls.Config) (OFPConn, error) {
+// DialTLS establishes the remote connection to the address on the
+// given network and then initiates TLS handshake, returning the
+// resulting TLS connection.
+func DialTLS(network, addr string, config *tls.Config) (Conn, error) {
 	conn, err := tls.Dial(network, addr, config)
 	if err != nil {
 		return nil, err
@@ -194,15 +223,19 @@ func DialTLS(network, addr string, config *tls.Config) (OFPConn, error) {
 	return NewConn(conn), nil
 }
 
-type Listener struct {
+// OFPListener is an OpenFlow network listener. Clients should typically
+// use variables of type net.Listener instead of assuming OFP.
+type OFPListener struct {
 	ln net.Listener
 }
 
-func (l *Listener) Accept() (net.Conn, error) {
+// Accept waits for and returns the next connection to the listener.
+func (l *OFPListener) Accept() (net.Conn, error) {
 	return l.AcceptOFP()
 }
 
-func (l *Listener) AcceptOFP() (OFPConn, error) {
+// Accepts accepts the next incoming call and returns new connection.
+func (l *OFPListener) AcceptOFP() (*OFPConn, error) {
 	conn, err := l.ln.Accept()
 	if err != nil {
 		return nil, err
@@ -211,15 +244,18 @@ func (l *Listener) AcceptOFP() (OFPConn, error) {
 	return NewConn(conn), nil
 }
 
-func (l *Listener) Close() error {
+// Close closes an OpenFlow server connection.
+func (l *OFPListener) Close() error {
 	return l.ln.Close()
 }
 
-func (l *Listener) Addr() net.Addr {
+// Addr returns the network address of the listener.
+func (l *OFPListener) Addr() net.Addr {
 	return l.ln.Addr()
 }
 
-func Listen(network, laddr string) (*Listener, error) {
+// Listen announces on the local network address laddr.
+func Listen(network, laddr string) (*OFPListener, error) {
 	tcpaddr, err := net.ResolveTCPAddr(network, laddr)
 	if err != nil {
 		return nil, err
@@ -230,14 +266,15 @@ func Listen(network, laddr string) (*Listener, error) {
 		return nil, err
 	}
 
-	return &Listener{ln}, err
+	return &OFPListener{ln}, err
 }
 
-func ListenTLS(network, laddr string, config *tls.Config) (*Listener, error) {
+// ListenTLS announces on the local network address.
+func ListenTLS(network, laddr string, config *tls.Config) (*OFPListener, error) {
 	ln, err := tls.Listen(network, laddr, config)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Listener{ln}, err
+	return &OFPListener{ln}, err
 }
