@@ -14,6 +14,12 @@ type CookieJar interface {
 	Cookies() uint64
 }
 
+type Cookie struct {
+	Type       Type
+	Cookie     uint64
+	CookieMask uint64
+}
+
 // CookieReader is the interface to read cookie jars.
 //
 // CookieReader parses the body of the handling request and returns the
@@ -32,16 +38,16 @@ func (fn CookieReaderFunc) CookiesJar(r io.Reader) (CookieJar, error) {
 	return fn(r)
 }
 
-type filterEntry struct {
+type cookieMuxEntry struct {
 	handler   Handler
 	evictable bool
 }
 
-// CookieHandler provides mechanism to hook up the message handler with an
+// CookieMux provides mechanism to hook up the message handler with an
 // opaque randomly created data. Handler is safe for concurrent use by
 // multiple goroutines.
-type CookieHandler struct {
-	// Reader is an OpenFlow message unmarshaler. CookieHandler will use the
+type CookieMux struct {
+	// Reader is an OpenFlow message unmarshaler. CookieMux will use the
 	// it to access the request cookie value. If the cookie matches, the
 	// registered handler will be called to process the request. Otherwise
 	// the request will be skipped.
@@ -49,18 +55,18 @@ type CookieHandler struct {
 
 	rand *rand.Rand
 
-	handlers map[uint64]*filterEntry
+	handlers map[uint64]*cookieMuxEntry
 	// A lock to access the handlers from multiple concurrent goroutines.
 	lock sync.RWMutex
 }
 
-// NewCookieHandler returns a new CookieHandler. The CookieHandler suitable
+// NewCookieMux returns a new CookieMux. The CookieMux suitable
 // for use as a OpenFlow request handler.
-func NewCookieHandler() *CookieHandler {
+func NewCookieMux() *CookieMux {
 	seed := time.Now().UTC().UnixNano()
 
-	return &CookieHandler{
-		handlers: make(map[uint64]*filterEntry),
+	return &CookieMux{
+		handlers: make(map[uint64]*cookieMuxEntry),
 		rand:     rand.New(rand.NewSource(seed)),
 	}
 }
@@ -70,23 +76,23 @@ func NewCookieHandler() *CookieHandler {
 // Cookie of each incoming request will compared to the given cookie jar
 // cookie. If the request cookie matches the registered one, the given
 // handler will be used to process the request.
-func (h *CookieHandler) Handle(jar CookieJar, handler Handler) {
+func (h *CookieMux) Handle(jar CookieJar, handler Handler) {
 	cookies := uint64(h.rand.Int63())
 	jar.SetCookies(cookies)
 
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
-	h.handlers[cookies] = &filterEntry{handler, false}
+	h.handlers[cookies] = &cookieMuxEntry{handler, false}
 }
 
 // Handle registers the handler function for the given cookie pattern.
-func (h *CookieHandler) HandleFunc(jar CookieJar, handler HandlerFunc) {
+func (h *CookieMux) HandleFunc(jar CookieJar, handler HandlerFunc) {
 	h.Handle(jar, handler)
 }
 
 // Unhandle removes the handler for the given cookie pattern.
-func (h *CookieHandler) Unhandle(jar CookieJar) {
+func (h *CookieMux) Unhandle(jar CookieJar) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
@@ -95,7 +101,7 @@ func (h *CookieHandler) Unhandle(jar CookieJar) {
 
 // Serve implements Handler interface. Serve dispatches the request to the
 // handler whose cookie matches.
-func (h *CookieHandler) Serve(rw ResponseWriter, r *Request) {
+func (h *CookieMux) Serve(rw ResponseWriter, r *Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return

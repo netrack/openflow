@@ -235,21 +235,21 @@ func HandleFunc(t Type, f func(ResponseWriter, *Request)) {
 // calls the marching handler.
 type ServeMux struct {
 	mu sync.RWMutex
-	m  map[Type][]*muxEntry
+	m  map[Type][]*serveMuxEntry
 }
 
-// muxEntry in an entry of the ServeMux handlers list.
-type muxEntry struct {
+// serveMuxEntry in an entry of the ServeMux handlers list.
+type serveMuxEntry struct {
 	h Handler
 }
 
 // NewServeMux allocates a new instance of the ServeMux.
 func NewServeMux() *ServeMux {
-	return &ServeMux{m: make(map[Type][]*muxEntry)}
+	return &ServeMux{m: make(map[Type][]*serveMuxEntry)}
 }
 
 // Handle registers the handler for the given message type.
-func (mux *ServeMux) Handle(t Type, handler Handler) *muxEntry {
+func (mux *ServeMux) Handle(t Type, handler Handler) {
 	mux.mu.Lock()
 	defer mux.mu.Unlock()
 
@@ -257,15 +257,14 @@ func (mux *ServeMux) Handle(t Type, handler Handler) *muxEntry {
 		panic("mux: nil handler")
 	}
 
-	entry := &muxEntry{h: handler}
+	entry := &serveMuxEntry{h: handler}
 	mux.m[t] = append(mux.m[t], entry)
-	return entry
 }
 
 // Handler registers handler function on the given OpenFlow
 // message type.
-func (mux *ServeMux) HandleFunc(t Type, f HandlerFunc) *muxEntry {
-	return mux.Handle(t, f)
+func (mux *ServeMux) HandleFunc(t Type, f HandlerFunc) {
+	mux.Handle(t, f)
 }
 
 // Unhandle deletes all the handler registrations for the given
@@ -278,17 +277,17 @@ func (mux *ServeMux) Unhandle(t Type) {
 	delete(mux.m, t)
 }
 
-// Handler returns a Handler instance for the given OpenFlow request.
-func (mux *ServeMux) Handler(r *Request) (Handler, Type) {
+// Dispatch returns a Handler instance for the given OpenFlow request.
+func (mux *ServeMux) Dispatch(r *Request) (h Handler) {
 	mux.mu.RLock()
 	defer mux.mu.RUnlock()
 
 	entries, ok := mux.m[r.Header.Type]
 	if !ok {
-		entries = append(entries, &muxEntry{h: DiscardHandler})
+		entries = append(entries, &serveMuxEntry{h: DiscardHandler})
 	}
 
-	h := HandlerFunc(func(rw ResponseWriter, r *Request) {
+	h = HandlerFunc(func(rw ResponseWriter, r *Request) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			return
@@ -299,12 +298,10 @@ func (mux *ServeMux) Handler(r *Request) (Handler, Type) {
 			entry.h.Serve(rw, r)
 		}
 	})
-
-	return h, r.Header.Type
 }
 
 // Serve dispatches OpenFlow requests to the registered handlers.
 func (mux *ServeMux) Serve(rw ResponseWriter, r *Request) {
-	h, _ := mux.Handler(r)
+	h := mux.Dispatch(r)
 	h.Serve(rw, r)
 }

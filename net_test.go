@@ -144,7 +144,7 @@ func TestDial(t *testing.T) {
 
 	cconn, err := ln.AcceptOFP()
 	if err != nil {
-		t.Fatalf("Failed to accept client connection:", err)
+		t.Fatal("Failed to accept client connection:", err)
 	}
 
 	// Define a new OpenFlow Hello message and send it into
