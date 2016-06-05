@@ -36,25 +36,25 @@ func (f PortFeatures) String() string {
 
 	switch {
 	case f&PF_10MB_HD != 0:
-		repr = "10Mbps half-duplex"
+		repr = "10 Mbps half-duplex"
 	case f&PF_10MB_FD != 0:
-		repr = "10Mbps full-duplex"
+		repr = "10 Mbps full-duplex"
 	case f&PF_100MB_HD != 0:
-		repr = "100Mbps half-duplex"
+		repr = "100 Mbps half-duplex"
 	case f&PF_100MB_FD != 0:
-		repr = "100Mbps full-duplex"
+		repr = "100 Mbps full-duplex"
 	case f&PF_1GB_HD != 0:
-		repr = "1Gbps half-duplex"
+		repr = "1 Gbps half-duplex"
 	case f&PF_1GB_FD != 0:
-		repr = "1Gbps full-duplex"
+		repr = "1 Gbps full-duplex"
 	case f&PF_10GB_FD != 0:
-		repr = "10Gbps full-duplex"
+		repr = "10 Gbps full-duplex"
 	case f&PF_40GB_FD != 0:
-		repr = "40Gbps full-duplex"
+		repr = "40 Gbps full-duplex"
 	case f&PF_100GB_FD != 0:
-		repr = "100Gbps full-duplex"
+		repr = "100 Gbps full-duplex"
 	case f&PF_1TB_FD != 0:
-		repr = "1Tbps full-duplex"
+		repr = "1 Tbps full-duplex"
 	case f&PF_OTHER != 0:
 		repr = "other"
 	default:

@@ -23,6 +23,17 @@ of.HandleFunc(of.TypeHello, func(rw of.ResponseWriter, r *of.Request) {
 of.ListenAndServe()
 ```
 
+```go
+match := &of.RequestMatcher{Disposable: true}
+match.Filter(&of.TypeFilter{TypePacketIn})
+match.Filter(&of.CookieFilter{0x123abc, &of.CookieReader{&ofp.PacketIn{}}})
+
+dispatcher := NewRequestDispatcher()
+dispatcher.HandleFunc(match, func(rw of.ResponseWriter, r *of.Request) {
+	rw.WriteHeader()
+})
+```
+
 # License
 
 The openflow library is distributed under MIT license, therefore you are free to do with code whatever you want. See the [LICENSE](LICENSE) file for full license text.
