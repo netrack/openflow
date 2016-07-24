@@ -11,10 +11,8 @@ import (
 func main() {
 	of.HandleFunc(of.TypeHello, func(rw of.ResponseWriter, r *of.Request) {
 		log.Println("RECV ofp_hello:", r.Header)
-		rw.Header().Type = of.TypeHello
-		rw.WriteHeader()
-
-		log.Println("SEND ofp_hello:", rw.Header())
+		defer log.Println("SEND ofp_hello")
+		rw.WriteHeader(&of.Header{Type: of.TypeHello})
 	})
 
 	of.HandleFunc(of.TypePacketIn, func(rw of.ResponseWriter, r *of.Request) {
@@ -39,18 +37,15 @@ func main() {
 			Instructions: instr,
 		}
 
-		rw.Header().Type = of.TypeFlowMod
-
 		rw.Write(fmod.Bytes())
-		rw.WriteHeader()
-		log.Println("SEND ofp_of_mod:", rw.Header())
+		rw.WriteHeader(&of.Header{Type: of.TypeFlowMod})
+		log.Println("SEND ofp_of_mod")
 	})
 
 	of.HandleFunc(of.TypeEchoRequest, func(rw of.ResponseWriter, r *of.Request) {
 		log.Println("RECV ofp_echo_request:", r.Header)
-		rw.Header().Type = of.TypeEchoReply
-		rw.WriteHeader()
-		log.Println("SEND ofp_echo_reply:", rw.Header())
+		defer log.Println("SEND ofp_echo_reply")
+		rw.WriteHeader(&of.Header{Type: of.TypeEchoReply})
 	})
 
 	log.Println("started listening...")

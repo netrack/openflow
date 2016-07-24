@@ -4,9 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"io/ioutil"
 	"net"
-	"sync"
 	"time"
 )
 
@@ -28,16 +26,11 @@ type ResponseWriter interface {
 	// Hijack lets the caller take over the connection.
 	Hijacker
 
-	// Header returns the Header interface that will be sent by
-	// WriteHeader. Changing the header after a call to WriteHeader
-	// (or Write) has no effect.
-	Header() *Header
-
 	// Write writes the data to the connection as part of an OpenFlow reply.
 	Write([]byte) (int, error)
 
 	// WriteHeader sends an Response header as part of an OpenFlow reply.
-	WriteHeader() error
+	WriteHeader(*Header) error
 
 	// Close closes connection.
 	Close() error
@@ -71,19 +64,13 @@ type Response struct {
 	// Conn is an OpenFlow connection instance.
 	Conn Conn
 
-	// The Header is a response header. It contains the negotiated
-	// version of the OpenFlow, a type and length of the message.
+	// Request header, that could be used to configure a few of
+	// response attributes.
 	header Header
 
 	// The buf is a response message buffer. We use this buffer
 	// to calculate the length of the payload.
 	buf bytes.Buffer
-}
-
-// Header returns the Header instance of an OpenFlow response, it
-// may be used to adjust the response attributes.
-func (w *Response) Header() *Header {
-	return &w.header
 }
 
 // Write writes the given byte slice to the output buffer.
@@ -92,13 +79,20 @@ func (w *Response) Write(b []byte) (n int, err error) {
 }
 
 // WriteHeader sends an OpenFlow response.
-func (w *Response) WriteHeader() (err error) {
+func (w *Response) WriteHeader(header *Header) (err error) {
 	var buf bytes.Buffer
 
-	w.header.Length = headerlen + uint16(w.buf.Len())
+	// When the version is not configured properly, we will
+	// use the version from the response header, to minimize
+	// manual configuration.
+	if header.Version == 0 {
+		header.Version = w.header.Version
+	}
+
+	header.Length = headerlen + uint16(w.buf.Len())
 	defer w.buf.Reset()
 
-	_, err = w.header.WriteTo(&buf)
+	_, err = header.WriteTo(&buf)
 	if err != nil {
 		return
 	}
@@ -129,7 +123,7 @@ func (w *Response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 // DefaultServer is a default OpenFlow server.
 var DefaultServer = Server{
 	Addr:    "0.0.0.0:6633",
-	Handler: DefaultServeMux,
+	Handler: DefaultDispatcher,
 }
 
 // ListenAndServe starts default OpenFlow server.
@@ -152,7 +146,7 @@ type Server struct {
 	WriteTimeout time.Duration
 }
 
-// ListenAndServe listens on the network address and then calls Serve
+// ListenAndServe listens on the network address and then calls Server
 // to handle requests on the incoming connections.
 func (srv *Server) ListenAndServe() error {
 	ln, err := net.Listen("tcp", srv.Addr)
@@ -213,98 +207,4 @@ func (srv *Server) serve(c *OFPConn, h Handler) {
 		// pending messages will written.
 		c.buf.Flush()
 	}
-}
-
-// DefaultServeMux is the default ServeMux used by Serve.
-var DefaultServeMux = NewServeMux()
-
-// Handle registers the handler on the given type of the OpenFlow
-// message in the DefaultServeMux.
-func Handle(t Type, handler Handler) {
-	DefaultServeMux.Handle(t, handler)
-}
-
-// HandleFunc registers the handler function on the given type of
-// the OpenFlow message in the DefaultServeMux.
-func HandleFunc(t Type, f func(ResponseWriter, *Request)) {
-	DefaultServeMux.HandleFunc(t, f)
-}
-
-// ServeMux is an OpenFlow request multiplexer. It matches the type
-// of the OpenFlow message against a list of registered handlers and
-// calls the marching handler.
-type ServeMux struct {
-	mu sync.RWMutex
-	m  map[Type][]*muxEntry
-}
-
-// muxEntry in an entry of the ServeMux handlers list.
-type muxEntry struct {
-	h Handler
-}
-
-// NewServeMux allocates a new instance of the ServeMux.
-func NewServeMux() *ServeMux {
-	return &ServeMux{m: make(map[Type][]*muxEntry)}
-}
-
-// Handle registers the handler for the given message type.
-func (mux *ServeMux) Handle(t Type, handler Handler) *muxEntry {
-	mux.mu.Lock()
-	defer mux.mu.Unlock()
-
-	if handler == nil {
-		panic("mux: nil handler")
-	}
-
-	entry := &muxEntry{h: handler}
-	mux.m[t] = append(mux.m[t], entry)
-	return entry
-}
-
-// Handler registers handler function on the given OpenFlow
-// message type.
-func (mux *ServeMux) HandleFunc(t Type, f HandlerFunc) *muxEntry {
-	return mux.Handle(t, f)
-}
-
-// Unhandle deletes all the handler registrations for the given
-// OpenFlow message type.
-func (mux *ServeMux) Unhandle(t Type) {
-	mux.mu.Lock()
-	defer mux.mu.Unlock()
-
-	// Remove all handlers from the registration map.
-	delete(mux.m, t)
-}
-
-// Handler returns a Handler instance for the given OpenFlow request.
-func (mux *ServeMux) Handler(r *Request) (Handler, Type) {
-	mux.mu.RLock()
-	defer mux.mu.RUnlock()
-
-	entries, ok := mux.m[r.Header.Type]
-	if !ok {
-		entries = append(entries, &muxEntry{h: DiscardHandler})
-	}
-
-	h := HandlerFunc(func(rw ResponseWriter, r *Request) {
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			return
-		}
-
-		for _, entry := range entries {
-			r.Body = bytes.NewBuffer(body)
-			entry.h.Serve(rw, r)
-		}
-	})
-
-	return h, r.Header.Type
-}
-
-// Serve dispatches OpenFlow requests to the registered handlers.
-func (mux *ServeMux) Serve(rw ResponseWriter, r *Request) {
-	h, _ := mux.Handler(r)
-	h.Serve(rw, r)
 }

@@ -8,38 +8,73 @@ import (
 )
 
 const (
-	AT_OUTPUT       ActionType = iota
+	// Output to switch port.
+	AT_OUTPUT ActionType = iota
+
+	// Copy TTL "outwards", from next-to-outermost to outermost.
 	AT_COPY_TTL_OUT ActionType = 10 + iota
-	AT_COPY_TTL_IN  ActionType = 10 + iota
+
+	// Copy TTL "inwards" -- from outermost to next-to-outermost.
+	AT_COPY_TTL_IN ActionType = 10 + iota
+
+	// MPLS TTL.
 	AT_SET_MPLS_TTL ActionType = 12 + iota
+
+	// Decrement MPLS TTL.
 	AT_DEC_MPLS_TTL ActionType = 12 + iota
-	AT_PUSH_VLAN    ActionType = 12 + iota
-	AT_POP_VLAN     ActionType = 12 + iota
-	AT_PUSH_MPLS    ActionType = 12 + iota
-	AT_POP_MPLS     ActionType = 12 + iota
-	AT_SET_QUEUE    ActionType = 12 + iota
-	AT_GROUP        ActionType = 12 + iota
-	AT_SET_NW_TTL   ActionType = 12 + iota
-	AT_DEC_NW_TTL   ActionType = 12 + iota
-	AT_SET_FIELD    ActionType = 12 + iota
-	AT_PUSH_PBB     ActionType = 12 + iota
-	AT_POP_PBB      ActionType = 12 + iota
+
+	// Push a new VLAN tag.
+	AT_PUSH_VLAN ActionType = 12 + iota
+
+	// Pop the outer VLAN tag.
+	AT_POP_VLAN ActionType = 12 + iota
+
+	// Push a new MPLS tag.
+	AT_PUSH_MPLS ActionType = 12 + iota
+
+	// Pop the outer MPLS tag.
+	AT_POP_MPLS ActionType = 12 + iota
+
+	// Set queue id when outputting to a port.
+	AT_SET_QUEUE ActionType = 12 + iota
+
+	// Apply group.
+	AT_GROUP ActionType = 12 + iota
+
+	// IP TTL.
+	AT_SET_NW_TTL ActionType = 12 + iota
+
+	// Decrement IP TTL.
+	AT_DEC_NW_TTL ActionType = 12 + iota
+
+	// Set a header field using OXM TLV format.
+	AT_SET_FIELD ActionType = 12 + iota
+
+	// Push a new PBB service tag (I-TAG).
+	AT_PUSH_PBB ActionType = 12 + iota
+
+	// Pop the outer PBB service tag (I-TAG).
+	AT_POP_PBB ActionType = 12 + iota
+
+	// Experimetal.
 	AT_EXPERIMENTER ActionType = 0xffff
 )
 
 type ActionType uint16
 
 const (
-	// Maximum MaxLength value which can be used to request a specific byte Length.
+	// Maximum MaxLength value which can be used to request a specific byte
+	// length.
 	CML_MAX uint16 = 0xffe5
 
-	// Indicates that no buffering should be applied and
-	// the whole packet is to be sent to the controller.
+	// Indicates that no buffering should be applied and the whole packet is
+	// to be sent to the controller.
 	CML_NO_BUFFER uint16 = 0xffff
 )
 
 type actionhdr struct {
 	Type ActionType
+
 	// Length of action, including this header. This is the length of action,
 	// including any padding to make it 64-bit aligned
 	Len uint16
@@ -184,6 +219,7 @@ type ActionSetField struct {
 	Field OXM
 }
 
+// WriteTo implemetes WriterTo interface.
 func (a ActionSetField) WriteTo(w io.Writer) (int64, error) {
 	var buf bytes.Buffer
 

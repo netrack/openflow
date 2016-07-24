@@ -8,7 +8,7 @@ import (
 )
 
 func PacketInCookieReader() of.CookieReader {
-	return of.CookieReaderFunc(func(r io.Reader) (of.CookieJar, error) {
+	fn := func(r io.Reader) (of.CookieJar, error) {
 		var packetIn ofp.PacketIn
 
 		if _, err := packetIn.ReadFrom(r); err != nil {
@@ -16,5 +16,7 @@ func PacketInCookieReader() of.CookieReader {
 		}
 
 		return &packetIn, nil
-	})
+	}
+
+	return of.CookieReaderFunc(fn)
 }
