@@ -4,9 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"io/ioutil"
 	"net"
-	"sync"
 	"time"
 )
 
@@ -129,7 +127,7 @@ func (w *Response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 // DefaultServer is a default OpenFlow server.
 var DefaultServer = Server{
 	Addr:    "0.0.0.0:6633",
-	Handler: DefaultServeMux,
+	Handler: DefaultDispatcher,
 }
 
 // ListenAndServe starts default OpenFlow server.
@@ -152,7 +150,7 @@ type Server struct {
 	WriteTimeout time.Duration
 }
 
-// ListenAndServe listens on the network address and then calls Serve
+// ListenAndServe listens on the network address and then calls Server
 // to handle requests on the incoming connections.
 func (srv *Server) ListenAndServe() error {
 	ln, err := net.Listen("tcp", srv.Addr)
@@ -213,19 +211,4 @@ func (srv *Server) serve(c *OFPConn, h Handler) {
 		// pending messages will written.
 		c.buf.Flush()
 	}
-}
-
-// DefaultServeMux is the default ServeMux used by Serve.
-var DefaultServeMux = NewServeMux()
-
-// Handle registers the handler on the given type of the OpenFlow
-// message in the DefaultServeMux.
-func Handle(t Type, handler Handler) {
-	DefaultServeMux.Handle(t, handler)
-}
-
-// HandleFunc registers the handler function on the given type of
-// the OpenFlow message in the DefaultServeMux.
-func HandleFunc(t Type, f func(ResponseWriter, *Request)) {
-	DefaultServeMux.HandleFunc(t, f)
 }

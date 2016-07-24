@@ -15,8 +15,8 @@ The usage is pretty similar to the handling HTTP request, but instead of routes 
 ```go
 // Define the OpenFlow handler for hello messages.
 of.HandleFunc(of.TypeHello, func(rw of.ResponseWriter, r *of.Request) {
-    rw.Header().Set(of.TypeHeaderKey, of.TypeHello)
-    rw.WriteHeader()
+        rw.Header().Type = of.TypeHello
+        rw.WriteHeader()
 })
 
 // Start the TCP server on 6633 port.
@@ -24,13 +24,12 @@ of.ListenAndServe()
 ```
 
 ```go
-match := &of.RequestMatcher{Disposable: true}
-match.Filter(&of.TypeFilter{TypePacketIn})
-match.Filter(&of.CookieFilter{0x123abc, &of.CookieReader{&ofp.PacketIn{}}})
+tm := &TypeMatcher{TypePacketIn}
+m := &of.RequestMatcher{tm}
 
-dispatcher := NewRequestDispatcher()
-dispatcher.HandleFunc(match, func(rw of.ResponseWriter, r *of.Request) {
-	rw.WriteHeader()
+d := NewRequestDispatcher()
+d.HandleFunc(m, func(rw of.ResponseWriter, r *of.Request) {
+        rw.WriteHeader()
 })
 ```
 

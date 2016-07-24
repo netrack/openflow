@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
-	"math/rand"
-	"sync"
-	"time"
 )
 
 type CookieJar interface {
@@ -32,12 +29,12 @@ func (fn CookieReaderFunc) CookiesJar(r io.Reader) (CookieJar, error) {
 	return fn(r)
 }
 
-// CookieMux provides mechanism to hook up the message handler with an
+// CookieFilter provides mechanism to hook up the message handler with an
 // opaque data. Filter is safe for concurrent use by multiple goroutines.
 type CookieFilter struct {
 	Cookies uint64
 
-	// Reader is an OpenFlow message unmarshaler. CookieMux will use the
+	// Reader is an OpenFlow message unmarshaler. CookieFilter will use
 	// it to access the request cookie value. If the cookie matches, the
 	// registered handler will be called to process the request. Otherwise
 	// the request will be skipped.

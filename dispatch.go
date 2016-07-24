@@ -1,64 +1,62 @@
 package of
 
 import (
-	"bytes"
+	"sync"
 )
 
-type Filter interface {
-	Filter(*Request) bool
+type Matcher interface {
+	Match(*Request) bool
 }
 
-type FilterFunc func(*Request) bool
+type MatcherFunc func(*Request) bool
 
-func (fn FilterFunc) Filter(r *Request) bool {
+func (fn MatcherFunc) Match(r *Request) bool {
 	return fn(r)
 }
 
-// TypeDispatcher represents a filter
-type TypeFilter struct {
+type TypeMatcher struct {
 	Type Type
 }
 
-func (f *TypeFilter) Filter(r *Request) bool {
+func (f *TypeMatcher) Match(r *Request) bool {
 	return r.Header.Type == f.Type
 }
 
-type Matcher interface {
-	Match(r *Request) bool
-}
+type RequestMatcher []Matcher
 
-type RequestMatcher struct {
-	Filters []Filter
-
-	Disposable bool
-}
-
-func (d *RequestMatcher) Filter(f Filter) {
-	d.Filters = append(d.Filters, f)
-}
-
-func (d *RequestMatcher) Match(r *Request) (b bool) {
-	for _, filter := range d.Filters {
-		b = filter.Filter(r)
-		if !b {
-			return
+func (d *RequestMatcher) Match(r *Request) bool {
+	for _, matcher := range *d {
+		if !matcher.Match(r) {
+			return false
 		}
 	}
+
+	return true
 }
 
 // Dispatcher is an interface used to select the matching handler to
 // process the received OpenFlow message.
 type Dispatcher interface {
-	Dispatch(*Request) (Handler, Matcher)
+	Dispatch(*Request) Handler
+}
+
+type DispatchHandler interface {
+	Dispatcher
+	Handler
+}
+
+type dispatchEntry struct {
+	matcher Matcher
+	handler Handler
 }
 
 type RequestDispatcher struct {
 	lock     sync.RWMutex
-	handlers map[Matcher]Handler
+	handlers []*dispatchEntry
 }
 
 func NewRequestDispatcher() *RequestDispatcher {
-	return &RequestDispatcher{handlers: make(map[Matcher]Handler)}
+	return &RequestDispatcher{}
 }
 
 func (d *RequestDispatcher) Handle(m Matcher, h Handler) {
@@ -69,85 +67,78 @@ func (d *RequestDispatcher) Handle(m Matcher, h Handler) {
 		panic("openflow: request dispatcher nil matcher")
 	}
 
-	d.handlers[m] = h
+	d.handlers = append(d.handlers, &dispatchEntry{m, h})
 }
 
-func (d *RequestDispatcher) HandleFunc(m Matcher, f HandlerFunc) {
-	d.Handle(m, f)
+func (d *RequestDispatcher) HandleFunc(m Matcher, h HandlerFunc) {
+	d.Handle(m, h)
 }
 
-func (d *RequestDispatcher) Dispatch(r *Request) (Handler, Matcher) {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
+func (d *RequestDispatcher) Dispatch(r *Request) Handler {
+	d.lock.RLock()
+	defer d.lock.RUnlock()
 
-	entries, ok := d.m[r.Header.Type]
-	if !ok {
-		entries = append(entries, &serveMuxEntry{h: DiscardHandler})
+	// Try to match the processing request to any of the
+	// registered filters.
+	for _, entry := range d.handlers {
+		if !entry.matcher.Match(r) {
+			continue
+		}
+
+		return entry.handler
 	}
 
-	return HandlerFunc(func(rw ResponseWriter, r *Request) {
-		if len(entities) == 0 {
-			return
-		}
-
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			return
-		}
-
-		for _, entry := range entries {
-			r.Body = bytes.NewBuffer(body)
-			go entry.h.Serve(rw, r)
-		}
-	})
+	// When the handler was not found, we have to return
+	// the discard handler.
+	return DiscardHandler
 }
 
 // TypeDispatcher is an OpenFlow request multiplexer. It matches the type
 // of the OpenFlow message against a list of registered handlers and calls
 // the marching handler.
 type TypeDispatcher struct {
-	dispatcher RequestDispatcher
+	dispatcher *RequestDispatcher
 }
 
-// NewTypeDispatcher allocates a new instance of the TypeDispatcher.
 func NewTypeDispatcher() *TypeDispatcher {
-	return &TypeDispatcher{dispatcher: NewRequestDispatcher()}
+	return &TypeDispatcher{NewRequestDispatcher()}
 }
 
 // Handle registers the handler for the given message type.
 func (d *TypeDispatcher) Handle(t Type, h Handler) {
-	dispatcher := &RequestMatcher{Disposable: false}
-	dispatcher.Filter(&TypeFilter{t})
-
-	d.dispatcher.Handle(dispatcher, h)
+	d.dispatcher.Handle(&TypeMatcher{t}, h)
 }
 
-// Handler registers handler function on the given OpenFlow
+// HandleFunc registers handler function on the given OpenFlow
 // message type.
 func (d *TypeDispatcher) HandleFunc(t Type, f HandlerFunc) {
 	d.Handle(t, f)
 }
 
 // Dispatch returns a Handler instance for the given OpenFlow request.
-func (d *TypeDispatcher) Dispatch(r *Request) (Handler, Dispatcher) {
+func (d *TypeDispatcher) Dispatch(r *Request) Handler {
 	return d.dispatcher.Dispatch(r)
 }
 
-// Serve dispatches OpenFlow requests to the registered handlers.
+// Serve implements Handler internface. It processing the request and
+// writes back the response.
 func (d *TypeDispatcher) Serve(rw ResponseWriter, r *Request) {
-	h, _ := d.Handler(r)
+	h := d.Dispatch(r)
 	h.Serve(rw, r)
 }
 
-/*
+// DefaultDispatcher is an instance of the TypeDispatcher used as
+// a default handler in the DefaultServer instance.
+var DefaultDispatcher = NewTypeDispatcher()
 
-match := &of.RequestMatcher{Disposable: true}
-match.Filter(&of.TypeFilter{TypePacketIn})
-match.Filter(&of.CookieFilter{0x123abc, &of.CookieReader{&ofp.PacketIn{}}})
+// Handle registers the handler on the given type of the OpenFlow
+// message in the DefaultServeMux.
+func Handle(t Type, handler Handler) {
+	DefaultDispatcher.Handle(t, handler)
+}
 
-dispatcher := NewRequestDispatcher()
-dispatcher.HandleFunc(match, func(rw of.ResponseWriter, r *of.Request) {
-	rw.WriteHeader()
-})
-
-*/
+// HandleFunc registers the handler function on the given type of
+// the OpenFlow message in the DefaultServeMux.
+func HandleFunc(t Type, f func(ResponseWriter, *Request)) {
+	DefaultDispatcher.HandleFunc(t, f)
+}

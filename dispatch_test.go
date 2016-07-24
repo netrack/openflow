@@ -8,12 +8,12 @@ import (
 	"testing"
 )
 
-func TestServerMux(t *testing.T) {
+func TestTypeDispatcher(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	mux := NewServeMux()
-	mux.HandleFunc(TypeHello, func(rw ResponseWriter, r *Request) {
+	rd := NewTypeDispatcher()
+	rd.HandleFunc(TypeHello, func(rw ResponseWriter, r *Request) {
 		rw.Write([]byte{0, 0, 0, 0})
 		rw.WriteHeader()
 		wg.Done()
@@ -22,7 +22,7 @@ func TestServerMux(t *testing.T) {
 	reader := bytes.NewBuffer([]byte{4, 0, 0, 8, 0, 0, 0, 0})
 	conn := &dummyConn{r: *reader}
 
-	s := Server{Addr: "0.0.0.0:6633", Handler: mux}
+	s := Server{Addr: "0.0.0.0:6633", Handler: rd}
 	err := s.Serve(&dummyListener{conn})
 
 	if err != io.EOF {
