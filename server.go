@@ -26,16 +26,11 @@ type ResponseWriter interface {
 	// Hijack lets the caller take over the connection.
 	Hijacker
 
-	// Header returns the Header interface that will be sent by
-	// WriteHeader. Changing the header after a call to WriteHeader
-	// (or Write) has no effect.
-	Header() *Header
-
 	// Write writes the data to the connection as part of an OpenFlow reply.
 	Write([]byte) (int, error)
 
 	// WriteHeader sends an Response header as part of an OpenFlow reply.
-	WriteHeader() error
+	WriteHeader(*Header) error
 
 	// Close closes connection.
 	Close() error
@@ -69,19 +64,13 @@ type Response struct {
 	// Conn is an OpenFlow connection instance.
 	Conn Conn
 
-	// The Header is a response header. It contains the negotiated
-	// version of the OpenFlow, a type and length of the message.
+	// Request header, that could be used to configure a few of
+	// response attributes.
 	header Header
 
 	// The buf is a response message buffer. We use this buffer
 	// to calculate the length of the payload.
 	buf bytes.Buffer
-}
-
-// Header returns the Header instance of an OpenFlow response, it
-// may be used to adjust the response attributes.
-func (w *Response) Header() *Header {
-	return &w.header
 }
 
 // Write writes the given byte slice to the output buffer.
@@ -90,13 +79,20 @@ func (w *Response) Write(b []byte) (n int, err error) {
 }
 
 // WriteHeader sends an OpenFlow response.
-func (w *Response) WriteHeader() (err error) {
+func (w *Response) WriteHeader(header *Header) (err error) {
 	var buf bytes.Buffer
 
-	w.header.Length = headerlen + uint16(w.buf.Len())
+	// When the version is not configured properly, we will
+	// use the version from the response header, to minimize
+	// manual configuration.
+	if header.Version == 0 {
+		header.Version = w.header.Version
+	}
+
+	header.Length = headerlen + uint16(w.buf.Len())
 	defer w.buf.Reset()
 
-	_, err = w.header.WriteTo(&buf)
+	_, err = header.WriteTo(&buf)
 	if err != nil {
 		return
 	}

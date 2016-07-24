@@ -56,7 +56,8 @@ const (
 
 type Type uint8
 
-// A Header represents an OpenFlow message header.
+// The Header is a response header. It contains the negotiated
+// version of the OpenFlow, a type and length of the message.
 type Header struct {
 	// Version specifies the version of the protocol.
 	Version uint8
@@ -70,7 +71,11 @@ type Header struct {
 	// XId is an transaction id associated with this packet.
 	//
 	// Replies use the same id as was in the request to facilitate pairing.
-	XId uint32
+	XID uint32
+}
+
+func (h *Header) Copy() *Header {
+	return &Header{h.Version, h.Type, h.Length, h.XID}
 }
 
 // Length of the packet payload including header.

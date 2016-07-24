@@ -14,9 +14,10 @@ func TestTypeDispatcher(t *testing.T) {
 
 	rd := NewTypeDispatcher()
 	rd.HandleFunc(TypeHello, func(rw ResponseWriter, r *Request) {
+		defer wg.Done()
+
 		rw.Write([]byte{0, 0, 0, 0})
-		rw.WriteHeader()
-		wg.Done()
+		rw.WriteHeader(r.Header.Copy())
 	})
 
 	reader := bytes.NewBuffer([]byte{4, 0, 0, 8, 0, 0, 0, 0})
