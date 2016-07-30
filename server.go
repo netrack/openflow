@@ -120,15 +120,20 @@ func (w *Response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return w.Conn.Hijack()
 }
 
-// DefaultServer is a default OpenFlow server.
-var DefaultServer = Server{
-	Addr:    "0.0.0.0:6633",
-	Handler: DefaultDispatcher,
-}
-
-// ListenAndServe starts default OpenFlow server.
-func ListenAndServe() error {
-	return DefaultServer.ListenAndServe()
+// ListenAndServe listens on the given TCP address the handler. When
+// handler set to nil, the default handler will be used.
+//
+// A trivial example is:
+//
+//	of.HandleFunc(of.TypeEchoRequest, func(rw of.ResponseWriter, r *of.Request) {
+//		rw.WriteHeader(&of.Header{Type: of.TypeEchoReply})
+//	})
+//
+//	ListenAndServe(":6633", nil)
+//
+func ListenAndServe(addr string, handler Handler) error {
+	server := &Server{Addr: addr, Handler: handler}
+	return server.ListenAndServe()
 }
 
 // A Server defines parameters for running OpenFlow server.
@@ -162,6 +167,13 @@ func (srv *Server) ListenAndServe() error {
 func (srv *Server) Serve(l net.Listener) error {
 	defer l.Close()
 
+	// When the handler is not specified, the default dispatcher
+	// will be used instead.
+	handler := srv.Handler
+	if handler == nil {
+		handler = DefaultDispatcher
+	}
+
 	for {
 		rwc, err := l.Accept()
 		if err != nil {
@@ -172,7 +184,7 @@ func (srv *Server) Serve(l net.Listener) error {
 		c.ReadTimeout = srv.ReadTimeout
 		c.WriteTimeout = srv.WriteTimeout
 
-		go srv.serve(c, srv.Handler)
+		go srv.serve(c, handler)
 	}
 }
 

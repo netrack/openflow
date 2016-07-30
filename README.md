@@ -19,7 +19,7 @@ of.HandleFunc(of.TypeHello, func(rw of.ResponseWriter, r *of.Request) {
 })
 
 // Start the TCP server on 6633 port.
-of.ListenAndServe()
+of.ListenAndServe(":6633", nil)
 ```
 
 ```go
