@@ -1,39 +1,22 @@
 package of
 
 import (
-	"bufio"
 	"bytes"
-	"errors"
 	"net"
 	"time"
 )
 
-var (
-	ErrHijacked = errors.New("openflow: Connection has been hijacked")
-)
-
-type Hijacker interface {
-	// Hijack lets the caller take over the connection.
-	//
-	// After a call to Hijack(), the OFP server library will not do
-	// anything else with a connection.
-	Hijack() (net.Conn, *bufio.ReadWriter, error)
-}
-
 // A ResponseWriter interface is used by an OpenFlow handler to construct
 // an OpenFlow Response.
 type ResponseWriter interface {
-	// Hijack lets the caller take over the connection.
-	Hijacker
-
 	// Write writes the data to the connection as part of an OpenFlow reply.
 	Write([]byte) (int, error)
 
 	// WriteHeader sends an Response header as part of an OpenFlow reply.
 	WriteHeader(*Header) error
 
-	// Close closes connection.
-	Close() error
+	// Conn returns the instance of the OpenFlow protocol connection.
+	Conn() Conn
 }
 
 // A Handler responds to an OpenFlow request.
@@ -61,8 +44,8 @@ var DiscardHandler = HandlerFunc(func(rw ResponseWriter, r *Request) {})
 // Response implements ResponseWriter interface and represents the
 // response from an OpenFlow request.
 type Response struct {
-	// Conn is an OpenFlow connection instance.
-	Conn Conn
+	// conn is an OpenFlow connection instance.
+	conn *conn
 
 	// Request header, that could be used to configure a few of
 	// response attributes.
@@ -102,22 +85,17 @@ func (w *Response) WriteHeader(header *Header) (err error) {
 		return
 	}
 
-	_, err = w.Conn.Write(buf.Bytes())
+	_, err = w.conn.Write(buf.Bytes())
 	if err != nil {
 		return
 	}
 
-	return w.Conn.Flush()
+	return w.conn.Flush()
 }
 
-// Close closes connection.
-func (w *Response) Close() error {
-	return w.Close()
-}
-
-// Hijack lets the caller take over the connection.
-func (w *Response) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	return w.Conn.Hijack()
+// Conn returns the OpenFlow connection.
+func (w *Response) Conn() Conn {
+	return w.conn
 }
 
 // ListenAndServe listens on the given TCP address the handler. When
@@ -180,7 +158,7 @@ func (srv *Server) Serve(l net.Listener) error {
 			return err
 		}
 
-		c := NewConn(rwc)
+		c := newConn(rwc)
 		c.ReadTimeout = srv.ReadTimeout
 		c.WriteTimeout = srv.WriteTimeout
 
@@ -188,14 +166,9 @@ func (srv *Server) Serve(l net.Listener) error {
 	}
 }
 
-func (srv *Server) serve(c *OFPConn, h Handler) {
-	origconn := c.rwc
-	// Define a deferred function to close the connection.
-	defer func() {
-		if !c.hijacked() {
-			origconn.Close()
-		}
-	}()
+func (srv *Server) serve(c *conn, h Handler) {
+	// Define a deferred call to close the connection.
+	defer c.Close()
 
 	for {
 		// Wait for the new request from either the Switch or
@@ -212,11 +185,11 @@ func (srv *Server) serve(c *OFPConn, h Handler) {
 
 		// Construct a new response instance with some default
 		// attributes and execute respective handler for it.
-		resp := &Response{Conn: c, header: header}
+		resp := &Response{conn: c, header: header}
 		h.Serve(resp, req)
 
 		// Write the buffer content to the connection, so the
 		// pending messages will written.
-		c.buf.Flush()
+		c.Flush()
 	}
 }

@@ -89,19 +89,22 @@ func TestListener(t *testing.T) {
 		t.Fatal("Failed to create listener:", err)
 	}
 
-	defer ln.ln.Close()
+	ofpLn := ln.(*listener)
+	defer ofpLn.ln.Close()
 
 	dconn := &dummyConn{}
 	dln := &dummyListener{dconn}
 
-	ln.ln = dln
+	ofpLn.ln = dln
 
-	conn, err := ln.AcceptOFP()
+	c, err := ln.Accept()
+	ofpConn := c.(*conn)
+
 	if err != nil {
 		t.Fatal("Failed to accept a new connection:", err)
 	}
 
-	if conn.rwc != dconn {
+	if ofpConn.rwc != dconn {
 		t.Fatal("Failed to create OFP connection")
 	}
 }
@@ -114,7 +117,8 @@ func TestDial(t *testing.T) {
 
 	// Defer the connection closing call, since we are
 	// going to replace it with a dummy one.
-	defer ln.ln.Close()
+	ofpLn := ln.(*listener)
+	defer ofpLn.ln.Close()
 
 	// Define a connection instance that is expecting
 	// to be returned on accepting the client connection.
@@ -128,7 +132,7 @@ func TestDial(t *testing.T) {
 	r.WriteTo(&serverConn.r)
 
 	// Perform the actual connection replacement.
-	ln.ln = &dummyListener{serverConn}
+	ofpLn.ln = &dummyListener{serverConn}
 
 	rwc, err := Dial("tcp6", serverAddr)
 	if err != nil {
@@ -140,9 +144,9 @@ func TestDial(t *testing.T) {
 	// Replace the client connection with a dummy one,
 	// so we could perform damn simple unit test.
 	clientConn := &dummyConn{}
-	rwc.(*OFPConn).rwc = clientConn
+	rwc.(*conn).rwc = clientConn
 
-	cconn, err := ln.AcceptOFP()
+	cconn, err := ln.Accept()
 	if err != nil {
 		t.Fatal("Failed to accept client connection:", err)
 	}
