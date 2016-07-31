@@ -19,12 +19,14 @@ type GroupType uint8
 
 const (
 	// Last usable group number
-	G_MAX Group = 0xffffff00
+	GroupMax Group = 0xffffff00
+
 	// Represents all groups for group delete commands
-	G_ALL Group = 0xfffffffc
+	GroupAll Group = 0xfffffffc
+
 	// Wildcard group used only for flow stats requests.
 	// Selects all flows regardless of group (including flows with no group)
-	G_ANY Group = 0xffffffff
+	GroupAny Group = 0xffffffff
 )
 
 type Group uint32

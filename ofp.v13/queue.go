@@ -10,7 +10,7 @@ type QueueProperties uint16
 
 const (
 	//TODO: Q_ANY Queue
-	Q_ALL Queue = 0xffffffff
+	QueueAll Queue = 0xffffffff
 )
 
 type Queue uint32
