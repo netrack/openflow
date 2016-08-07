@@ -1,43 +1,199 @@
 package ofp
 
 import (
-	"bytes"
-	"fmt"
 	"testing"
 )
 
 func TestAction(t *testing.T) {
+	tests := []testValue{
+		{Action{Type: ActionTypeCopyTTLOut}, []byte{
+			0x00, 0xb, // Action type.
+			0x00, 0x08, // Action lenght,
+			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
+		}},
+		{Action{Type: ActionTypeCopyTTLIn}, []byte{
+			0x00, 0xc,
+			0x00, 0x08,
+			0x00, 0x00, 0x00, 0x00,
+		}},
+	}
+
+	testMarshal(t, tests)
 }
 
 func TestActionOutput(t *testing.T) {
-	var buf bytes.Buffer
-	a := ActionOutput{P_FLOOD, 0}
-
-	_, err := a.WriteTo(&buf)
-	if err != nil {
-		t.Fatal("Failed to marshal action:", err)
+	tests := []testValue{
+		{ActionOutput{Port: PortIn, MaxLen: 0}, []byte{
+			0x0, 0x0, // Action type.
+			0x0, 0x10, // Action length.
+			0xff, 0xff, 0xff, 0xf8, // Port number.
+			0x0, 0x0, // Maximum length.
+			0x0, 0x0, 0x0, 0x0, 0x0, 0x0}}, // 6-byte padding.
+		{ActionOutput{Port: PortFlood, MaxLen: 0}, []byte{
+			0x0, 0x0,
+			0x0, 0x10,
+			0xff, 0xff, 0xff, 0xfb,
+			0x0, 0x0,
+			0x0, 0x0, 0x0, 0x0, 0x0, 0x0}},
+		{ActionOutput{Port: PortController, MaxLen: 0x80}, []byte{
+			0x0, 0x0,
+			0x0, 0x10,
+			0xff, 0xff, 0xff, 0xfd,
+			0x0, 0x80,
+			0x0, 0x0, 0x0, 0x0, 0x0, 0x0}},
 	}
 
-	hexstr := fmt.Sprintf("%x", buf.Bytes())
-	if hexstr != "00000010fffffffb0000000000000000" {
-		t.Fatal("Marshaled action data is incorrect:", hexstr)
-	}
+	testMarshal(t, tests)
 }
 
 func TestActionGroup(t *testing.T) {
+	tests := []testValue{
+		{ActionGroup{GroupID: GroupMax}, []byte{
+			0x0, 0x16, // Action type.
+			0x0, 0x08, // Action length.
+			0xff, 0xff, 0xff, 0x00}}, // Group identifier.
+		{ActionGroup{GroupID: GroupAll}, []byte{
+			0x0, 0x16,
+			0x0, 0x08,
+			0xff, 0xff, 0xff, 0xfc}},
+		{ActionGroup{GroupID: GroupAny}, []byte{
+			0x0, 0x16,
+			0x0, 0x08,
+			0xff, 0xff, 0xff, 0xff}},
+	}
+
+	testMarshal(t, tests)
 }
 
 func TestActionSetQueue(t *testing.T) {
+	tests := []testValue{
+		{ActionSetQueue{QueueID: QueueAll}, []byte{
+			0x0, 0x15, // Action type.
+			0x0, 0x08, // Action length.
+			0xff, 0xff, 0xff, 0xff}}, // Queue identifier.
+		{ActionSetQueue{QueueID: 0x4200}, []byte{
+			0x0, 0x15,
+			0x0, 0x08,
+			0x0, 0x0, 0x42, 0x00}},
+	}
+
+	testMarshal(t, tests)
 }
 
 func TestActionMPLSTTL(t *testing.T) {
+	tests := []testValue{
+		{ActionSetMPLSTTL{TTL: 64}, []byte{
+			0x0, 0x0f, // Action type.
+			0x0, 0x08, // Action length.
+			0x40,            // Time to live.
+			0x0, 0x0, 0x0}}, // 3-bytes padding.
+		{ActionSetMPLSTTL{TTL: 32}, []byte{
+			0x0, 0x0f,
+			0x0, 0x08,
+			0x20,
+			0x0, 0x0, 0x0}},
+	}
+
+	testMarshal(t, tests)
 }
 
 func TestActionSetNetworkTTL(t *testing.T) {
+	tests := []testValue{
+		{ActionSetNetworkTTL{TTL: 48}, []byte{
+			0x0, 0x17, // Action type.
+			0x0, 0x08, // Action length.
+			0x30,            // Time to live.
+			0x0, 0x0, 0x0}}, // 3-bytes padding.
+	}
+
+	testMarshal(t, tests)
 }
 
 func TestActionPush(t *testing.T) {
+	tests := []testValue{
+		{ActionPush{Type: ActionTypePushVLAN, EtherType: 1000}, []byte{
+			0x0, 0x11, // Action type.
+			0x0, 0x08, // Action length.
+			0x03, 0xe8, // Ethernet type.
+			0x0, 0x0}}, // 2-bytes padding.
+		{ActionPush{Type: ActionTypePushMPLS, EtherType: 7}, []byte{
+			0x0, 0x13,
+			0x0, 0x08,
+			0x0, 0x07,
+			0x0, 0x0}},
+	}
+
+	testMarshal(t, tests)
 }
 
 func TestActionPopMPLS(t *testing.T) {
+	tests := []testValue{
+		{ActionPopMPLS{EtherType: 1001}, []byte{
+			0x0, 0x14, // Action type.
+			0x0, 0x08, // Action length.
+			0x03, 0xe9, // Ethernet type.
+			0x0, 0x0}}, // 2-bytes padding.
+		{ActionPopMPLS{EtherType: 9}, []byte{
+			0x0, 0x14,
+			0x0, 0x8,
+			0x0, 0x9,
+			0x0, 0x0}},
+	}
+
+	testMarshal(t, tests)
+}
+
+func TestActionSetField(t *testing.T) {
+	oxm1 := OXM{
+		Class: XMC_OPENFLOW_BASIC,
+		Field: XMT_OFB_IN_PORT,
+		Value: OXMValue{0x00, 0x01},
+		Mask:  OXMValue{0x00, 0xff},
+	}
+
+	oxm2 := OXM{
+		Class: XMC_OPENFLOW_BASIC,
+		Field: XMT_OFB_IPV4_SRC,
+		Value: OXMValue{172, 17, 0, 25},
+	}
+
+	tests := []testValue{
+		{ActionSetField{Field: oxm1}, []byte{
+			0x00, 0x19, // Action type.
+			0x00, 0x10, // Action length.
+			0x80, 0x00, // OpenFlow basic.
+			0x01,                   // Match field + Mask flag.
+			0x04,                   // Payload length.
+			0x00, 0x01, 0x00, 0xff, // Payload.
+			0x0, 0x0, 0x0, 0x0, // 4-bytes padding.
+		}},
+		{ActionSetField{Field: oxm2}, []byte{
+			0x00, 0x19,
+			0x00, 0x10,
+			0x80, 0x00,
+			0x16,
+			0x04,
+			0xac, 0x11, 0x00, 0x19,
+			0x0, 0x0, 0x0, 0x0,
+		}},
+	}
+
+	testMarshal(t, tests)
+}
+
+func TestActionExperimenter(t *testing.T) {
+	tests := []testValue{
+		{ActionExperimenter{41}, []byte{
+			0xff, 0x0ff, // Action type.
+			0x0, 0x08, // Action length.
+			0x0, 0x0, 0x0, 0x29, // Experimeter.
+		}},
+		{ActionExperimenter{42}, []byte{
+			0xff, 0x0ff,
+			0x0, 0x08,
+			0x0, 0x0, 0x0, 0x2a,
+		}},
+	}
+
+	testMarshal(t, tests)
 }

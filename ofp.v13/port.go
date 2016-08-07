@@ -164,35 +164,35 @@ const (
 	// Send the packet out the input port. This reserved
 	// port must be explicitly used in order to send back
 	// out of the input port.
-	P_IN_PORT PortNo = 0xfffffff8 + iota
+	PortIn PortNo = 0xfffffff8 + iota
 
 	// Submit the packet to the first flow table. This
 	// destination port can only be used in packet-out messages.
-	P_TABLE PortNo = 0xfffffff8 + iota
+	PortTable PortNo = 0xfffffff8 + iota
 
 	// Process with normal L2/L3 switching.
-	P_NORMAL PortNo = 0xfffffff8 + iota
+	PortNormal PortNo = 0xfffffff8 + iota
 
 	// All physical ports in VLAN, except input port and
 	// those blocked or link down.
-	P_FLOOD PortNo = 0xfffffff8 + iota
+	PortFlood PortNo = 0xfffffff8 + iota
 
 	// All physical ports except input port.
-	P_ALL PortNo = 0xfffffff8 + iota
+	PortAll PortNo = 0xfffffff8 + iota
 
 	// Send to controller.
-	P_CONTROLLER PortNo = 0xfffffff8 + iota
+	PortController PortNo = 0xfffffff8 + iota
 
 	// Local openflow "port".
-	P_LOCAL PortNo = 0xfffffff8 + iota
+	PortLocal PortNo = 0xfffffff8 + iota
 
 	// Wildcard port used only for flow mod (delete) and flow
 	// stats requests. Selects all flows regardless of output port
 	// (including flows with no output port).
-	P_ANY PortNo = 0xffffffff
+	PortAny PortNo = 0xffffffff
 
 	// Maximum number of physical and logical switch ports
-	P_MAX PortNo = 0xffffff00
+	PortMax PortNo = 0xffffff00
 )
 
 type PortNo uint32
