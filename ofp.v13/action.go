@@ -258,7 +258,7 @@ func (a ActionPopMPLS) WriteTo(w io.Writer) (int64, error) {
 type ActionSetField struct {
 	// Field contains a header field described using
 	// a single OXM TLV structure.
-	Field OXM
+	Field XM
 }
 
 // WriteTo implement the io.WriterTo interface. It serializes the action

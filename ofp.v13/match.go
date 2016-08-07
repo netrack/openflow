@@ -8,168 +8,153 @@ import (
 )
 
 const (
-	// OpenFlow 1.1 match type MT_STANDARD is deprecated.
-	MT_STANDARD MatchType = iota
-
-	// OpenFlow Extensible Match type.
-	MT_OXM
-)
-
-// MatchType indicates the match structure (set of fields that compose the
-// match) in use.
-//
-// The match type is placed in the type field at the beginning of all match
-// structures.
-type MatchType uint16
-
-const (
 	// Switch input port.
-	XMT_OFB_IN_PORT OXMField = iota
+	XMTypeInPort XMType = iota // 0
 
 	// Switch physical input port.
-	XMT_OFB_IN_PHY_PORT
+	XMTypeInPhyPort
 
 	// Metadata passed between tables.
-	XMT_OFB_METADATA
+	XMTypeMetadata
 
 	// Ethernet destination address.
-	XMT_OFB_ETH_DST
+	XMTypeEthDst
 
 	// Ethernet source address.
-	XMT_OFB_ETH_SRC
+	XMTypeEthSrc
 
 	// Ethernet frame type.
-	XMT_OFB_ETH_TYPE
+	XMTypeEthType // 5
 
 	// VLAN identificator.
-	XMT_OFB_VLAN_VID
+	XMTypeVlanID
 
 	// VLAN priority.
-	XMT_OFB_VLAN_PCP
+	XMTypeVlanPCP
 
 	// IP DSCP (6 bits in ToS field).
-	XMT_OFB_IP_DSCP
+	XMTypeIPDSCP
 
 	// IP ECN (2 bits in ToS field).
-	XMT_OFB_IP_ECN
+	XMTypeIPECN
 
 	// IP protocol.
-	XMT_OFB_IP_PROTO
+	XMTypeIPProto // 10
 
 	// IPv4 source address.
-	XMT_OFB_IPV4_SRC
+	XMTypeIPv4Src
 
 	// IPv4 destination address.
-	XMT_OFB_IPV4_DST
+	XMTypeIPv4Dst
 
 	// TCP source port.
-	XMT_OFB_TCP_SRC
+	XMTypeTCPSrc
 
 	// TCP destination port.
-	XMT_OFB_TCP_DST
+	XMTypeTCPDst
 
 	// UDP source port.
-	XMT_OFB_UDP_SRC
+	XMTypeUDPSrc // 15
 
 	// UDP destination port.
-	XMT_OFB_UDP_DST
+	XMTypeUDPDst
 
 	// SCTP source port.
-	XMT_OFB_SCTP_SRC
+	XMTypeSCTPSrc
 
 	// SCTP destination port.
-	XMT_OFB_SCTP_DST
+	XMTypeSCTPDst
 
 	// ICMPv4 type.
-	XMT_OFB_ICMPV4_TYPE
+	XMTypeICMPv4Type
 
 	// ICMPv4 code.
-	XMT_OFB_ICMPV4_CODE
+	XMTypeICMPv4Code // 20
 
 	// ARP opcode.
-	XMT_OFB_ARP_OP
+	XMTypeARPOpcode
 
 	// ARP source IPv4 address.
-	XMT_OFB_ARP_SPA
+	XMTypeARPSPA
 
 	// ARP target IPv4 address.
-	XMT_OFB_ARP_TPA
+	XMTypeARPTPA
 
 	// ARP source hardware address.
-	XMT_OFB_ARP_SHA
+	XMTypeARPSHA
 
 	// ARP target hardware address.
-	XMT_OFB_ARP_THA
+	XMTypeARPTHA // 25
 
 	// IPv6 source address.
-	XMT_OFB_IPV6_SRC
+	XMTypeIPv6Src
 
 	// IPv6 destination address.
-	XMT_OFB_IPV6_DST
+	XMTypeIPv6Dst
 
 	// IPv6 Flow Label.
-	XMT_OFB_IPV6_FLABEL
+	XMTypeIPv6Flabel
 
 	// ICMPv6 type.
-	XMT_OFB_ICMPV6_TYPE
+	XMTypeICMPv6Type
 
 	// ICMPv6 code.
-	XMT_OFB_ICMPV6_CODE
+	XMTypeICMPv6Code // 30
 
 	// Target address for ND.
-	XMT_OFB_IPV6_ND_TARGET
+	XMTypeIPv6NDTarget
 
 	// Source link-layer for ND.
-	XMT_OFB_IPV6_ND_SLL
+	XMTypeIPv6NDSLL
 
 	// Target link-layer for ND.
-	XMT_OFB_IPV6_ND_TLL
+	XMTypeNDTLL
 
 	// MPLS label.
-	XMT_OFB_MPLS_LABEL
+	XMTypeMPLSLabel
 
 	// MPLS TC.
-	XMT_OFB_MPLS_TC
+	XMTypeMPLSTC // 35
 
 	// MPLS BoS bit.
-	XMT_OFP_MPLS_BOS
+	XMTypeMPLSBOS
 
 	// PBB I-SID.
-	XMT_OFB_PBB_ISID
+	XMTypePBBISID
 
 	// Logical Port Metadata.
-	XMT_OFB_TUNNEL_ID
+	XMTypeTunnelID
 
 	// IPv6 Extension Header pseudo-field.
-	XMT_OFB_IPV6_EXTHDR
+	XMTypeIPv6EXTHDR
 )
 
-type OXMField uint8
+type XMType uint8
 
 const (
 	// Backward compatibility with NXM.
-	XMC_NXM_0 OXMClass = iota
+	XMClassNicira0 XMClass = iota
 
 	// Backward compatibility with NXM.
-	XMC_NXM_1 OXMClass = iota
+	XMClassNicira1
 
 	// The class XMC_OPENFLOW_BASIC contains the basic set of OpenFlow
 	// match fields.
-	XMC_OPENFLOW_BASIC OXMClass = 0x8000
+	XMClassOpenflowBasic XMClass = 0x8000
 
 	// The optional class XMC_EXPERIMENTER is used for experimenter
 	// matches.
-	XMC_EXPERIMENTER OXMClass = 0xffff
+	XMClassExperimenter XMClass = 0xffff
 )
 
-// OXMClass represents an OXM Class ID. The high order bit differentiate
+// XMClass represents an OXM Class ID. The high order bit differentiate
 // reserved classes from member classes.
 //
 // Classes 0x0000 to 0x7FFF are member classes, allocated by ONF.
 //
 // Classes 0x8000 to 0xFFFE are reserved classes, reserved for
 // standardisation.
-type OXMClass uint16
+type XMClass uint16
 
 const (
 	// Bit that indicate that a VLAN id is set.
@@ -222,6 +207,107 @@ const (
 // Values of this type could be used as OXM matching values.
 type IPv6ExtHdrFlags uint16
 
+// The XM defines the flow match fields are described using
+// the OpenFlow Extensible Match (OXM) format, which is a
+// compact type-length-value (TLV) format.
+type XM struct {
+	// Match class that contains related match type
+	Class XMClass
+	// Class-specific value, identifying one of the
+	// match types within the match class.
+	Type  XMType
+	Value XMValue
+	Mask  XMValue
+}
+
+// ReadFrom implements io.ReaderFrom interface. It deserializes
+// the OpenFlow extensible match from the given reader.
+func (xm *XM) ReadFrom(r io.Reader) (n int64, err error) {
+	var length uint8
+
+	n, err = binary.ReadSlice(r, binary.BigEndian, []interface{}{
+		&xm.Class, &xm.Type, &length,
+	})
+
+	if err != nil {
+		return
+	}
+
+	hasmask := (xm.Type & 1) == 1
+	xm.Type >>= 1
+
+	var m int64
+
+	xm.Value = make(XMValue, length)
+	m, err = binary.Read(r, binary.BigEndian, &xm.Value)
+	n += m
+
+	if err != nil {
+		return
+	}
+
+	if hasmask {
+		length /= 2
+		copy(xm.Mask, xm.Value[length:])
+		xm.Value = xm.Value[:length]
+	}
+
+	return
+}
+
+// WriteTo implements io.WriterTo interface. It serializes the Openflow
+// extensible match into given writer.
+func (xm *XM) WriteTo(w io.Writer) (int64, error) {
+	var hasmask XMType
+	if len(xm.Mask) > 0 {
+		hasmask = 1
+	}
+
+	field := (xm.Type << 1) | hasmask
+
+	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
+		xm.Class, field, uint8(len(xm.Mask) + len(xm.Value)),
+		xm.Value, xm.Mask,
+	})
+}
+
+type XMValue []byte
+
+func (val XMValue) UInt32() (v uint32) {
+	binary.Read(bytes.NewBuffer(val), binary.BigEndian, &v)
+	return
+}
+
+func (val XMValue) UInt16() (v uint16) {
+	binary.Read(bytes.NewBuffer(val), binary.BigEndian, &v)
+	return
+}
+
+func (val XMValue) UInt8() (v uint8) {
+	binary.Read(bytes.NewBuffer(val), binary.BigEndian, &v)
+	return
+}
+
+type XMExperimenterHeader struct {
+	XM           XM
+	Experimenter uint32
+}
+
+const (
+	// OpenFlow 1.1 match type MT_STANDARD is deprecated.
+	MatchTypeStandard MatchType = iota
+
+	// OpenFlow Extensible Match type.
+	MatchTypeXM
+)
+
+// MatchType indicates the match structure (set of fields that compose the
+// match) in use.
+//
+// The match type is placed in the type field at the beginning of all match
+// structures.
+type MatchType uint16
+
 // Match represents fields to match against flows.
 type Match struct {
 	// Type indicates the match structure (set of fields that compose
@@ -229,24 +315,31 @@ type Match struct {
 	// the beginning of all match structures.
 	Type MatchType
 
-	// OXMFields lists a set of packet match criteria.
-	OXMFields []OXM
+	// Fields lists a set of packet match criteria.
+	Fields []XM
 }
 
 // Field returns a first entry of OXM by the given type.
-func (m *Match) Field(field OXMField) *OXM {
-	for _, oxm := range m.OXMFields {
-		if oxm.Field == field {
-			return &oxm
+func (m *Match) Field(mt XMType) *XM {
+	for _, xm := range m.Fields {
+		if xm.Type == mt {
+			return &xm
 		}
 	}
 
 	return nil
 }
 
-// ReadFrom implements ReaderFrom interface.
+// ReadFrom implements io.ReaderFrom interface. It deserializes the
+// bytes from the given reader to the Match structure.
 func (m *Match) ReadFrom(r io.Reader) (n int64, err error) {
 	var length uint16
+
+	// Initialize the structure attributes with default
+	// values, so we could read multiple times into the
+	// same variable.
+	m.Type, m.Fields = 0, nil
+
 	n, err = binary.ReadSlice(r, binary.BigEndian, []interface{}{
 		&m.Type, &length,
 	})
@@ -266,25 +359,28 @@ func (m *Match) ReadFrom(r io.Reader) (n int64, err error) {
 	}
 
 	rbuf := bytes.NewBuffer(buf)
-	for rbuf.Len() > 7 {
-		var oxm OXM
 
-		_, err = oxm.ReadFrom(rbuf)
+	for rbuf.Len() > 7 {
+		var xm XM
+
+		_, err = xm.ReadFrom(rbuf)
 		if err != nil {
 			return
 		}
 
-		m.OXMFields = append(m.OXMFields, oxm)
+		m.Fields = append(m.Fields, xm)
 	}
 
 	return
 }
 
+// WriterTo implements io.WriterTo interface. It serializes the Match
+// structure to the given writer.
 func (m *Match) WriteTo(w io.Writer) (n int64, err error) {
 	var buf bytes.Buffer
 
-	for _, oxm := range m.OXMFields {
-		_, err = oxm.WriteTo(&buf)
+	for _, xm := range m.Fields {
+		_, err = xm.WriteTo(&buf)
 		if err != nil {
 			return
 		}
@@ -303,91 +399,4 @@ func (m *Match) WriteTo(w io.Writer) (n int64, err error) {
 	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
 		m.Type, uint16(length), buf.Bytes(),
 	})
-}
-
-// The flow match fields are described using the OpenFlow Extensible
-// Match (OXM) format, which is a compact type-length-value (TLV) format.
-type OXM struct {
-	// Match class that contains related match type
-	Class OXMClass
-	// Class-specific value, identifying one of the
-	// match types within the match class.
-	Field OXMField
-	Value OXMValue
-	Mask  OXMValue
-}
-
-func (oxm *OXM) ReadFrom(r io.Reader) (n int64, err error) {
-	var length uint8
-
-	n, err = binary.ReadSlice(r, binary.BigEndian, []interface{}{
-		&oxm.Class, &oxm.Field, &length,
-	})
-
-	if err != nil {
-		return
-	}
-
-	hasmask := (oxm.Field & 1) == 1
-	oxm.Field >>= 1
-
-	var m int64
-
-	oxm.Value = make(OXMValue, length)
-	m, err = binary.Read(r, binary.BigEndian, &oxm.Value)
-	n += m
-
-	if hasmask {
-		length /= 2
-		oxm.Mask = make(OXMValue, length)
-
-		m, err = binary.Read(r, binary.BigEndian, &oxm.Mask)
-		n += m
-
-		if err != nil {
-			return
-		}
-	}
-
-	return
-}
-
-func (oxm *OXM) WriteTo(w io.Writer) (int64, error) {
-	var hasmask OXMField
-	if len(oxm.Mask) > 0 {
-		hasmask = 1
-	}
-
-	field := (oxm.Field << 1) | hasmask
-
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		oxm.Class, field, uint8(len(oxm.Mask) + len(oxm.Value)), oxm.Value, oxm.Mask,
-	})
-}
-
-type OXMValue []byte
-
-func (val OXMValue) PortNo() (n PortNo) {
-	binary.Read(bytes.NewBuffer(val), binary.BigEndian, &n)
-	return
-}
-
-func (val OXMValue) UInt32() (v uint32) {
-	binary.Read(bytes.NewBuffer(val), binary.BigEndian, &v)
-	return
-}
-
-func (val OXMValue) UInt16() (v uint16) {
-	binary.Read(bytes.NewBuffer(val), binary.BigEndian, &v)
-	return
-}
-
-func (val OXMValue) UInt8() (v uint8) {
-	binary.Read(bytes.NewBuffer(val), binary.BigEndian, &v)
-	return
-}
-
-type OXMExperimenterHeader struct {
-	OXM          OXM
-	Experimenter uint32
 }
