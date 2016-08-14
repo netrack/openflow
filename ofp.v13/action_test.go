@@ -5,7 +5,7 @@ import (
 )
 
 func TestAction(t *testing.T) {
-	tests := []testValue{
+	tests := []testM{
 		{Action{Type: ActionTypeCopyTTLOut}, []byte{
 			0x00, 0xb, // Action type.
 			0x00, 0x08, // Action lenght,
@@ -22,7 +22,7 @@ func TestAction(t *testing.T) {
 }
 
 func TestActionOutput(t *testing.T) {
-	tests := []testValue{
+	tests := []testM{
 		{ActionOutput{Port: PortIn, MaxLen: 0}, []byte{
 			0x0, 0x0, // Action type.
 			0x0, 0x10, // Action length.
@@ -47,7 +47,7 @@ func TestActionOutput(t *testing.T) {
 }
 
 func TestActionGroup(t *testing.T) {
-	tests := []testValue{
+	tests := []testM{
 		{ActionGroup{GroupID: GroupMax}, []byte{
 			0x0, 0x16, // Action type.
 			0x0, 0x08, // Action length.
@@ -66,7 +66,7 @@ func TestActionGroup(t *testing.T) {
 }
 
 func TestActionSetQueue(t *testing.T) {
-	tests := []testValue{
+	tests := []testM{
 		{ActionSetQueue{QueueID: QueueAll}, []byte{
 			0x0, 0x15, // Action type.
 			0x0, 0x08, // Action length.
@@ -81,7 +81,7 @@ func TestActionSetQueue(t *testing.T) {
 }
 
 func TestActionMPLSTTL(t *testing.T) {
-	tests := []testValue{
+	tests := []testM{
 		{ActionSetMPLSTTL{TTL: 64}, []byte{
 			0x0, 0x0f, // Action type.
 			0x0, 0x08, // Action length.
@@ -98,7 +98,7 @@ func TestActionMPLSTTL(t *testing.T) {
 }
 
 func TestActionSetNetworkTTL(t *testing.T) {
-	tests := []testValue{
+	tests := []testM{
 		{ActionSetNetworkTTL{TTL: 48}, []byte{
 			0x0, 0x17, // Action type.
 			0x0, 0x08, // Action length.
@@ -110,7 +110,7 @@ func TestActionSetNetworkTTL(t *testing.T) {
 }
 
 func TestActionPush(t *testing.T) {
-	tests := []testValue{
+	tests := []testM{
 		{ActionPush{Type: ActionTypePushVLAN, EtherType: 1000}, []byte{
 			0x0, 0x11, // Action type.
 			0x0, 0x08, // Action length.
@@ -127,7 +127,7 @@ func TestActionPush(t *testing.T) {
 }
 
 func TestActionPopMPLS(t *testing.T) {
-	tests := []testValue{
+	tests := []testM{
 		{ActionPopMPLS{EtherType: 1001}, []byte{
 			0x0, 0x14, // Action type.
 			0x0, 0x08, // Action length.
@@ -144,21 +144,21 @@ func TestActionPopMPLS(t *testing.T) {
 }
 
 func TestActionSetField(t *testing.T) {
-	oxm1 := OXM{
-		Class: XMC_OPENFLOW_BASIC,
-		Field: XMT_OFB_IN_PORT,
-		Value: OXMValue{0x00, 0x01},
-		Mask:  OXMValue{0x00, 0xff},
+	xm1 := XM{
+		Class: XMClassOpenflowBasic,
+		Type:  XMTypeInPort,
+		Value: XMValue{0x00, 0x01},
+		Mask:  XMValue{0x00, 0xff},
 	}
 
-	oxm2 := OXM{
-		Class: XMC_OPENFLOW_BASIC,
-		Field: XMT_OFB_IPV4_SRC,
-		Value: OXMValue{172, 17, 0, 25},
+	xm2 := XM{
+		Class: XMClassOpenflowBasic,
+		Type:  XMTypeIPv4Src,
+		Value: XMValue{172, 17, 0, 25},
 	}
 
-	tests := []testValue{
-		{ActionSetField{Field: oxm1}, []byte{
+	tests := []testM{
+		{ActionSetField{Field: xm1}, []byte{
 			0x00, 0x19, // Action type.
 			0x00, 0x10, // Action length.
 			0x80, 0x00, // OpenFlow basic.
@@ -167,7 +167,7 @@ func TestActionSetField(t *testing.T) {
 			0x00, 0x01, 0x00, 0xff, // Payload.
 			0x0, 0x0, 0x0, 0x0, // 4-bytes padding.
 		}},
-		{ActionSetField{Field: oxm2}, []byte{
+		{ActionSetField{Field: xm2}, []byte{
 			0x00, 0x19,
 			0x00, 0x10,
 			0x80, 0x00,
@@ -182,7 +182,7 @@ func TestActionSetField(t *testing.T) {
 }
 
 func TestActionExperimenter(t *testing.T) {
-	tests := []testValue{
+	tests := []testM{
 		{ActionExperimenter{41}, []byte{
 			0xff, 0x0ff, // Action type.
 			0x0, 0x08, // Action length.

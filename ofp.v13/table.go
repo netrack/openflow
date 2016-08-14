@@ -137,7 +137,7 @@ type TableFeaturePropActions struct {
 type TableFeaturePropOXM struct {
 	Type   TableFeaturePropType
 	Length uint16
-	OXMID  []OXM
+	Fields []XM
 }
 
 type TableFeaturePropExperimenter struct {
