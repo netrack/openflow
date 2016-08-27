@@ -53,7 +53,7 @@ func testMarshal(t *testing.T, tests []testM) {
 
 		if bytes.Compare(test.b, buf.Bytes()) != 0 {
 			t.Fatalf("The marshaled result is not equal to "+
-				"the expected one: `%x`, got instead: `%x`",
+				"the\nexpected:\n`%x`,\ngot instead:\n`%x`",
 				test.b, buf.Bytes())
 		}
 	}
