@@ -4,7 +4,7 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/netrack/openflow/encoding/binary"
+	"github.com/netrack/openflow/encoding"
 )
 
 // EchoRequest message consists of an OpenFlow header
@@ -17,7 +17,7 @@ type EchoRequest struct {
 }
 
 func (er *EchoRequest) WriteTo(w io.Writer) (int64, error) {
-	return binary.Write(w, binary.BigEndian, er.Data)
+	return encoding.WriteTo(w, er.Data)
 }
 
 func (er *EchoRequest) ReadFrom(r io.Reader) (n int64, err error) {
@@ -36,7 +36,7 @@ type EchoReply struct {
 }
 
 func (er *EchoReply) WriteTo(w io.Writer) (int64, error) {
-	return binary.Write(w, binary.BigEndian, er.Data)
+	return encoding.WriteTo(w, er.Data)
 }
 
 func (er *EchoReply) ReadFrom(r io.Reader) (n int64, err error) {

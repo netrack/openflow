@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/netrack/openflow/encoding/binary"
+	"github.com/netrack/openflow/encoding"
 )
 
 const (
@@ -177,7 +177,7 @@ func (f *FlowMod) WriteTo(w io.Writer) (n int64, err error) {
 		return
 	}
 
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
+	return encoding.WriteTo(w,
 		f.Cookie,
 		f.CookieMask,
 		f.TableID,
@@ -191,7 +191,7 @@ func (f *FlowMod) WriteTo(w io.Writer) (n int64, err error) {
 		f.Flags,
 		pad2{},
 		buf.Bytes(),
-	})
+	)
 }
 
 const (
@@ -267,7 +267,7 @@ func (f *FlowRemoved) SetCookies(cookies uint64) {
 
 // ReadFrom implements ReaderFrom interface.
 func (f *FlowRemoved) ReadFrom(r io.Reader) (n int64, err error) {
-	n, err = binary.ReadSlice(r, binary.BigEndian, []interface{}{
+	n, err = encoding.ReadFrom(r,
 		&f.Cookie,
 		&f.Priority,
 		&f.Reason,
@@ -278,7 +278,7 @@ func (f *FlowRemoved) ReadFrom(r io.Reader) (n int64, err error) {
 		&f.HardTimeout,
 		&f.PacketCount,
 		&f.ByteCount,
-	})
+	)
 
 	if err != nil {
 		return

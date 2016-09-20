@@ -2,10 +2,12 @@ package ofp
 
 import (
 	"testing"
+
+	"github.com/netrack/openflow/encoding/encodingtest"
 )
 
 func TestAction(t *testing.T) {
-	tests := []testM{
+	tests := []encodingtest.M{
 		{Action{Type: ActionTypeCopyTTLOut}, []byte{
 			0x00, 0xb, // Action type.
 			0x00, 0x08, // Action lenght,
@@ -18,11 +20,11 @@ func TestAction(t *testing.T) {
 		}},
 	}
 
-	testMarshal(t, tests)
+	encodingtest.RunM(t, tests)
 }
 
 func TestActionOutput(t *testing.T) {
-	tests := []testM{
+	tests := []encodingtest.M{
 		{ActionOutput{Port: PortIn, MaxLen: 0}, []byte{
 			0x0, 0x0, // Action type.
 			0x0, 0x10, // Action length.
@@ -43,11 +45,11 @@ func TestActionOutput(t *testing.T) {
 			0x0, 0x0, 0x0, 0x0, 0x0, 0x0}},
 	}
 
-	testMarshal(t, tests)
+	encodingtest.RunM(t, tests)
 }
 
 func TestActionGroup(t *testing.T) {
-	tests := []testM{
+	tests := []encodingtest.M{
 		{ActionGroup{GroupID: GroupMax}, []byte{
 			0x0, 0x16, // Action type.
 			0x0, 0x08, // Action length.
@@ -62,11 +64,11 @@ func TestActionGroup(t *testing.T) {
 			0xff, 0xff, 0xff, 0xff}},
 	}
 
-	testMarshal(t, tests)
+	encodingtest.RunM(t, tests)
 }
 
 func TestActionSetQueue(t *testing.T) {
-	tests := []testM{
+	tests := []encodingtest.M{
 		{ActionSetQueue{QueueID: QueueAll}, []byte{
 			0x0, 0x15, // Action type.
 			0x0, 0x08, // Action length.
@@ -77,11 +79,11 @@ func TestActionSetQueue(t *testing.T) {
 			0x0, 0x0, 0x42, 0x00}},
 	}
 
-	testMarshal(t, tests)
+	encodingtest.RunM(t, tests)
 }
 
 func TestActionMPLSTTL(t *testing.T) {
-	tests := []testM{
+	tests := []encodingtest.M{
 		{ActionSetMPLSTTL{TTL: 64}, []byte{
 			0x0, 0x0f, // Action type.
 			0x0, 0x08, // Action length.
@@ -94,11 +96,11 @@ func TestActionMPLSTTL(t *testing.T) {
 			0x0, 0x0, 0x0}},
 	}
 
-	testMarshal(t, tests)
+	encodingtest.RunM(t, tests)
 }
 
 func TestActionSetNetworkTTL(t *testing.T) {
-	tests := []testM{
+	tests := []encodingtest.M{
 		{ActionSetNetworkTTL{TTL: 48}, []byte{
 			0x0, 0x17, // Action type.
 			0x0, 0x08, // Action length.
@@ -106,11 +108,11 @@ func TestActionSetNetworkTTL(t *testing.T) {
 			0x0, 0x0, 0x0}}, // 3-bytes padding.
 	}
 
-	testMarshal(t, tests)
+	encodingtest.RunM(t, tests)
 }
 
 func TestActionPush(t *testing.T) {
-	tests := []testM{
+	tests := []encodingtest.M{
 		{ActionPush{Type: ActionTypePushVLAN, EtherType: 1000}, []byte{
 			0x0, 0x11, // Action type.
 			0x0, 0x08, // Action length.
@@ -123,11 +125,11 @@ func TestActionPush(t *testing.T) {
 			0x0, 0x0}},
 	}
 
-	testMarshal(t, tests)
+	encodingtest.RunM(t, tests)
 }
 
 func TestActionPopMPLS(t *testing.T) {
-	tests := []testM{
+	tests := []encodingtest.M{
 		{ActionPopMPLS{EtherType: 1001}, []byte{
 			0x0, 0x14, // Action type.
 			0x0, 0x08, // Action length.
@@ -140,7 +142,7 @@ func TestActionPopMPLS(t *testing.T) {
 			0x0, 0x0}},
 	}
 
-	testMarshal(t, tests)
+	encodingtest.RunM(t, tests)
 }
 
 func TestActionSetField(t *testing.T) {
@@ -157,7 +159,7 @@ func TestActionSetField(t *testing.T) {
 		Value: XMValue{172, 17, 0, 25},
 	}
 
-	tests := []testM{
+	tests := []encodingtest.M{
 		{ActionSetField{Field: xm1}, []byte{
 			0x00, 0x19, // Action type.
 			0x00, 0x10, // Action length.
@@ -178,11 +180,11 @@ func TestActionSetField(t *testing.T) {
 		}},
 	}
 
-	testMarshal(t, tests)
+	encodingtest.RunM(t, tests)
 }
 
 func TestActionExperimenter(t *testing.T) {
-	tests := []testM{
+	tests := []encodingtest.M{
 		{ActionExperimenter{41}, []byte{
 			0xff, 0x0ff, // Action type.
 			0x0, 0x08, // Action length.
@@ -195,5 +197,5 @@ func TestActionExperimenter(t *testing.T) {
 		}},
 	}
 
-	testMarshal(t, tests)
+	encodingtest.RunM(t, tests)
 }

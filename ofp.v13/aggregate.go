@@ -1,5 +1,6 @@
 package ofp
 
+// Aggregate information about multiple flow entries is requested.
 type AggregateStatsRequest struct {
 	TableID    Table
 	_          pad3

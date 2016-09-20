@@ -3,7 +3,7 @@ package ofp
 import (
 	"io"
 
-	"github.com/netrack/openflow/encoding/binary"
+	"github.com/netrack/openflow/encoding"
 )
 
 const (
@@ -29,13 +29,13 @@ func (h *Hello) Bytes() []byte { return Bytes(h) }
 // WriteTo implements io.WriterTo interface. It serializes
 // the message in binary format.
 func (h *Hello) WriteTo(w io.Writer) (int64, error) {
-	return binary.Write(w, binary.BigEndian, h.Elements)
+	return encoding.WriteTo(w, h.Elements)
 }
 
 // ReadFrom implements io.ReaderFrom interface. It de-serializes
 // the message from binary format.
 func (h *Hello) ReadFrom(r io.Reader) (int64, error) {
-	return binary.Read(r, binary.BigEndian, &h.Elements)
+	return encoding.ReadFrom(r, &h.Elements)
 }
 
 // Common header for all Hello Elements

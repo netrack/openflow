@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/netrack/openflow/encoding/binary"
+	"github.com/netrack/openflow/encoding"
 )
 
 const (
@@ -69,9 +69,8 @@ func (p *PacketIn) SetCookies(cookies uint64) {
 func (p *PacketIn) ReadFrom(r io.Reader) (n int64, err error) {
 	// Read the packet-in header, then the list of match
 	// rules, that used to match the processing packet.
-	n, err = binary.ReadSlice(r, binary.BigEndian, []interface{}{
-		&p.BufferID, &p.Length, &p.Reason, &p.TableID, &p.Cookie,
-	})
+	n, err = encoding.ReadFrom(r, &p.BufferID, &p.Length,
+		&p.Reason, &p.TableID, &p.Cookie)
 
 	if err != nil {
 		return
@@ -86,7 +85,7 @@ func (p *PacketIn) ReadFrom(r io.Reader) (n int64, err error) {
 	}
 
 	var padding pad2
-	nn, err = binary.Read(r, binary.BigEndian, &padding)
+	nn, err = encoding.ReadFrom(r, &padding)
 	return n + nn, err
 }
 
@@ -126,7 +125,6 @@ func (p *PacketOut) WriteTo(w io.Writer) (n int64, err error) {
 		return
 	}
 
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		p.BufferID, p.InPort, uint16(buf.Len()), pad6{}, buf.Bytes(),
-	})
+	return encoding.WriteTo(w, p.BufferID, p.InPort,
+		uint16(buf.Len()), pad6{}, buf.Bytes())
 }

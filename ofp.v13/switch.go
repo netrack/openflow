@@ -3,7 +3,7 @@ package ofp
 import (
 	"io"
 
-	"github.com/netrack/openflow/encoding/binary"
+	"github.com/netrack/openflow/encoding"
 )
 
 const (
@@ -76,7 +76,7 @@ type SwitchFeatures struct {
 }
 
 func (s *SwitchFeatures) WriteTo(w io.Writer) (int64, error) {
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
+	return encoding.WriteTo(w,
 		s.DatapathID,
 		s.NumBuffers,
 		s.NumTables,
@@ -84,11 +84,11 @@ func (s *SwitchFeatures) WriteTo(w io.Writer) (int64, error) {
 		pad2{},
 		s.Capabilities,
 		s.Reserved,
-	})
+	)
 }
 
 func (s *SwitchFeatures) ReadFrom(r io.Reader) (int64, error) {
-	return binary.ReadSlice(r, binary.BigEndian, []interface{}{
+	return encoding.ReadFrom(r,
 		&s.DatapathID,
 		&s.NumBuffers,
 		&s.NumTables,
@@ -96,7 +96,7 @@ func (s *SwitchFeatures) ReadFrom(r io.Reader) (int64, error) {
 		&pad2{},
 		&s.Capabilities,
 		&s.Reserved,
-	})
+	)
 }
 
 // The controller is able to set and query configuration
@@ -113,9 +113,9 @@ type SwitchConfig struct {
 }
 
 func (sc *SwitchConfig) ReadFrom(r io.Reader) (int64, error) {
-	return binary.Read(r, binary.BigEndian, sc)
+	return encoding.ReadFrom(r, sc)
 }
 
 func (sc *SwitchConfig) WriteTo(w io.Writer) (int64, error) {
-	return binary.Write(w, binary.BigEndian, sc)
+	return encoding.WriteTo(w, sc)
 }

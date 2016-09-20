@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/netrack/openflow/encoding/binary"
+	"github.com/netrack/openflow/encoding"
 )
 
 const (
@@ -116,9 +116,8 @@ func (m *MultipartRequest) WriteTo(w io.Writer) (n int64, err error) {
 		}
 	}
 
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		m.Type, m.Flags, pad4{}, buf.Bytes(),
-	})
+	return encoding.WriteTo(
+		w, m.Type, m.Flags, pad4{}, buf.Bytes())
 }
 
 // The switch responds on T_MULTIPART_REQUEST with one
@@ -129,9 +128,8 @@ type MultipartReply struct {
 }
 
 func (m *MultipartReply) ReadFrom(r io.Reader) (int64, error) {
-	return binary.ReadSlice(r, binary.BigEndian, []interface{}{
-		&m.Type, &m.Flags, &pad4{},
-	})
+	return encoding.ReadFrom(
+		r, &m.Type, &m.Flags, &pad4{})
 }
 
 type ExperimenterMultipartHeader struct {

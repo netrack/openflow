@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/netrack/openflow/encoding/binary"
+	"github.com/netrack/openflow/encoding"
 )
 
 const (
@@ -230,7 +230,7 @@ func (p *Port) ReadFrom(r io.Reader) (int64, error) {
 	p.HWAddr = make(net.HardwareAddr, 6)
 	p.Name = make([]byte, MAX_PORT_NAME_LEN)
 
-	return binary.ReadSlice(r, binary.BigEndian, []interface{}{
+	return encoding.ReadFrom(r,
 		&p.PortNo,
 		&pad4{},
 		&p.HWAddr,
@@ -244,7 +244,7 @@ func (p *Port) ReadFrom(r io.Reader) (int64, error) {
 		&p.Peer,
 		&p.CurrSpeed,
 		&p.MaxSpeed,
-	})
+	)
 }
 
 type Ports []Port

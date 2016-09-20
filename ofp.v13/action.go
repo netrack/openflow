@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/netrack/openflow/encoding/binary"
+	"github.com/netrack/openflow/encoding"
 )
 
 const (
@@ -109,7 +109,7 @@ func (a Actions) WriteTo(w io.Writer) (n int64, err error) {
 		}
 	}
 
-	return binary.Write(w, binary.BigEndian, buf.Bytes())
+	return encoding.WriteTo(w, buf.Bytes())
 }
 
 // Action is header that is common to all actions. The length includes
@@ -119,12 +119,10 @@ type Action struct {
 	Type ActionType
 }
 
-// WriteTo implements io.WriterTo interface. It serializes the action
-// with a necessary padding.
+// WriteTo implements io.WriterTo interface. It serializes
+// the action with a necessary padding.
 func (a Action) WriteTo(w io.Writer) (int64, error) {
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		actionhdr{a.Type, 8}, pad4{},
-	})
+	return encoding.WriteTo(w, actionhdr{a.Type, 8}, pad4{})
 }
 
 // ActionOutput is an action used to output the packets to the switch port.
@@ -143,12 +141,10 @@ type ActionOutput struct {
 	MaxLen uint16
 }
 
-// WriteTo implement the io.WriterTo interface. It serializes the action
-// with a necessary padding.
+// WriteTo implement the io.WriterTo interface. It serializes
+// the action with a necessary padding.
 func (a ActionOutput) WriteTo(w io.Writer) (int64, error) {
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		actionhdr{ActionTypeOutput, 16}, a, pad6{},
-	})
+	return encoding.WriteTo(w, actionhdr{ActionTypeOutput, 16}, a, pad6{})
 }
 
 // ActionGroup is an action that specifis the group used to process
@@ -159,12 +155,10 @@ type ActionGroup struct {
 	GroupID Group
 }
 
-// WriteTo implement the io.WriterTo interface. It serializes the action
-// with a necessary padding.
+// WriteTo implement the io.WriterTo interface. It serializes
+// the action with a necessary padding.
 func (a ActionGroup) WriteTo(w io.Writer) (int64, error) {
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		actionhdr{ActionTypeGroup, 8}, a,
-	})
+	return encoding.WriteTo(w, actionhdr{ActionTypeGroup, 8}, a)
 }
 
 // ActionSetQueue sets the queue ID that will be used to map a flow entry
@@ -179,12 +173,10 @@ type ActionSetQueue struct {
 	QueueID Queue
 }
 
-// WriteTo implement the io.WriterTo interface. It serializes the action
-// with a necessary padding.
+// WriteTo implement the io.WriterTo interface. It serializes
+// the action with a necessary padding.
 func (a ActionSetQueue) WriteTo(w io.Writer) (int64, error) {
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		actionhdr{ActionTypeSetQueue, 8}, a,
-	})
+	return encoding.WriteTo(w, actionhdr{ActionTypeSetQueue, 8}, a)
 }
 
 // ActionSetMPLSTTL is an action used to replace the MPLS TTL
@@ -194,12 +186,10 @@ type ActionSetMPLSTTL struct {
 	TTL uint8
 }
 
-// WriteTo implement the io.WriterTo interface. It serializes the action
-// with a necessary padding.
+// WriteTo implement the io.WriterTo interface. It serializes
+// the action with a necessary padding.
 func (a ActionSetMPLSTTL) WriteTo(w io.Writer) (int64, error) {
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		actionhdr{ActionTypeSetMPLSTTL, 8}, a, pad3{},
-	})
+	return encoding.WriteTo(w, actionhdr{ActionTypeSetMPLSTTL, 8}, a, pad3{})
 }
 
 // ActionSetNetworkTTL is an action used to replace the network
@@ -209,12 +199,10 @@ type ActionSetNetworkTTL struct {
 	TTL uint8
 }
 
-// WriteTo implement the io.WriterTo interface. It serializes the action
-// with a necessary padding.
+// WriteTo implement the io.WriterTo interface. It serializes
+// the action with a necessary padding.
 func (a ActionSetNetworkTTL) WriteTo(w io.Writer) (int64, error) {
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		actionhdr{ActionTypeSetNwTTL, 8}, a, pad3{},
-	})
+	return encoding.WriteTo(w, actionhdr{ActionTypeSetNwTTL, 8}, a, pad3{})
 }
 
 // ActionPush is an action used to push the VLAN, MPLS or PBB
@@ -231,12 +219,10 @@ type ActionPush struct {
 	EtherType uint16
 }
 
-// WriteTo implement the io.WriterTo interface. It serializes the action
-// with a necessary padding.
+// WriteTo implement the io.WriterTo interface. It serializes
+// the action with a necessary padding.
 func (a ActionPush) WriteTo(w io.Writer) (int64, error) {
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		actionhdr{a.Type, 8}, a.EtherType, pad2{},
-	})
+	return encoding.WriteTo(w, actionhdr{a.Type, 8}, a.EtherType, pad2{})
 }
 
 // ActionPopMPLS is an action used to extract the outer-most MPLS tag
@@ -246,12 +232,10 @@ type ActionPopMPLS struct {
 	EtherType uint16
 }
 
-// WriteTo implement the io.WriterTo interface. It serializes the action
-// with a necessary padding.
+// WriteTo implement the io.WriterTo interface. It serializes
+// the action with a necessary padding.
 func (a ActionPopMPLS) WriteTo(w io.Writer) (int64, error) {
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		actionhdr{ActionTypePopMPLS, 8}, a, pad2{},
-	})
+	return encoding.WriteTo(w, actionhdr{ActionTypePopMPLS, 8}, a, pad2{})
 }
 
 // ActionSetField is an action used to set the value of the packet field.
@@ -261,8 +245,8 @@ type ActionSetField struct {
 	Field XM
 }
 
-// WriteTo implement the io.WriterTo interface. It serializes the action
-// with a necessary padding.
+// WriteTo implement the io.WriterTo interface. It serializes
+// the action with a necessary padding.
 func (a ActionSetField) WriteTo(w io.Writer) (int64, error) {
 	var buf bytes.Buffer
 
@@ -281,9 +265,8 @@ func (a ActionSetField) WriteTo(w io.Writer) (int64, error) {
 		}
 	}
 
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		actionhdr{ActionTypeSetField, uint16(buf.Len() + 4)}, buf.Bytes(),
-	})
+	header := actionhdr{ActionTypeSetField, uint16(buf.Len() + 4)}
+	return encoding.WriteTo(w, header, buf.Bytes())
 }
 
 // ActionExperimenter is an experimenter action.
@@ -292,10 +275,8 @@ type ActionExperimenter struct {
 	Experimenter uint32
 }
 
-// WriteTo implement the io.WriterTo interface. It serializes the action
-// with a necessary padding.
+// WriteTo implements the io.WriterTo interface. It serializes
+// the action with a necessary padding.
 func (a ActionExperimenter) WriteTo(w io.Writer) (int64, error) {
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		actionhdr{ActionTypeExperimenter, 8}, a,
-	})
+	return encoding.WriteTo(w, actionhdr{ActionTypeExperimenter, 8}, a)
 }
