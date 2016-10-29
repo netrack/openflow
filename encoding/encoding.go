@@ -25,7 +25,13 @@ func WriteTo(w io.Writer, v ...interface{}) (int64, error) {
 	var wbuf bytes.Buffer
 
 	for _, elem := range v {
-		err = binary.Write(&wbuf, binary.BigEndian, elem)
+		switch elem := elem.(type) {
+		case io.WriterTo:
+			_, err = elem.WriteTo(&wbuf)
+		default:
+			err = binary.Write(&wbuf, binary.BigEndian, elem)
+		}
+
 		if err != nil {
 			return 0, err
 		}

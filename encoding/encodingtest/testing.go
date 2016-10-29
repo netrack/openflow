@@ -27,8 +27,8 @@ func RunM(t *testing.T, tests []M) {
 
 		if nn != int64(len(test.Bytes)) {
 			t.Fatalf("Invalid length returned on attempt to "+
-				"marshal: `%x`: %d, expected %d",
-				test.Bytes, nn, len(test.Bytes))
+				"marshal:\n`%x`: %d,\nexpected:\n`%x`: %d\n",
+				buf.Bytes(), nn, test.Bytes, len(test.Bytes))
 		}
 
 		if bytes.Compare(test.Bytes, buf.Bytes()) != 0 {
