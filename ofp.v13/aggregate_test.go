@@ -7,7 +7,7 @@ import (
 )
 
 func TestAggregateStatsRequest(t *testing.T) {
-	tests := []encodingtest.M{
+	tests := []encodingtest.MU{
 		{&AggregateStatsRequest{
 			TableID:    TableMax,
 			OutPort:    PortNormal,
@@ -40,11 +40,11 @@ func TestAggregateStatsRequest(t *testing.T) {
 		}},
 	}
 
-	encodingtest.RunM(t, tests)
+	encodingtest.RunMU(t, tests)
 }
 
 func TestAggregateStatsReply(t *testing.T) {
-	tests := []encodingtest.M{
+	tests := []encodingtest.MU{
 		{&AggregateStatsReply{
 			PacketCount: 0x0906caed7a9289a1,
 			ByteCount:   0x202bba4297c31ce6,
@@ -57,5 +57,5 @@ func TestAggregateStatsReply(t *testing.T) {
 		}},
 	}
 
-	encodingtest.RunM(t, tests)
+	encodingtest.RunMU(t, tests)
 }

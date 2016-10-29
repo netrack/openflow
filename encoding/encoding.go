@@ -21,8 +21,10 @@ func (r *reader) Read(b []byte) (int, error) {
 }
 
 func WriteTo(w io.Writer, v ...interface{}) (int64, error) {
-	var err error
-	var wbuf bytes.Buffer
+	var (
+		wbuf bytes.Buffer
+		err  error
+	)
 
 	for _, elem := range v {
 		switch elem := elem.(type) {
@@ -41,11 +43,22 @@ func WriteTo(w io.Writer, v ...interface{}) (int64, error) {
 }
 
 func ReadFrom(r io.Reader, v ...interface{}) (int64, error) {
-	var err error
+	var (
+		num int64
+		err error
+	)
+
 	rd := &reader{r, 0}
 
 	for _, elem := range v {
-		err = binary.Read(rd, binary.BigEndian, elem)
+		switch elem := elem.(type) {
+		case io.ReaderFrom:
+			num, err = elem.ReadFrom(r)
+			rd.read += num
+		default:
+			err = binary.Read(rd, binary.BigEndian, elem)
+		}
+
 		if err != nil {
 			return rd.read, err
 		}
