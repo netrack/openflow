@@ -31,6 +31,18 @@ func (a *AggregateStatsRequest) WriteTo(w io.Writer) (int64, error) {
 		&a.Match)
 }
 
+func (a *AggregateStatsRequest) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r,
+		&a.TableID,
+		&defaultPad3,
+		&a.OutPort,
+		&a.OutGroup,
+		&defaultPad4,
+		&a.Cookie,
+		&a.CookieMask,
+		&a.Match)
+}
+
 type AggregateStatsReply struct {
 	PacketCount uint64
 	ByteCount   uint64
@@ -40,4 +52,9 @@ type AggregateStatsReply struct {
 func (a *AggregateStatsReply) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(
 		w, a.PacketCount, a.ByteCount, a.FlowCount, pad4{})
+}
+
+func (a *AggregateStatsReply) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(
+		r, &a.PacketCount, &a.ByteCount, &a.FlowCount, &defaultPad4)
 }
