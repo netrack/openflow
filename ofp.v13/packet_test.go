@@ -2,10 +2,12 @@ package ofp
 
 import (
 	"testing"
+
+	"github.com/netrack/openflow/encoding/encodingtest"
 )
 
 func TestPacketIn(t *testing.T) {
-	tests := []testU{
+	tests := []encodingtest.U{
 		{&PacketIn{
 			BufferID: NoBuffer,
 			Length:   0x20,
@@ -35,11 +37,11 @@ func TestPacketIn(t *testing.T) {
 		}},
 	}
 
-	testUnmarshal(t, tests)
+	encodingtest.RunU(t, tests)
 }
 
 func TestPacketOut(t *testing.T) {
-	tests := []testM{
+	tests := []encodingtest.M{
 		{&PacketOut{
 			BufferID: NoBuffer,
 			InPort:   PortController,
@@ -55,5 +57,5 @@ func TestPacketOut(t *testing.T) {
 		}},
 	}
 
-	testMarshal(t, tests)
+	encodingtest.RunM(t, tests)
 }

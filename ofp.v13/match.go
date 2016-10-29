@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/netrack/openflow/encoding/binary"
+	"github.com/netrack/openflow/encoding"
 )
 
 const (
@@ -225,10 +225,8 @@ type XM struct {
 func (xm *XM) ReadFrom(r io.Reader) (n int64, err error) {
 	var length uint8
 
-	n, err = binary.ReadSlice(r, binary.BigEndian, []interface{}{
-		&xm.Class, &xm.Type, &length,
-	})
-
+	n, err = encoding.ReadFrom(
+		r, &xm.Class, &xm.Type, &length)
 	if err != nil {
 		return
 	}
@@ -239,7 +237,7 @@ func (xm *XM) ReadFrom(r io.Reader) (n int64, err error) {
 	var m int64
 
 	xm.Value = make(XMValue, length)
-	m, err = binary.Read(r, binary.BigEndian, &xm.Value)
+	m, err = encoding.ReadFrom(r, &xm.Value)
 	n += m
 
 	if err != nil {
@@ -265,26 +263,26 @@ func (xm *XM) WriteTo(w io.Writer) (int64, error) {
 
 	field := (xm.Type << 1) | hasmask
 
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		xm.Class, field, uint8(len(xm.Mask) + len(xm.Value)),
-		xm.Value, xm.Mask,
-	})
+	return encoding.WriteTo(
+		w, xm.Class, field,
+		uint8(len(xm.Mask)+len(xm.Value)),
+		xm.Value, xm.Mask)
 }
 
 type XMValue []byte
 
 func (val XMValue) UInt32() (v uint32) {
-	binary.Read(bytes.NewBuffer(val), binary.BigEndian, &v)
+	encoding.ReadFrom(bytes.NewBuffer(val), &v)
 	return
 }
 
 func (val XMValue) UInt16() (v uint16) {
-	binary.Read(bytes.NewBuffer(val), binary.BigEndian, &v)
+	encoding.ReadFrom(bytes.NewBuffer(val), &v)
 	return
 }
 
 func (val XMValue) UInt8() (v uint8) {
-	binary.Read(bytes.NewBuffer(val), binary.BigEndian, &v)
+	encoding.ReadFrom(bytes.NewBuffer(val), &v)
 	return
 }
 
@@ -340,10 +338,7 @@ func (m *Match) ReadFrom(r io.Reader) (n int64, err error) {
 	// same variable.
 	m.Type, m.Fields = 0, nil
 
-	n, err = binary.ReadSlice(r, binary.BigEndian, []interface{}{
-		&m.Type, &length,
-	})
-
+	n, err = encoding.ReadFrom(r, &m.Type, &length)
 	if err != nil {
 		return
 	}
@@ -351,7 +346,7 @@ func (m *Match) ReadFrom(r io.Reader) (n int64, err error) {
 	var nn int64
 
 	buf := make([]byte, length)
-	nn, err = binary.Read(r, binary.BigEndian, &buf)
+	nn, err = encoding.ReadFrom(r, &buf)
 	n += nn
 
 	if err != nil {
@@ -374,7 +369,7 @@ func (m *Match) ReadFrom(r io.Reader) (n int64, err error) {
 	return
 }
 
-// WriterTo implements io.WriterTo interface. It serializes the Match
+// WriteTo implements io.WriterTo interface. It serializes the Match
 // structure to the given writer.
 func (m *Match) WriteTo(w io.Writer) (n int64, err error) {
 	var buf bytes.Buffer
@@ -396,7 +391,6 @@ func (m *Match) WriteTo(w io.Writer) (n int64, err error) {
 		}
 	}
 
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		m.Type, uint16(length), buf.Bytes(),
-	})
+	return encoding.WriteTo(
+		w, m.Type, uint16(length), buf.Bytes())
 }

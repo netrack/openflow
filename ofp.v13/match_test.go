@@ -2,10 +2,12 @@ package ofp
 
 import (
 	"testing"
+
+	"github.com/netrack/openflow/encoding/encodingtest"
 )
 
 func TestXM(t *testing.T) {
-	tests := []testMU{
+	tests := []encodingtest.MU{
 		{&XM{Class: XMClassOpenflowBasic,
 			Type:  XMTypeUDPSrc,
 			Value: XMValue{0x00, 0x35},
@@ -18,7 +20,7 @@ func TestXM(t *testing.T) {
 			}},
 	}
 
-	testMarshalUnmarshal(t, tests)
+	encodingtest.RunMU(t, tests)
 }
 
 func TestMatch(t *testing.T) {
@@ -28,7 +30,7 @@ func TestMatch(t *testing.T) {
 		Value: XMValue{0x00, 0x00, 0x00, 0x03},
 	}}}
 
-	tests := []testMU{{&m, []byte{
+	tests := []encodingtest.MU{{&m, []byte{
 		0x00, 0x01, // Match type.
 		0x00, 0x0c, // Match length.
 		0x80, 0x00, // OpenFlow basic.
@@ -38,7 +40,7 @@ func TestMatch(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, // 4-byte padding.
 	}}}
 
-	testMarshalUnmarshal(t, tests)
+	encodingtest.RunMU(t, tests)
 }
 
 func TestXMValue(t *testing.T) {

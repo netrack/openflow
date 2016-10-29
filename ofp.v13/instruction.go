@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/netrack/openflow/encoding/binary"
+	"github.com/netrack/openflow/encoding"
 )
 
 const (
@@ -63,7 +63,7 @@ func (i Instructions) WriteTo(w io.Writer) (n int64, err error) {
 		}
 	}
 
-	return binary.Write(w, binary.BigEndian, buf.Bytes())
+	return encoding.WriteTo(w, buf.Bytes())
 }
 
 // InstructionGotoTable represents a packet processing pipeline
@@ -76,9 +76,8 @@ type InstructionGotoTable struct {
 
 // WriteTo implements WriterTo interface.
 func (i InstructionGotoTable) WriteTo(w io.Writer) (int64, error) {
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		instructionhdr{IT_GOTO_TABLE, 8}, i.TableID, pad3{},
-	})
+	return encoding.WriteTo(w, instructionhdr{
+		IT_GOTO_TABLE, 8}, i.TableID, pad3{})
 }
 
 // InstructionWriteMetadata setups metadata fields to use later in
@@ -98,10 +97,9 @@ type InstructionWriteMetadata struct {
 
 // WriteTo implements WriterTo interface.
 func (i InstructionWriteMetadata) WriteTo(w io.Writer) (int64, error) {
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
+	return encoding.WriteTo(w,
 		instructionhdr{IT_WRITE_METADATA, 24},
-		pad4{}, i.Metadata, i.MetadataMask,
-	})
+		pad4{}, i.Metadata, i.MetadataMask)
 }
 
 // InstructionActions represents a bundle of action instructions.
@@ -131,9 +129,8 @@ func (i InstructionActions) WriteTo(w io.Writer) (n int64, err error) {
 		return
 	}
 
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		instructionhdr{i.Type, uint16(buf.Len()) + 8}, pad4{}, buf.Bytes(),
-	})
+	return encoding.WriteTo(w, instructionhdr{
+		i.Type, uint16(buf.Len()) + 8}, pad4{}, buf.Bytes())
 }
 
 // Instruction structure for IT_METER
@@ -144,7 +141,5 @@ type InstructionMeter struct {
 
 // WriteTo implements WriterTo interface.
 func (i *InstructionMeter) WriteTo(w io.Writer) (int64, error) {
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		instructionhdr{IT_METER, 8}, i.MeterID,
-	})
+	return encoding.WriteTo(w, instructionhdr{IT_METER, 8}, i.MeterID)
 }

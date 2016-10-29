@@ -4,7 +4,7 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/netrack/openflow/encoding/binary"
+	"github.com/netrack/openflow/encoding"
 )
 
 const (
@@ -226,10 +226,7 @@ type ErrorMsg struct {
 }
 
 func (e *ErrorMsg) ReadFrom(r io.Reader) (n int64, err error) {
-	n, err = binary.ReadSlice(r, binary.BigEndian, []interface{}{
-		&e.Type, &e.Code,
-	})
-
+	n, err = encoding.ReadFrom(r, &e.Type, &e.Code)
 	if err != nil {
 		return
 	}
@@ -243,7 +240,7 @@ func (e *ErrorMsg) ReadFrom(r io.Reader) (n int64, err error) {
 }
 
 func (e *ErrorMsg) WriteTo(w io.Writer) (int64, error) {
-	return binary.Write(w, binary.BigEndian, e)
+	return encoding.WriteTo(w, e)
 }
 
 type ErrorExperimenterMsg struct {

@@ -3,7 +3,7 @@ package ofp
 import (
 	"io"
 
-	"github.com/netrack/openflow/encoding/binary"
+	"github.com/netrack/openflow/encoding"
 )
 
 const (
@@ -37,19 +37,13 @@ type TableMod struct {
 }
 
 func (t *TableMod) ReadFrom(r io.Reader) (int64, error) {
-	return binary.ReadSlice(r, binary.BigEndian, []interface{}{
-		&t.TableID,
-		&pad3{},
-		&t.Config,
-	})
+	return encoding.ReadFrom(
+		r, &t.TableID, &pad3{}, &t.Config)
 }
 
 func (t *TableMod) WriteTo(w io.Writer) (int64, error) {
-	return binary.WriteSlice(w, binary.BigEndian, []interface{}{
-		t.TableID,
-		pad3{},
-		t.Config,
-	})
+	return encoding.WriteTo(
+		w, t.TableID, pad3{}, t.Config)
 }
 
 // Information about tables is requested with the MP_TABLE multipart
@@ -67,13 +61,13 @@ type TableStats struct {
 }
 
 func (t *TableStats) ReadFrom(r io.Reader) (int64, error) {
-	return binary.ReadSlice(r, binary.BigEndian, []interface{}{
+	return encoding.ReadFrom(r,
 		&t.TableID,
 		&pad3{},
 		&t.ActiveCount,
 		&t.LookupCount,
 		&t.MatchedCount,
-	})
+	)
 }
 
 type TableFeatures struct {
