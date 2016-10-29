@@ -24,13 +24,13 @@ func TestXM(t *testing.T) {
 }
 
 func TestMatch(t *testing.T) {
-	m := Match{MatchTypeXM, []XM{{
+	m := &Match{MatchTypeXM, []XM{{
 		Class: XMClassOpenflowBasic,
 		Type:  XMTypeInPort,
 		Value: XMValue{0x00, 0x00, 0x00, 0x03},
 	}}}
 
-	tests := []encodingtest.MU{{&m, []byte{
+	tests := []encodingtest.MU{{m, []byte{
 		0x00, 0x01, // Match type.
 		0x00, 0x0c, // Match length.
 		0x80, 0x00, // OpenFlow basic.

@@ -8,12 +8,14 @@ import (
 
 const (
 	MAX_TABLE_NAME_LEN = 32
+)
 
-	// Last usable table number
-	TT_MAX Table = 0xfe
+const (
+	// TableMax defines the last usable table number.
+	TableMax Table = 0xfe
 
-	// Fake tables
-	TT_ALL Table = 0xff
+	// TableAll defines the fake table.
+	TableAll Table = 0xff
 )
 
 type Table uint8

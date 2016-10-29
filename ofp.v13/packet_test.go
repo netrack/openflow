@@ -26,8 +26,11 @@ func TestPacketIn(t *testing.T) {
 			0x02, // Table identifier.
 			0x00, 0x00, 0x00, 0x00,
 			0xde, 0xad, 0xbe, 0xef, // Cookie.
+
 			0x00, 0x01, // Match type.
 			0x00, 0x0c, // Match length.
+
+			// Match.
 			0x80, 0x00, // OpenFlow basic.
 			0x00,                   // Match field + Mask flag.
 			0x04,                   // Payload length.
@@ -45,7 +48,7 @@ func TestPacketOut(t *testing.T) {
 		{&PacketOut{
 			BufferID: NoBuffer,
 			InPort:   PortController,
-			Actions:  Actions{ActionGroup{GroupID: GroupAll}},
+			Actions:  Actions{&ActionGroup{GroupID: GroupAll}},
 		}, []byte{
 			0xff, 0xff, 0xff, 0xff, // Buffer identifier.
 			0xff, 0xff, 0xff, 0xfd, // Port number.

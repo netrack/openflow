@@ -121,7 +121,7 @@ type Action struct {
 
 // WriteTo implements io.WriterTo interface. It serializes
 // the action with a necessary padding.
-func (a Action) WriteTo(w io.Writer) (int64, error) {
+func (a *Action) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, actionhdr{a.Type, 8}, pad4{})
 }
 
@@ -143,8 +143,8 @@ type ActionOutput struct {
 
 // WriteTo implement the io.WriterTo interface. It serializes
 // the action with a necessary padding.
-func (a ActionOutput) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, actionhdr{ActionTypeOutput, 16}, a, pad6{})
+func (a *ActionOutput) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{ActionTypeOutput, 16}, *a, pad6{})
 }
 
 // ActionGroup is an action that specifis the group used to process
@@ -157,8 +157,8 @@ type ActionGroup struct {
 
 // WriteTo implement the io.WriterTo interface. It serializes
 // the action with a necessary padding.
-func (a ActionGroup) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, actionhdr{ActionTypeGroup, 8}, a)
+func (a *ActionGroup) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{ActionTypeGroup, 8}, *a)
 }
 
 // ActionSetQueue sets the queue ID that will be used to map a flow entry
@@ -175,8 +175,8 @@ type ActionSetQueue struct {
 
 // WriteTo implement the io.WriterTo interface. It serializes
 // the action with a necessary padding.
-func (a ActionSetQueue) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, actionhdr{ActionTypeSetQueue, 8}, a)
+func (a *ActionSetQueue) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{ActionTypeSetQueue, 8}, *a)
 }
 
 // ActionSetMPLSTTL is an action used to replace the MPLS TTL
@@ -188,8 +188,8 @@ type ActionSetMPLSTTL struct {
 
 // WriteTo implement the io.WriterTo interface. It serializes
 // the action with a necessary padding.
-func (a ActionSetMPLSTTL) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, actionhdr{ActionTypeSetMPLSTTL, 8}, a, pad3{})
+func (a *ActionSetMPLSTTL) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{ActionTypeSetMPLSTTL, 8}, *a, pad3{})
 }
 
 // ActionSetNetworkTTL is an action used to replace the network
@@ -201,8 +201,8 @@ type ActionSetNetworkTTL struct {
 
 // WriteTo implement the io.WriterTo interface. It serializes
 // the action with a necessary padding.
-func (a ActionSetNetworkTTL) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, actionhdr{ActionTypeSetNwTTL, 8}, a, pad3{})
+func (a *ActionSetNetworkTTL) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{ActionTypeSetNwTTL, 8}, *a, pad3{})
 }
 
 // ActionPush is an action used to push the VLAN, MPLS or PBB
@@ -221,7 +221,7 @@ type ActionPush struct {
 
 // WriteTo implement the io.WriterTo interface. It serializes
 // the action with a necessary padding.
-func (a ActionPush) WriteTo(w io.Writer) (int64, error) {
+func (a *ActionPush) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, actionhdr{a.Type, 8}, a.EtherType, pad2{})
 }
 
@@ -234,8 +234,8 @@ type ActionPopMPLS struct {
 
 // WriteTo implement the io.WriterTo interface. It serializes
 // the action with a necessary padding.
-func (a ActionPopMPLS) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, actionhdr{ActionTypePopMPLS, 8}, a, pad2{})
+func (a *ActionPopMPLS) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{ActionTypePopMPLS, 8}, *a, pad2{})
 }
 
 // ActionSetField is an action used to set the value of the packet field.
@@ -247,7 +247,7 @@ type ActionSetField struct {
 
 // WriteTo implement the io.WriterTo interface. It serializes
 // the action with a necessary padding.
-func (a ActionSetField) WriteTo(w io.Writer) (int64, error) {
+func (a *ActionSetField) WriteTo(w io.Writer) (int64, error) {
 	var buf bytes.Buffer
 
 	_, err := a.Field.WriteTo(&buf)
@@ -277,6 +277,6 @@ type ActionExperimenter struct {
 
 // WriteTo implements the io.WriterTo interface. It serializes
 // the action with a necessary padding.
-func (a ActionExperimenter) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, actionhdr{ActionTypeExperimenter, 8}, a)
+func (a *ActionExperimenter) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{ActionTypeExperimenter, 8}, *a)
 }
