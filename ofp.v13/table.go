@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	MAX_TABLE_NAME_LEN = 32
+	MaxTableNameLen = 32
 )
 
 const (
@@ -76,7 +76,7 @@ type TableFeatures struct {
 	Length  uint16
 	TableID Table
 	_       pad5
-	name    [MAX_TABLE_NAME_LEN]byte
+	name    [MaxTableNameLen]byte
 
 	MetadataMatch uint64
 	MetadataWrite uint64
