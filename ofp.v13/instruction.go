@@ -9,25 +9,25 @@ import (
 
 const (
 	// Setup the next table in the lookup pipeline.
-	IT_GOTO_TABLE InstructionType = 1 + iota
+	InstructionTypeGotoTable InstructionType = 1 + iota
 
 	// Setup the metadata field for use later in pipeline.
-	IT_WRITE_METADATA InstructionType = 1 + iota
+	InstructionTypeWriteMetadata InstructionType = 1 + iota
 
 	// Write the action(s) onto the datapath action set.
-	IT_WRITE_ACTIONS InstructionType = 1 + iota
+	InstructionTypeWriteActions InstructionType = 1 + iota
 
 	// Applies the action(s) immediately.
-	IT_APPLY_ACTIONS InstructionType = 1 + iota
+	InstructionTypeApplyActions InstructionType = 1 + iota
 
 	// Clears all actions from the datapath action set.
-	IT_CLEAR_ACTIONS InstructionType = 1 + iota
+	InstructionTypeClearActions InstructionType = 1 + iota
 
 	// Apply meter (rate limiter).
-	IT_METER InstructionType = 1 + iota
+	InstructionTypeMeter InstructionType = 1 + iota
 
 	// Experimenter instruction.
-	IT_EXPERIMENTER InstructionType = 0xffff
+	InstructionTypeExperimenter InstructionType = 0xffff
 )
 
 // InstructionType represents a type of the flow modification instruction.
@@ -75,9 +75,9 @@ type InstructionGotoTable struct {
 }
 
 // WriteTo implements WriterTo interface.
-func (i InstructionGotoTable) WriteTo(w io.Writer) (int64, error) {
+func (i *InstructionGotoTable) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, instructionhdr{
-		IT_GOTO_TABLE, 8}, i.TableID, pad3{})
+		InstructionTypeGotoTable, 8}, i.TableID, pad3{})
 }
 
 // InstructionWriteMetadata setups metadata fields to use later in
@@ -96,9 +96,9 @@ type InstructionWriteMetadata struct {
 }
 
 // WriteTo implements WriterTo interface.
-func (i InstructionWriteMetadata) WriteTo(w io.Writer) (int64, error) {
+func (i *InstructionWriteMetadata) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w,
-		instructionhdr{IT_WRITE_METADATA, 24},
+		instructionhdr{InstructionTypeWriteMetadata, 24},
 		pad4{}, i.Metadata, i.MetadataMask)
 }
 
@@ -121,12 +121,12 @@ type InstructionActions struct {
 }
 
 // WriteTo implements WriterTo interface.
-func (i InstructionActions) WriteTo(w io.Writer) (n int64, err error) {
+func (i *InstructionActions) WriteTo(w io.Writer) (int64, error) {
 	var buf bytes.Buffer
 
-	_, err = i.Actions.WriteTo(&buf)
+	_, err := i.Actions.WriteTo(&buf)
 	if err != nil {
-		return
+		return 0, err
 	}
 
 	return encoding.WriteTo(w, instructionhdr{
@@ -141,5 +141,6 @@ type InstructionMeter struct {
 
 // WriteTo implements WriterTo interface.
 func (i *InstructionMeter) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, instructionhdr{IT_METER, 8}, i.MeterID)
+	return encoding.WriteTo(w, instructionhdr{
+		InstructionTypeMeter, 8}, i.MeterID)
 }

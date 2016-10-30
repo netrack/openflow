@@ -1,7 +1,6 @@
 package ofp
 
 import (
-	"bytes"
 	"io"
 
 	"github.com/netrack/openflow/encoding"
@@ -9,19 +8,19 @@ import (
 
 const (
 	// New flow.
-	FC_ADD FlowModCommand = iota
+	FlowAdd FlowModCommand = iota
 
 	// Modify all matching flows.
-	FC_MODIFY
+	FlowModity
 
 	// Modify entry strictly matching wildcards and priority.
-	FC_MODIFY_STRICT
+	FlowModifyStrict
 
 	// Delete all matching flows.
-	FC_DELETE
+	FlowDelete
 
 	// Delete entry strictly matching wildcards and priority.
-	FC_DELETE_STRICT
+	FlowDeleteStrict
 )
 
 // FlowModCommand represents a type of the flow table modification
@@ -31,7 +30,7 @@ type FlowModCommand uint8
 const (
 	// When the FF_SEND_FLOW_REM flag is set, the switch must send a
 	// flow removed message when the flow entry expires or is deleted.
-	FF_SEND_FLOW_REM FlowModFlags = 1 << iota
+	FlowFlagSendFlowRem FlowModFlag = 1 << iota
 
 	// When the FF_CHECK_OVERLAP flag is set, the switch must check that
 	// there are no conflicting entries with the same priority prior to
@@ -39,21 +38,21 @@ const (
 	//
 	// If there is one, the flow mod fails and an error message is
 	// returned.
-	FF_CHECK_OVERLAP FlowModFlags = 1 << iota
+	FlowFlagCheckOverlap FlowModFlag = 1 << iota
 
 	// Reset flow packet and byte counts.
-	FF_RESET_COUNTS FlowModFlags = 1 << iota
+	FlowFlagResetCounts FlowModFlag = 1 << iota
 
 	// When the FF_NO_PKT_COUNTS flag is set, the switch does not need to
 	// keep track of the flow packet count.
-	FF_NO_PKT_COUNTS FlowModFlags = 1 << iota
+	FlowFlagNoPktCounts FlowModFlag = 1 << iota
 
 	// When the FF_NO_BYT_COUNTS flag is set, the switch does not need to
 	// keep track of the flow byte count.
-	FF_NO_BYT_COUNTS FlowModFlags = 1 << iota
+	FlowFlagNoBytCounts FlowModFlag = 1 << iota
 )
 
-type FlowModFlags uint16
+type FlowModFlag uint16
 
 // FlowMod represents a modification message to a flow table from the
 // controller.
@@ -135,7 +134,7 @@ type FlowMod struct {
 	OutGroup Group
 
 	// Flags specifies a set of flow modification flags.
-	Flags FlowModFlags
+	Flags FlowModFlag
 
 	// Match lists fields to match.
 	Match Match
@@ -164,19 +163,7 @@ func (f *FlowMod) Bytes() []byte {
 }
 
 // WriteTo implements WriterTo interface.
-func (f *FlowMod) WriteTo(w io.Writer) (n int64, err error) {
-	var buf bytes.Buffer
-
-	_, err = f.Match.WriteTo(&buf)
-	if err != nil {
-		return
-	}
-
-	_, err = f.Instructions.WriteTo(&buf)
-	if err != nil {
-		return
-	}
-
+func (f *FlowMod) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w,
 		f.Cookie,
 		f.CookieMask,
@@ -190,22 +177,42 @@ func (f *FlowMod) WriteTo(w io.Writer) (n int64, err error) {
 		f.OutGroup,
 		f.Flags,
 		pad2{},
-		buf.Bytes(),
+		&f.Match,
+		&f.Instructions,
+	)
+}
+
+func (f *FlowMod) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r,
+		&f.Cookie,
+		&f.CookieMask,
+		&f.TableID,
+		&f.Command,
+		&f.IdleTimeout,
+		&f.HardTimeout,
+		&f.Priority,
+		&f.BufferID,
+		&f.OutPort,
+		&f.OutGroup,
+		&f.Flags,
+		&defaultPad2,
+		&f.Match,
+		&f.Instructions,
 	)
 }
 
 const (
 	// Flow idle time exceeded IdleTimeout.
-	RR_IDLE_TIMEOUT FlowRemovedReason = iota
+	FlowReasonIdleTimeout FlowRemovedReason = iota
 
 	// Time exceeded HardTimeout.
-	RR_HARD_TIMEOUT
+	FlowReasonHardTimeout
 
 	// Evicted by a delete flow mod.
-	RR_DELETE
+	FlowReasonDelete
 
 	// Group was removed.
-	RR_GROUP_DELETE
+	FlowReasonGroupDelete
 )
 
 // FlowRemovedReason specifies the reason of the flow entry removal.
@@ -265,9 +272,25 @@ func (f *FlowRemoved) SetCookies(cookies uint64) {
 	f.Cookie = cookies
 }
 
+func (f *FlowRemoved) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w,
+		f.Cookie,
+		f.Priority,
+		f.Reason,
+		f.TableID,
+		f.DurationSec,
+		f.DurationNSec,
+		f.IdleTimeout,
+		f.HardTimeout,
+		f.PacketCount,
+		f.ByteCount,
+		&f.Match,
+	)
+}
+
 // ReadFrom implements ReaderFrom interface.
-func (f *FlowRemoved) ReadFrom(r io.Reader) (n int64, err error) {
-	n, err = encoding.ReadFrom(r,
+func (f *FlowRemoved) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r,
 		&f.Cookie,
 		&f.Priority,
 		&f.Reason,
@@ -278,41 +301,115 @@ func (f *FlowRemoved) ReadFrom(r io.Reader) (n int64, err error) {
 		&f.HardTimeout,
 		&f.PacketCount,
 		&f.ByteCount,
+		&f.Match,
 	)
-
-	if err != nil {
-		return
-	}
-
-	nn, err := f.Match.ReadFrom(r)
-	return n + nn, err
 }
 
 type FlowStatsRequest struct {
-	TableID    Table
-	_          pad3
-	OutPort    PortNo
-	OutGroup   Group
-	_          pad4
+	TableID Table
+
+	OutPort  PortNo
+	OutGroup Group
+
 	Cookie     uint64
 	CookieMask uint64
 	Match      Match
 }
 
+func (f *FlowStatsRequest) Cookies() uint64 {
+	return f.Cookie
+}
+
+func (f *FlowStatsRequest) SetCookies(cookies uint64) {
+	f.Cookie = cookies
+}
+
+func (f *FlowStatsRequest) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w,
+		f.TableID,
+		pad3{},
+		f.OutPort,
+		f.OutGroup,
+		pad4{},
+		f.Cookie,
+		f.CookieMask,
+		&f.Match,
+	)
+}
+
+func (f *FlowStatsRequest) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r,
+		&f.TableID,
+		&defaultPad3,
+		&f.OutPort,
+		&f.OutGroup,
+		&defaultPad4,
+		&f.Cookie,
+		&f.CookieMask,
+		&f.Match,
+	)
+}
+
 type FlowStats struct {
-	Length       uint16
-	TableID      Table
-	_            pad1
+	Length  uint16
+	TableID Table
+
 	DurationSec  uint32
 	DurationNSec uint32
 
 	Priority    uint16
 	IdleTimeout uint16
 	HardTimeout uint16
-	Flags       FlowModFlags
-	_           pad4
+	Flags       FlowModFlag
+
 	Cookie      uint64
 	PacketCount uint64
 	ByteCount   uint64
 	Match       Match
+}
+
+func (f *FlowStats) Cookies() uint64 {
+	return f.Cookie
+}
+
+func (f *FlowStats) SetCookies(cookies uint64) {
+	f.Cookie = cookies
+}
+
+func (f *FlowStats) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w,
+		f.Length,
+		f.TableID,
+		pad1{},
+		f.DurationSec,
+		f.DurationNSec,
+		f.Priority,
+		f.IdleTimeout,
+		f.HardTimeout,
+		f.Flags,
+		pad4{},
+		f.Cookie,
+		f.PacketCount,
+		f.ByteCount,
+		&f.Match,
+	)
+}
+
+func (f *FlowStats) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r,
+		&f.Length,
+		&f.TableID,
+		&defaultPad1,
+		&f.DurationSec,
+		&f.DurationNSec,
+		&f.Priority,
+		&f.IdleTimeout,
+		&f.HardTimeout,
+		&f.Flags,
+		&defaultPad4,
+		&f.Cookie,
+		&f.PacketCount,
+		&f.ByteCount,
+		&f.Match,
+	)
 }
