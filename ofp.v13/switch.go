@@ -8,43 +8,45 @@ import (
 
 const (
 	// Flow statistics
-	C_FLOW_STATS Capabilities = 1 << iota
+	CapabilityFlowStats Capability = 1 << iota
 
 	// Table statistics
-	C_TABLE_STATS Capabilities = 1 << iota
+	CapabilityTableStats Capability = 1 << iota
 
 	// Port statistics
-	C_PORT_STATS Capabilities = 1 << iota
+	CapabilityPortStats Capability = 1 << iota
 
 	// Group statistics
-	C_GROUP_STATS Capabilities = 1 << iota
+	CapabilityGroupStats Capability = 1 << iota
 
 	// Can reassemble IP fragments
-	C_IP_REASM Capabilities = 1 << iota
+	CapabilityIPReasm Capability = 1 << iota
 
 	// Queue statistics
-	C_QUEUE_STATS Capabilities = 1 << iota
+	CapabilityQueueStats Capability = 1 << iota
 
 	// Switch will block looping ports
-	C_PORT_BLOCKED Capabilities = 1 << 8
+	CapabilityPortBlocked Capability = 1 << 8
 )
 
-type Capabilities uint32
+type Capability uint32
 
 const (
 	// No special handling for fragments
-	C_FRAG_NORMAL ConfigFlags = iota
+	ConfigFlagFragNormal ConfigFlag = iota
 
 	// Drop fragments
-	C_FRAG_DROP ConfigFlags = 1 << 0
+	ConfigFlagFragDrop
 
 	// Reassemble (only if C_IP_REASM set)
-	C_FRAG_REASM ConfigFlags = 1 << 1
-	C_FRAG_MASK  ConfigFlags = iota
+	ConfigFlagFragReasm
+
+	// Fragment reassemble mask
+	ConfigFlagFragMask
 )
 
 // Configuration flags
-type ConfigFlags uint16
+type ConfigFlag uint16
 
 // The C_FRAG_* flags indicate whether IP fragments should be
 // treated normally, dropped, or reassembled. "Normal" handling
@@ -69,7 +71,7 @@ type SwitchFeatures struct {
 	AuxiliaryID uint8
 
 	// Bitmap of support Capabilities
-	Capabilities Capabilities
+	Capabilities Capability
 
 	// Reserved
 	Reserved uint32
@@ -106,16 +108,16 @@ func (s *SwitchFeatures) ReadFrom(r io.Reader) (int64, error) {
 // it does not reply to a request to set the configuration.
 type SwitchConfig struct {
 	// Cofigurion flags
-	Flags ConfigFlags
+	Flags ConfigFlag
 	// Max bytes of packet that datapath should send
 	// to the controller.
 	MissSendLength uint16
 }
 
 func (sc *SwitchConfig) ReadFrom(r io.Reader) (int64, error) {
-	return encoding.ReadFrom(r, sc)
+	return encoding.ReadFrom(r, &sc.Flags, &sc.MissSendLength)
 }
 
 func (sc *SwitchConfig) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, sc)
+	return encoding.WriteTo(w, *sc)
 }
