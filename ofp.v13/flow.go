@@ -1,6 +1,7 @@
 package ofp
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/netrack/openflow/encoding"
@@ -164,40 +165,18 @@ func (f *FlowMod) Bytes() []byte {
 
 // WriteTo implements WriterTo interface.
 func (f *FlowMod) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w,
-		f.Cookie,
-		f.CookieMask,
-		f.TableID,
-		f.Command,
-		f.IdleTimeout,
-		f.HardTimeout,
-		f.Priority,
-		f.BufferID,
-		f.OutPort,
-		f.OutGroup,
-		f.Flags,
-		pad2{},
-		&f.Match,
-		&f.Instructions,
+	return encoding.WriteTo(w, f.Cookie, f.CookieMask, f.TableID,
+		f.Command, f.IdleTimeout, f.HardTimeout, f.Priority,
+		f.BufferID, f.OutPort, f.OutGroup, f.Flags, pad2{},
+		&f.Match, &f.Instructions,
 	)
 }
 
 func (f *FlowMod) ReadFrom(r io.Reader) (int64, error) {
-	return encoding.ReadFrom(r,
-		&f.Cookie,
-		&f.CookieMask,
-		&f.TableID,
-		&f.Command,
-		&f.IdleTimeout,
-		&f.HardTimeout,
-		&f.Priority,
-		&f.BufferID,
-		&f.OutPort,
-		&f.OutGroup,
-		&f.Flags,
-		&defaultPad2,
-		&f.Match,
-		&f.Instructions,
+	return encoding.ReadFrom(r, &f.Cookie, &f.CookieMask, &f.TableID,
+		&f.Command, &f.IdleTimeout, &f.HardTimeout, &f.Priority,
+		&f.BufferID, &f.OutPort, &f.OutGroup, &f.Flags, &defaultPad2,
+		&f.Match, &f.Instructions,
 	)
 }
 
@@ -273,35 +252,17 @@ func (f *FlowRemoved) SetCookies(cookies uint64) {
 }
 
 func (f *FlowRemoved) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w,
-		f.Cookie,
-		f.Priority,
-		f.Reason,
-		f.TableID,
-		f.DurationSec,
-		f.DurationNSec,
-		f.IdleTimeout,
-		f.HardTimeout,
-		f.PacketCount,
-		f.ByteCount,
-		&f.Match,
+	return encoding.WriteTo(w, f.Cookie, f.Priority, f.Reason,
+		f.TableID, f.DurationSec, f.DurationNSec, f.IdleTimeout,
+		f.HardTimeout, f.PacketCount, f.ByteCount, &f.Match,
 	)
 }
 
 // ReadFrom implements ReaderFrom interface.
 func (f *FlowRemoved) ReadFrom(r io.Reader) (int64, error) {
-	return encoding.ReadFrom(r,
-		&f.Cookie,
-		&f.Priority,
-		&f.Reason,
-		&f.TableID,
-		&f.DurationSec,
-		&f.DurationNSec,
-		&f.IdleTimeout,
-		&f.HardTimeout,
-		&f.PacketCount,
-		&f.ByteCount,
-		&f.Match,
+	return encoding.ReadFrom(r, &f.Cookie, &f.Priority, &f.Reason,
+		&f.TableID, &f.DurationSec, &f.DurationNSec, &f.IdleTimeout,
+		&f.HardTimeout, &f.PacketCount, &f.ByteCount, &f.Match,
 	)
 }
 
@@ -325,33 +286,18 @@ func (f *FlowStatsRequest) SetCookies(cookies uint64) {
 }
 
 func (f *FlowStatsRequest) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w,
-		f.TableID,
-		pad3{},
-		f.OutPort,
-		f.OutGroup,
-		pad4{},
-		f.Cookie,
-		f.CookieMask,
-		&f.Match,
+	return encoding.WriteTo(w, f.TableID, pad3{}, f.OutPort,
+		f.OutGroup, pad4{}, f.Cookie, f.CookieMask, &f.Match,
 	)
 }
 
 func (f *FlowStatsRequest) ReadFrom(r io.Reader) (int64, error) {
-	return encoding.ReadFrom(r,
-		&f.TableID,
-		&defaultPad3,
-		&f.OutPort,
-		&f.OutGroup,
-		&defaultPad4,
-		&f.Cookie,
-		&f.CookieMask,
-		&f.Match,
+	return encoding.ReadFrom(r, &f.TableID, &defaultPad3, &f.OutPort,
+		&f.OutGroup, &defaultPad4, &f.Cookie, &f.CookieMask, &f.Match,
 	)
 }
 
 type FlowStats struct {
-	Length  uint16
 	TableID Table
 
 	DurationSec  uint32
@@ -365,7 +311,9 @@ type FlowStats struct {
 	Cookie      uint64
 	PacketCount uint64
 	ByteCount   uint64
-	Match       Match
+
+	Match        Match
+	Instructions Instructions
 }
 
 func (f *FlowStats) Cookies() uint64 {
@@ -377,39 +325,17 @@ func (f *FlowStats) SetCookies(cookies uint64) {
 }
 
 func (f *FlowStats) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w,
-		f.Length,
-		f.TableID,
-		pad1{},
-		f.DurationSec,
-		f.DurationNSec,
-		f.Priority,
-		f.IdleTimeout,
-		f.HardTimeout,
-		f.Flags,
-		pad4{},
-		f.Cookie,
-		f.PacketCount,
-		f.ByteCount,
-		&f.Match,
-	)
-}
+	var buf bytes.Buffer
 
-func (f *FlowStats) ReadFrom(r io.Reader) (int64, error) {
-	return encoding.ReadFrom(r,
-		&f.Length,
-		&f.TableID,
-		&defaultPad1,
-		&f.DurationSec,
-		&f.DurationNSec,
-		&f.Priority,
-		&f.IdleTimeout,
-		&f.HardTimeout,
-		&f.Flags,
-		&defaultPad4,
-		&f.Cookie,
-		&f.PacketCount,
-		&f.ByteCount,
-		&f.Match,
+	_, err := encoding.WriteTo(&buf, f.TableID, pad1{}, f.DurationSec,
+		f.DurationNSec, f.Priority, f.IdleTimeout, f.HardTimeout,
+		f.Flags, pad4{}, f.Cookie, f.PacketCount, f.ByteCount,
+		&f.Match, &f.Instructions,
 	)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return encoding.WriteTo(w, uint16(buf.Len()), buf.Bytes())
 }

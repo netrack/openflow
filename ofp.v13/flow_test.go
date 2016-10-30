@@ -114,7 +114,101 @@ func TestFlowRemoved(t *testing.T) {
 }
 
 func TestFlowStatsRequest(t *testing.T) {
+	match := Match{MatchTypeXM, []XM{{
+		Class: XMClassOpenflowBasic,
+		Type:  XMTypeInPort,
+		Value: XMValue{0x00, 0x00, 0x00, 0x02},
+	}}}
+
+	tests := []encodingtest.MU{
+		{&FlowStatsRequest{
+			TableID:    TableMax,
+			OutPort:    PortFlood,
+			OutGroup:   GroupAny,
+			Cookie:     0xdbf7525e57bd7eef,
+			CookieMask: 0x44d8b8f011090dcb,
+			Match:      match,
+		}, []byte{
+			0xfe,             // Table identifier.
+			0x00, 0x00, 0x00, // 3-byte padding.
+			0xff, 0xff, 0xff, 0xfb, // Out port.
+			0xff, 0xff, 0xff, 0xff, // Out group.
+			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
+
+			0xdb, 0xf7, 0x52, 0x5e, 0x57, 0xbd, 0x7e, 0xef, // Cookie.
+			0x44, 0xd8, 0xb8, 0xf0, 0x11, 0x09, 0x0d, 0xcb, // Cookie mask.
+
+			// Match.
+			0x00, 0x01, // Match type.
+			0x00, 0x0c, // Match length.
+			0x80, 0x00, // OpenFlow basic.
+			0x00,                   // Match field + Mask flag.
+			0x04,                   // Payload length.
+			0x00, 0x00, 0x00, 0x02, // Payload.
+			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
+		}},
+	}
+
+	encodingtest.RunMU(t, tests)
 }
 
-func TestFlowStatsReply(t *testing.T) {
+func TestFlowStats(t *testing.T) {
+	flags := FlowFlagSendFlowRem | FlowFlagCheckOverlap
+
+	match := Match{MatchTypeXM, []XM{{
+		Class: XMClassOpenflowBasic,
+		Type:  XMTypeInPort,
+		Value: XMValue{0x00, 0x00, 0x00, 0x03},
+	}}}
+
+	instr := Instructions{&InstructionActions{
+		Type: InstructionTypeClearActions,
+	}}
+
+	tests := []encodingtest.M{
+		{&FlowStats{
+			TableID:      Table(23),
+			DurationSec:  929584189,
+			DurationNSec: 1244051003,
+			Priority:     13,
+			IdleTimeout:  47,
+			HardTimeout:  92,
+			Flags:        flags,
+			Cookie:       0xf22884334a8def04,
+			PacketCount:  8005984375916722949,
+			ByteCount:    3104105491404993109,
+			Match:        match,
+			Instructions: instr,
+		}, []byte{
+			0x00, 0x46, // Length.
+			0x17,                   // Table identifier.
+			0x00,                   // 1-byte padding.
+			0x37, 0x68, 0x54, 0x3d, // Duration seconds.
+			0x4a, 0x26, 0xb6, 0x3b, // Duration nanoseconds.
+			0x00, 0x0d, // Priority.
+			0x00, 0x2f, // IDLE timeout.
+			0x00, 0x5c, // Hard timeout.
+			0x00, 0x03, // Flags.
+			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
+			0xf2, 0x28, 0x84, 0x33, 0x4a, 0x8d, 0xef, 0x04, // Cookie.
+			0x6f, 0x1a, 0xf8, 0x5f, 0x53, 0xd7, 0xfb, 0x05, // Packet count.
+			0x2b, 0x13, 0xff, 0x7f, 0x88, 0x88, 0xb2, 0x55, // Byte count.
+
+			// Match.
+			0x00, 0x01, // Match type.
+			0x00, 0x0c, // Match length.
+			0x80, 0x00, // OpenFlow basic.
+			0x00,                   // Match field + Mask flag.
+			0x04,                   // Payload length.
+			0x00, 0x00, 0x00, 0x03, // Payload.
+			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
+
+			// Instructions.
+			0x00, 0x05, // Instruction type.
+			0x00, 0x08, // Intruction length.
+			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
+		}},
+	}
+
+	encodingtest.RunM(t, tests)
 }
