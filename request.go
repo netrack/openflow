@@ -48,8 +48,12 @@ type Request struct {
 
 // NewRequest returns a new Request given a type, address, and optional
 // body.
-func NewRequest(t Type, body io.Reader) (*Request, error) {
-	req := &Request{Body: body, Proto: "OFP/1.3", ProtoMajor: 1, ProtoMinor: 3}
+func NewRequest(t Type, body ...io.WriterTo) (*Request, error) {
+	req := &Request{
+		Body:       newReader(body...),
+		Proto:      "OFP/1.3",
+		ProtoMajor: 1, ProtoMinor: 3,
+	}
 
 	req.Header.Version = uint8(req.ProtoMajor + req.ProtoMinor)
 	req.Header.Type = t

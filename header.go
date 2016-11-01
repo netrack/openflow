@@ -3,7 +3,7 @@ package of
 import (
 	"io"
 
-	"github.com/netrack/openflow/encoding/binary"
+	"github.com/netrack/openflow/encoding"
 )
 
 const (
@@ -85,10 +85,10 @@ func (h *Header) Len() int {
 
 // WriteTo writes the header in the write format to the given writer.
 func (h *Header) WriteTo(w io.Writer) (int64, error) {
-	return binary.Write(w, binary.BigEndian, h)
+	return encoding.WriteTo(w, *h)
 }
 
 // ReadFrom reads the header from the given reader in the wire format.
 func (h *Header) ReadFrom(r io.Reader) (int64, error) {
-	return binary.Read(r, binary.BigEndian, h)
+	return encoding.ReadFrom(r, &h.Version, &h.Type, &h.Length, &h.XID)
 }
