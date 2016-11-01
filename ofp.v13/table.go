@@ -21,7 +21,7 @@ const (
 type Table uint8
 
 const (
-	TC_DEPRECATED_MASK TableConfig = 3
+	TableConfigDeprecatedMask TableConfig = 3
 )
 
 type TableConfig uint32
@@ -32,20 +32,19 @@ type TableMod struct {
 	// change should be applied. If the TableID is OFPTT_ALL,
 	// the configuration is applied to all tables in the switch.
 	TableID Table
+
 	// The config field is a bitmap that is provided for backward
 	// compatibility with earlier version of the specification,
 	// it is reserved for future use.
 	Config TableConfig
 }
 
-func (t *TableMod) ReadFrom(r io.Reader) (int64, error) {
-	return encoding.ReadFrom(
-		r, &t.TableID, &pad3{}, &t.Config)
+func (t *TableMod) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, t.TableID, pad3{}, t.Config)
 }
 
-func (t *TableMod) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(
-		w, t.TableID, pad3{}, t.Config)
+func (t *TableMod) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &t.TableID, &pad3{}, &t.Config)
 }
 
 // Information about tables is requested with the MP_TABLE multipart
@@ -54,18 +53,31 @@ func (t *TableMod) WriteTo(w io.Writer) (int64, error) {
 type TableStats struct {
 	// Identifier of table. Lower numbered tables are consulted first
 	TableID Table
+
 	// Number of active entries
 	ActiveCount uint32
+
 	// Number of packets looked up in table
 	LookupCount uint64
+
 	// Number of packets that hit table
 	MatchedCount uint64
+}
+
+func (t *TableStats) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w,
+		t.TableID,
+		pad3{},
+		t.ActiveCount,
+		t.LookupCount,
+		t.MatchedCount,
+	)
 }
 
 func (t *TableStats) ReadFrom(r io.Reader) (int64, error) {
 	return encoding.ReadFrom(r,
 		&t.TableID,
-		&pad3{},
+		&defaultPad3,
 		&t.ActiveCount,
 		&t.LookupCount,
 		&t.MatchedCount,
@@ -75,8 +87,7 @@ func (t *TableStats) ReadFrom(r io.Reader) (int64, error) {
 type TableFeatures struct {
 	Length  uint16
 	TableID Table
-	_       pad5
-	name    [MaxTableNameLen]byte
+	Name    string
 
 	MetadataMatch uint64
 	MetadataWrite uint64
@@ -84,6 +95,26 @@ type TableFeatures struct {
 
 	MaxEntries uint32
 	Properties []TableFeaturePropHeader
+}
+
+func (t *TableFeatures) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w)
+}
+
+func (t *TableFeatures) ReadFrom(r io.Reader) (int64, error) {
+	var name [MaxTableNameLen]byte
+	var length uint16
+
+	return encoding.ReadFrom(r,
+		&length,
+		&t.TableID,
+		&defaultPad5,
+		&name,
+		&t.MetadataMatch,
+		&t.MetadataWrite,
+		&t.Config,
+		&t.MaxEntries,
+	)
 }
 
 const (
