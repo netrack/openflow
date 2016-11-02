@@ -21,6 +21,10 @@ func (er *EchoRequest) WriteTo(w io.Writer) (int64, error) {
 }
 
 func (er *EchoRequest) ReadFrom(r io.Reader) (n int64, err error) {
+	// The header of the echo request will be unmarshalled by the
+	// previous read, so we need to read up to the end of the
+	// buffer. So it is responsibility of the called to provide
+	// fixed-length reader.
 	er.Data, err = ioutil.ReadAll(r)
 	if err != nil {
 		return
