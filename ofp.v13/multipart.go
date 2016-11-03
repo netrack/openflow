@@ -11,56 +11,56 @@ const (
 	// Description of this OpenFlow switch.
 	// The request body is empty.
 	// The reply body is struct Desc.
-	MP_DESC MultipartType = iota
+	MultipartTypeDescription MultipartType = iota
 
 	// Individual flow statistics.
 	// The request body is struct FlowStatsRequest.
 	// The reply body is an array of struct FlowStats.
-	MP_FLOW
+	MultipartTypeFlow
 
 	// Aggregate flow statistics.
 	// The request body is struct AggregateStatsRequest.
 	// The reply body is struct AggregateStatsReply.
-	MP_AGGREGATE
+	MultipartTypeAggregate
 
 	// Flow table statistics. The request body is empty.
 	// The reply body is an array of struct TableStats.
-	MP_TABLE
+	MultipartTypeTable
 
 	// Port statistics. The request body is struct PortStatsRequest.
 	// The reply body is an array of struct PortStats.
-	MP_PORT_STATS
+	MultipartTypePortStats
 
 	// Queue statistics for a port
 	// The request body is struct QueueStatsRequest.
 	// The reply body is an array of struct QueueStats
-	MP_QUEUE
+	MultipartTypeQueue
 
 	// Group counter statistics. The request body is struct GroupStatsRequest.
 	// The reply is an array of struct GroupStats.
-	MP_GROUP
+	MultipartTypeGroup
 
 	// Group description. The request body is empty.
 	// The reply body is an array of struct GroupDescStats.
-	MP_GROUP_DESC
+	MultipartTypeGroupDescription
 
 	// Group features. The request body is empty.
 	// The reply body is struct GroupFeatures.
-	MP_GROUP_FEATURES
+	MultipartTypeGroupFeatures
 
 	// Meter statistics.
 	// The request body is struct MeterMultipartRequests.
 	// The reply body is an array of struct MeterStats.
-	MP_METER
+	MultipartTypeMeter
 
 	// Meter configuration.
 	// The request body is struct MeterMultipartRequests.
 	// The reply body is an array of struct MeterConfig.
-	MP_METER_CONFIG
+	MultipartTypeMeterConfig
 
 	// Meter features. The request body is empty.
 	// The reply body is struct MeterFeatures.
-	MP_METER_FEATURES
+	MultipartTypeMeterFeatures
 
 	// Table features.
 	// The request body is either empty or contains an array of
@@ -68,31 +68,31 @@ const (
 	// desired view of the switch. If the switch is unable to
 	// set the specified view an error is returned.
 	// The reply body is an array of struct TableFeatures.
-	MP_TABLE_FEATURES
+	MultipartTypeTableFeatures
 
 	// Port description. The request body is empty.
 	// The reply body is an array of struct Port.
-	MP_PORT_DESC
+	MultipartTypePortDescription
 
 	// Experimenter extension. The request and reply bodies begin with
 	// struct ExperimenterMultipartHeader.
 	// The request and reply bodies are otherwise experimenter-defined.
-	MP_EXPERIMENTER MultipartType = 0xffff
+	MultipartTypeExperimenter MultipartType = 0xffff
 )
 
 type MultipartType uint16
 
 const (
-	MPF_REQ_MODE MultipartRequestFlags = 1 << iota
+	MultipartRequestMode MultipartRequestFlags = 1 << iota
 )
 
 type MultipartRequestFlags uint16
 
 const (
-	MPF_REPLY_MODE MultipartReplyFlags = 1 << iota
+	MultipartReplyMode MultipartReplyFlag = 1 << iota
 )
 
-type MultipartReplyFlags uint16
+type MultipartReplyFlag uint16
 
 // While the system is running, the controller may request
 // state from the datapath using the T_MULTIPART_REQUEST message
@@ -124,7 +124,7 @@ func (m *MultipartRequest) WriteTo(w io.Writer) (n int64, err error) {
 // or more T_MULTIPART_REPLY messages
 type MultipartReply struct {
 	Type  MultipartType
-	Flags MultipartReplyFlags
+	Flags MultipartReplyFlag
 }
 
 func (m *MultipartReply) ReadFrom(r io.Reader) (int64, error) {
