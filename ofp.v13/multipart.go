@@ -1,7 +1,6 @@
 package ofp
 
 import (
-	"bytes"
 	"io"
 
 	"github.com/netrack/openflow/encoding"
@@ -99,25 +98,18 @@ type MultipartReplyFlag uint16
 type MultipartRequest struct {
 	Type  MultipartType
 	Flags MultipartRequestFlags
-	Body  io.WriterTo
 }
 
 func (m *MultipartRequest) Bytes() []byte {
 	return Bytes(m)
 }
 
-func (m *MultipartRequest) WriteTo(w io.Writer) (n int64, err error) {
-	var buf bytes.Buffer
+func (m *MultipartRequest) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, m.Type, m.Flags, pad4{})
+}
 
-	if m.Body != nil {
-		_, err = m.Body.WriteTo(&buf)
-		if err != nil {
-			return
-		}
-	}
-
-	return encoding.WriteTo(
-		w, m.Type, m.Flags, pad4{}, buf.Bytes())
+func (m *MultipartRequest) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &m.Type, &m.Flags, &defaultPad4)
 }
 
 // The switch responds on T_MULTIPART_REQUEST with one
@@ -127,12 +119,23 @@ type MultipartReply struct {
 	Flags MultipartReplyFlag
 }
 
+func (m *MultipartReply) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, *m, pad4{})
+}
+
 func (m *MultipartReply) ReadFrom(r io.Reader) (int64, error) {
-	return encoding.ReadFrom(
-		r, &m.Type, &m.Flags, &pad4{})
+	return encoding.ReadFrom(r, &m.Type, &m.Flags, &defaultPad4)
 }
 
 type ExperimenterMultipartHeader struct {
 	Experimenter uint32
 	ExpType      uint32
+}
+
+func (m *ExperimenterMultipartHeader) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, *m)
+}
+
+func (m *ExperimenterMultipartHeader) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &m.Experimenter, &m.ExpType)
 }
