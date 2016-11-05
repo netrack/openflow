@@ -19,4 +19,5 @@ var (
 	defaultPad4 pad4
 	defaultPad5 pad5
 	defaultPad6 pad6
+	defaultPad7 pad7
 )

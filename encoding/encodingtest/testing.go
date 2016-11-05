@@ -83,7 +83,7 @@ func RunU(t *testing.T, tests []U) {
 
 		if bytes.Compare(before.Bytes(), after.Bytes()) != 0 {
 			t.Fatalf("The unmarshaled result is not equal to "+
-				"the expected one:\n`%v`,\ngot instead:\n`%v`\n%v",
+				"the expected one:\n`%x`,\ngot instead:\n`%x`\n%v",
 				before.Bytes(), after.Bytes(), test.Reader)
 		}
 	}
