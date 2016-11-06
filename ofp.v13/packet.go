@@ -64,29 +64,18 @@ func (p *PacketIn) SetCookies(cookies uint64) {
 	p.Cookie = cookies
 }
 
+func (p *PacketIn) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, p.BufferID, p.Length,
+		p.Reason, p.TableID, p.Cookie, &p.Match, pad2{})
+}
+
 // ReadFrom implements io.ReaderFrom interface. It de-serializes the
 // packet-in message from binary format.
-func (p *PacketIn) ReadFrom(r io.Reader) (n int64, err error) {
+func (p *PacketIn) ReadFrom(r io.Reader) (int64, error) {
 	// Read the packet-in header, then the list of match
 	// rules, that used to match the processing packet.
-	n, err = encoding.ReadFrom(r, &p.BufferID, &p.Length,
-		&p.Reason, &p.TableID, &p.Cookie)
-
-	if err != nil {
-		return
-	}
-
-	var nn int64
-	nn, err = p.Match.ReadFrom(r)
-	n += nn
-
-	if err != nil {
-		return
-	}
-
-	var padding pad2
-	nn, err = encoding.ReadFrom(r, &padding)
-	return n + nn, err
+	return encoding.ReadFrom(r, &p.BufferID, &p.Length,
+		&p.Reason, &p.TableID, &p.Cookie, &p.Match, &defaultPad2)
 }
 
 // PacketOut used by the controller to send a packet out through the
@@ -127,4 +116,19 @@ func (p *PacketOut) WriteTo(w io.Writer) (n int64, err error) {
 
 	return encoding.WriteTo(w, p.BufferID, p.InPort,
 		uint16(buf.Len()), pad6{}, buf.Bytes())
+}
+
+func (p *PacketOut) ReadFrom(r io.Reader) (int64, error) {
+	var len uint16
+
+	n, err := encoding.ReadFrom(r, &p.BufferID, &p.InPort,
+		&len, &defaultPad6)
+
+	if err != nil {
+		return n, err
+	}
+
+	limrd := io.LimitReader(r, int64(len))
+	nn, err := p.Actions.ReadFrom(limrd)
+	return n + nn, err
 }

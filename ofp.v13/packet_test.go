@@ -7,7 +7,7 @@ import (
 )
 
 func TestPacketIn(t *testing.T) {
-	tests := []encodingtest.U{
+	tests := []encodingtest.MU{
 		{&PacketIn{
 			BufferID: NoBuffer,
 			Length:   0x20,
@@ -40,11 +40,11 @@ func TestPacketIn(t *testing.T) {
 		}},
 	}
 
-	encodingtest.RunU(t, tests)
+	encodingtest.RunMU(t, tests)
 }
 
 func TestPacketOut(t *testing.T) {
-	tests := []encodingtest.M{
+	tests := []encodingtest.MU{
 		{&PacketOut{
 			BufferID: NoBuffer,
 			InPort:   PortController,
@@ -62,5 +62,5 @@ func TestPacketOut(t *testing.T) {
 		}},
 	}
 
-	encodingtest.RunM(t, tests)
+	encodingtest.RunMU(t, tests)
 }
