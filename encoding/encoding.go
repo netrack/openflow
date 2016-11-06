@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
+	"reflect"
 )
 
 // reader type used to calculate the count of bytes retrieved from the
@@ -11,6 +12,13 @@ import (
 type reader struct {
 	io.Reader
 	read int64
+}
+
+// ReadWriter describes typed that are capable both, to write their
+// representation into the writer and read it from the reader.
+type ReadWriter interface {
+	io.ReaderFrom
+	io.WriterTo
 }
 
 // Read implements io.Reader interface.
@@ -65,4 +73,32 @@ func ReadFrom(r io.Reader, v ...interface{}) (int64, error) {
 	}
 
 	return rd.read, nil
+}
+
+type ReaderMaker interface {
+	MakeReader() io.ReaderFrom
+}
+
+type readerMakerFunc func() io.ReaderFrom
+
+func (fn readerMakerFunc) MakeReader() io.ReaderFrom {
+	return fn()
+}
+
+func ReaderMakerOf(v interface{}) ReaderMaker {
+	valueType := reflect.TypeOf(v)
+	return readerMakerFunc(func() io.ReaderFrom {
+		value := reflect.New(valueType)
+		return value.Interface().(io.ReaderFrom)
+	})
+}
+
+// SkipEndOfFile returns nil of the given error caused by the
+// end of file.
+func SkipEndOfFile(err error) error {
+	if err == io.EOF {
+		return nil
+	}
+
+	return err
 }

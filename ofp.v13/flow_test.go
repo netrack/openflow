@@ -1,6 +1,7 @@
 package ofp
 
 import (
+	"encoding/gob"
 	"testing"
 
 	"github.com/netrack/openflow/encoding/encodingtest"
@@ -15,11 +16,9 @@ func TestFlowMod(t *testing.T) {
 		Value: XMValue{0x00, 0x00, 0x00, 0x03},
 	}}}
 
-	instr := Instructions{&InstructionActions{
-		Type: InstructionTypeClearActions,
-	}}
+	instr := Instructions{&InstructionClearActions{}}
 
-	tests := []encodingtest.M{
+	tests := []encodingtest.MU{
 		{&FlowMod{
 			Cookie:       0xdbf7525e57bd7eef,
 			CookieMask:   0x44d8b8f011090dcb,
@@ -64,7 +63,8 @@ func TestFlowMod(t *testing.T) {
 		}},
 	}
 
-	encodingtest.RunM(t, tests)
+	gob.Register(InstructionClearActions{})
+	encodingtest.RunMU(t, tests)
 }
 
 func TestFlowRemoved(t *testing.T) {
@@ -161,9 +161,7 @@ func TestFlowStats(t *testing.T) {
 		Value: XMValue{0x00, 0x00, 0x00, 0x03},
 	}}}
 
-	instr := Instructions{&InstructionActions{
-		Type: InstructionTypeClearActions,
-	}}
+	instr := Instructions{&InstructionClearActions{}}
 
 	tests := []encodingtest.M{
 		{&FlowStats{
