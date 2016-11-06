@@ -2,7 +2,9 @@ package ofp
 
 import (
 	"bytes"
+	"fmt"
 	"io"
+	"io/ioutil"
 
 	"github.com/netrack/openflow/encoding"
 )
@@ -74,6 +76,26 @@ const (
 // ActionType specifies the action type.
 type ActionType uint16
 
+var actionMap = map[ActionType]encoding.ReaderMaker{
+	ActionTypeOutput:       encoding.ReaderMakerOf(ActionOutput{}),
+	ActionTypeCopyTTLOut:   encoding.ReaderMakerOf(ActionCopyTTLOut{}),
+	ActionTypeCopyTTLIn:    encoding.ReaderMakerOf(ActionCopyTTLIn{}),
+	ActionTypeSetMPLSTTL:   encoding.ReaderMakerOf(ActionSetMPLSTTL{}),
+	ActionTypeDecMPLSTTL:   encoding.ReaderMakerOf(ActionDecMPLSTTL{}),
+	ActionTypePushVLAN:     encoding.ReaderMakerOf(ActionPushVLAN{}),
+	ActionTypePopVLAN:      encoding.ReaderMakerOf(ActionPopVLAN{}),
+	ActionTypePushMPLS:     encoding.ReaderMakerOf(ActionPushMPLS{}),
+	ActionTypePopMPLS:      encoding.ReaderMakerOf(ActionPopMPLS{}),
+	ActionTypeSetQueue:     encoding.ReaderMakerOf(ActionSetQueue{}),
+	ActionTypeGroup:        encoding.ReaderMakerOf(ActionGroup{}),
+	ActionTypeSetNwTTL:     encoding.ReaderMakerOf(ActionSetNetworkTTL{}),
+	ActionTypeDecNwTTL:     encoding.ReaderMakerOf(ActionDecNetworkTTL{}),
+	ActionTypeSetField:     encoding.ReaderMakerOf(ActionSetField{}),
+	ActionTypePushPBB:      encoding.ReaderMakerOf(ActionPushPBB{}),
+	ActionTypePopPBB:       encoding.ReaderMakerOf(ActionPopPBB{}),
+	ActionTypeExperimenter: encoding.ReaderMakerOf(ActionExperimenter{}),
+}
+
 const (
 	// ContentLenMax defines the maximum length of the bytes, that should
 	// be submitted to the controller on output action type.
@@ -91,12 +113,16 @@ type actionhdr struct {
 	Len uint16
 }
 
-type action interface {
-	io.WriterTo
+const actionLen uint16 = 8
+
+type Action interface {
+	encoding.ReadWriter
+
+	Type() ActionType
 }
 
 // Actions groups the set of actions.
-type Actions []action
+type Actions []Action
 
 func (a Actions) bytes() ([]byte, error) {
 	var buf bytes.Buffer
@@ -122,20 +148,21 @@ func (a Actions) WriteTo(w io.Writer) (int64, error) {
 }
 
 func (a Actions) ReadFrom(r io.Reader) (int64, error) {
-	return 0, nil
-}
+	var actionType ActionType
 
-// Action is header that is common to all actions. The length includes
-// the header and any padding used to make the action 64-bit aligned.
-type Action struct {
-	// Type specified type of the action.
-	Type ActionType
-}
+	rm := func() (io.ReaderFrom, error) {
+		if rm, ok := actionMap[actionType]; ok {
+			rd, err := rm.MakeReader()
+			a = append(a, rd.(Action))
+			return rd, err
+		}
 
-// WriteTo implements io.WriterTo interface. It serializes
-// the action with a necessary padding.
-func (a *Action) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, actionhdr{a.Type, 8}, pad4{})
+		format := "ofp: unknown action type: '%x'"
+		return nil, fmt.Errorf(format, actionType)
+	}
+
+	return encoding.ScanFrom(r, &actionType,
+		encoding.ReaderMakerFunc(rm))
 }
 
 // ActionOutput is an action used to output the packets to the switch port.
@@ -154,24 +181,157 @@ type ActionOutput struct {
 	MaxLen uint16
 }
 
+func (a *ActionOutput) Type() ActionType {
+	return ActionTypeOutput
+}
+
 // WriteTo implement the io.WriterTo interface. It serializes
 // the action with a necessary padding.
 func (a *ActionOutput) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, actionhdr{ActionTypeOutput, 16}, *a, pad6{})
+	return encoding.WriteTo(w, actionhdr{a.Type(), 16}, *a, pad6{})
 }
 
-// ActionGroup is an action that specifis the group used to process
-// the packet.
-type ActionGroup struct {
-	// The GroupID indicates the group used to process this packet.
-	// The set of buckets to apply depends on the group type.
-	GroupID Group
+func (a *ActionOutput) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &actionhdr{}, &a.Port, &a.MaxLen, &defaultPad6)
+}
+
+type ActionCopyTTLOut struct{}
+
+func (a *ActionCopyTTLOut) Type() ActionType {
+	return ActionTypeCopyTTLOut
+}
+
+func (a *ActionCopyTTLOut) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{a.Type(), actionLen}, pad4{})
+}
+
+func (a *ActionCopyTTLOut) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &defaultPad8)
+}
+
+type ActionCopyTTLIn struct{}
+
+func (a *ActionCopyTTLIn) Type() ActionType {
+	return ActionTypeCopyTTLIn
+}
+
+func (a *ActionCopyTTLIn) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{a.Type(), actionLen}, pad4{})
+}
+
+func (a *ActionCopyTTLIn) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &defaultPad8)
+}
+
+// ActionSetMPLSTTL is an action used to replace the MPLS TTL
+// value of the processing packet.
+type ActionSetMPLSTTL struct {
+	// The TTL field is the MPLS TTL to set
+	TTL uint8
+}
+
+func (a *ActionSetMPLSTTL) Type() ActionType {
+	return ActionTypeSetMPLSTTL
 }
 
 // WriteTo implement the io.WriterTo interface. It serializes
 // the action with a necessary padding.
-func (a *ActionGroup) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, actionhdr{ActionTypeGroup, 8}, *a)
+func (a *ActionSetMPLSTTL) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{a.Type(), actionLen}, a.TTL, pad3{})
+}
+
+func (a *ActionSetMPLSTTL) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &actionhdr{}, &a.TTL, &defaultPad3)
+}
+
+type ActionDecMPLSTTL struct{}
+
+func (a *ActionDecMPLSTTL) Type() ActionType {
+	return ActionTypeDecMPLSTTL
+}
+
+func (a *ActionDecMPLSTTL) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{a.Type(), actionLen}, pad4{})
+}
+
+func (a *ActionDecMPLSTTL) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &defaultPad8)
+}
+
+// ActionPushVLAN is an action used to push the VLAN tag onto the
+// processing packet.
+type ActionPushVLAN struct {
+	// The EtherType indicates the Ethertype of the new tag.
+	//
+	// It is used when pushing a new VLAN tag, new MPLS header
+	// or PBB service header.
+	EtherType uint16
+}
+
+func (a *ActionPushVLAN) Type() ActionType {
+	return ActionTypePushVLAN
+}
+
+func (a *ActionPushVLAN) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{a.Type(), actionLen},
+		a.EtherType, pad2{})
+}
+
+func (a *ActionPushVLAN) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &defaultPad4, &a.EtherType, &defaultPad2)
+}
+
+type ActionPopVLAN struct{}
+
+func (a *ActionPopVLAN) Type() ActionType {
+	return ActionTypePopVLAN
+}
+
+func (a *ActionPopVLAN) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{a.Type(), actionLen}, pad4{})
+}
+
+func (a *ActionPopVLAN) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &defaultPad8)
+}
+
+type ActionPushMPLS struct {
+	EtherType uint16
+}
+
+func (a *ActionPushMPLS) Type() ActionType {
+	return ActionTypePushMPLS
+}
+
+func (a *ActionPushMPLS) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{a.Type(), actionLen},
+		a.EtherType, pad2{})
+}
+
+func (a *ActionPushMPLS) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &defaultPad4, &a.EtherType, &defaultPad2)
+}
+
+// ActionPopMPLS is an action used to extract the outer-most MPLS tag
+// or shim header from the processing packet.
+type ActionPopMPLS struct {
+	// The EtherType indicates the Ethertype of the payload.
+	EtherType uint16
+}
+
+func (a *ActionPopMPLS) Type() ActionType {
+	return ActionTypePopMPLS
+}
+
+// WriteTo implement the io.WriterTo interface. It serializes
+// the action with a necessary padding.
+func (a *ActionPopMPLS) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{a.Type(), actionLen},
+		a.EtherType, pad2{})
+}
+
+func (a *ActionPopMPLS) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &defaultPad4, &a.EtherType, &defaultPad2)
 }
 
 // ActionSetQueue sets the queue ID that will be used to map a flow entry
@@ -186,23 +346,40 @@ type ActionSetQueue struct {
 	QueueID Queue
 }
 
+func (a *ActionSetQueue) Type() ActionType {
+	return ActionTypeSetQueue
+}
+
 // WriteTo implement the io.WriterTo interface. It serializes
 // the action with a necessary padding.
 func (a *ActionSetQueue) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, actionhdr{ActionTypeSetQueue, 8}, *a)
+	return encoding.WriteTo(w, actionhdr{a.Type(), actionLen}, a.QueueID)
 }
 
-// ActionSetMPLSTTL is an action used to replace the MPLS TTL
-// value of the processing packet.
-type ActionSetMPLSTTL struct {
-	// The TTL field is the MPLS TTL to set
-	TTL uint8
+func (a *ActionSetQueue) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &defaultPad4, &a.QueueID)
+}
+
+// ActionGroup is an action that specifis the group used to process
+// the packet.
+type ActionGroup struct {
+	// The GroupID indicates the group used to process this packet.
+	// The set of buckets to apply depends on the group type.
+	GroupID Group
+}
+
+func (a *ActionGroup) Type() ActionType {
+	return ActionTypeGroup
 }
 
 // WriteTo implement the io.WriterTo interface. It serializes
 // the action with a necessary padding.
-func (a *ActionSetMPLSTTL) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, actionhdr{ActionTypeSetMPLSTTL, 8}, *a, pad3{})
+func (a *ActionGroup) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{a.Type(), actionLen}, a.GroupID)
+}
+
+func (a *ActionGroup) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &defaultPad4, &a.GroupID)
 }
 
 // ActionSetNetworkTTL is an action used to replace the network
@@ -212,43 +389,34 @@ type ActionSetNetworkTTL struct {
 	TTL uint8
 }
 
+func (a *ActionSetNetworkTTL) Type() ActionType {
+	return ActionTypeSetNwTTL
+}
+
 // WriteTo implement the io.WriterTo interface. It serializes
 // the action with a necessary padding.
 func (a *ActionSetNetworkTTL) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, actionhdr{ActionTypeSetNwTTL, 8}, *a, pad3{})
+	return encoding.WriteTo(w, actionhdr{a.Type(), actionLen}, a.TTL, pad3{})
 }
 
-// ActionPush is an action used to push the VLAN, MPLS or PBB
-// tag onto the processing packet.
-type ActionPush struct {
-	// Type is the Push-Action type. It should be one of
-	// VLAN, MPLS or PBB.
-	Type ActionType
+func (a *ActionSetNetworkTTL) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &defaultPad4, &a.TTL, &defaultPad3)
+}
 
-	// The EtherType indicates the Ethertype of the new tag.
-	//
-	// It is used when pushing a new VLAN tag, new MPLS header
-	// or PBB service header.
-	EtherType uint16
+type ActionDecNetworkTTL struct{}
+
+func (a *ActionDecNetworkTTL) Type() ActionType {
+	return ActionTypeDecNwTTL
 }
 
 // WriteTo implement the io.WriterTo interface. It serializes
 // the action with a necessary padding.
-func (a *ActionPush) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, actionhdr{a.Type, 8}, a.EtherType, pad2{})
+func (a *ActionDecNetworkTTL) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{a.Type(), actionLen}, pad4{})
 }
 
-// ActionPopMPLS is an action used to extract the outer-most MPLS tag
-// or shim header from the processing packet.
-type ActionPopMPLS struct {
-	// The EtherType indicates the Ethertype of the payload.
-	EtherType uint16
-}
-
-// WriteTo implement the io.WriterTo interface. It serializes
-// the action with a necessary padding.
-func (a *ActionPopMPLS) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, actionhdr{ActionTypePopMPLS, 8}, *a, pad2{})
+func (a *ActionDecNetworkTTL) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &defaultPad8)
 }
 
 // ActionSetField is an action used to set the value of the packet field.
@@ -256,6 +424,10 @@ type ActionSetField struct {
 	// Field contains a header field described using
 	// a single OXM TLV structure.
 	Field XM
+}
+
+func (a *ActionSetField) Type() ActionType {
+	return ActionTypeSetField
 }
 
 // WriteTo implement the io.WriterTo interface. It serializes
@@ -278,9 +450,50 @@ func (a *ActionSetField) WriteTo(w io.Writer) (int64, error) {
 		}
 	}
 
-	header := actionhdr{ActionTypeSetField, uint16(buf.Len() + 4)}
+	header := actionhdr{a.Type(), uint16(buf.Len() + 4)}
 	return encoding.WriteTo(w, header, buf.Bytes())
 }
+
+func (a *ActionSetField) ReadFrom(r io.Reader) (int64, error) {
+	var header actionhdr
+	var num int64
+
+	n, err := encoding.ReadFrom(r, &header)
+	if err != nil {
+		return n, err
+	}
+
+	limrd := io.LimitReader(r, int64(header.Len-4))
+	num, err = a.Field.ReadFrom(limrd)
+	n += num
+
+	if err != nil {
+		return n, err
+	}
+
+	b, err := ioutil.ReadAll(limrd)
+	n += int64(len(b))
+	return n, err
+}
+
+type ActionPushPBB struct {
+	EtherType uint16
+}
+
+func (a *ActionPushPBB) Type() ActionType {
+	return ActionTypePushPBB
+}
+
+func (a *ActionPushPBB) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, actionhdr{a.Type(), actionLen},
+		a.EtherType, pad2{})
+}
+
+func (a *ActionPushPBB) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &defaultPad4, &a.EtherType, &defaultPad2)
+}
+
+type ActionPopPBB struct{}
 
 // ActionExperimenter is an experimenter action.
 type ActionExperimenter struct {
@@ -288,8 +501,16 @@ type ActionExperimenter struct {
 	Experimenter uint32
 }
 
+func (a *ActionExperimenter) Type() ActionType {
+	return ActionTypeExperimenter
+}
+
 // WriteTo implements the io.WriterTo interface. It serializes
 // the action with a necessary padding.
 func (a *ActionExperimenter) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, actionhdr{ActionTypeExperimenter, 8}, *a)
+	return encoding.WriteTo(w, actionhdr{a.Type(), actionLen}, a.Experimenter)
+}
+
+func (a *ActionExperimenter) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &defaultPad4, &a.Experimenter)
 }
