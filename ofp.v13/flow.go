@@ -337,5 +337,22 @@ func (f *FlowStats) WriteTo(w io.Writer) (int64, error) {
 		return 0, err
 	}
 
-	return encoding.WriteTo(w, uint16(buf.Len()), buf.Bytes())
+	return encoding.WriteTo(w, uint16(buf.Len()+2), buf.Bytes())
+}
+
+func (f *FlowStats) ReadFrom(r io.Reader) (int64, error) {
+	var len uint16
+
+	n, err := encoding.ReadFrom(r, &len, &f.TableID, &defaultPad1,
+		&f.DurationSec, &f.DurationNSec, &f.Priority, &f.IdleTimeout,
+		&f.HardTimeout, &f.Flags, &defaultPad4, &f.Cookie, &f.PacketCount,
+		&f.ByteCount, &f.Match)
+
+	if err != nil {
+		return n, err
+	}
+
+	limrd := io.LimitReader(r, int64(len)-n)
+	nn, err := f.Instructions.ReadFrom(limrd)
+	return n + nn, err
 }
