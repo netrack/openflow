@@ -9,6 +9,7 @@ type (
 	pad5 [5]uint8
 	pad6 [6]uint8
 	pad7 [7]uint8
+	pad8 [8]uint8
 )
 
 var (
@@ -20,4 +21,5 @@ var (
 	defaultPad5 pad5
 	defaultPad6 pad6
 	defaultPad7 pad7
+	defaultPad8 pad8
 )

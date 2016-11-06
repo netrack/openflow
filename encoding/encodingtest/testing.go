@@ -68,7 +68,7 @@ func RunU(t *testing.T, tests []U) {
 
 		if nn != int64(len(test.Bytes)) {
 			t.Fatalf("Invalid length returned on attempt to "+
-				"marshal: `%x`: %d, expected %d",
+				"unmarshal:`%x`: %d, expected: %d",
 				test.Bytes, nn, len(test.Bytes))
 		}
 

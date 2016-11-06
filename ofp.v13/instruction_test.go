@@ -20,7 +20,7 @@ func TestInstructionGotoTable(t *testing.T) {
 }
 
 func TestIntructionWriteMetadata(t *testing.T) {
-	tests := []encodingtest.M{
+	tests := []encodingtest.MU{
 		{&InstructionWriteMetadata{
 			Metadata:     0x5091aedc9697445e,
 			MetadataMask: 0x3ec894d841073494,
@@ -33,13 +33,12 @@ func TestIntructionWriteMetadata(t *testing.T) {
 		}},
 	}
 
-	encodingtest.RunM(t, tests)
+	encodingtest.RunMU(t, tests)
 }
 
 func TestInstructionActions(t *testing.T) {
 	tests := []encodingtest.M{
-		{&InstructionActions{
-			Type: InstructionTypeApplyActions,
+		{&InstructionApplyActions{
 			Actions: Actions{
 				&ActionGroup{GroupID: GroupAll},
 				&Action{Type: ActionTypeCopyTTLOut},

@@ -98,18 +98,31 @@ type action interface {
 // Actions groups the set of actions.
 type Actions []action
 
-// WriteTo writes the list of action to the given writer instance.
-func (a Actions) WriteTo(w io.Writer) (n int64, err error) {
+func (a Actions) bytes() ([]byte, error) {
 	var buf bytes.Buffer
 
 	for _, action := range a {
-		_, err = action.WriteTo(&buf)
+		_, err := action.WriteTo(&buf)
 		if err != nil {
-			return
+			return nil, err
 		}
 	}
 
-	return encoding.WriteTo(w, buf.Bytes())
+	return buf.Bytes(), nil
+}
+
+// WriteTo writes the list of action to the given writer instance.
+func (a Actions) WriteTo(w io.Writer) (int64, error) {
+	buf, err := a.bytes()
+	if err != nil {
+		return int64(len(buf)), err
+	}
+
+	return encoding.WriteTo(w, buf)
+}
+
+func (a Actions) ReadFrom(r io.Reader) (int64, error) {
+	return 0, nil
 }
 
 // Action is header that is common to all actions. The length includes
