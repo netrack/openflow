@@ -163,7 +163,7 @@ func TestFlowStats(t *testing.T) {
 
 	instr := Instructions{&InstructionClearActions{}}
 
-	tests := []encodingtest.M{
+	tests := []encodingtest.MU{
 		{&FlowStats{
 			TableID:      Table(23),
 			DurationSec:  929584189,
@@ -178,7 +178,7 @@ func TestFlowStats(t *testing.T) {
 			Match:        match,
 			Instructions: instr,
 		}, []byte{
-			0x00, 0x46, // Length.
+			0x00, 0x48, // Length.
 			0x17,                   // Table identifier.
 			0x00,                   // 1-byte padding.
 			0x37, 0x68, 0x54, 0x3d, // Duration seconds.
@@ -208,5 +208,5 @@ func TestFlowStats(t *testing.T) {
 		}},
 	}
 
-	encodingtest.RunM(t, tests)
+	encodingtest.RunMU(t, tests)
 }
