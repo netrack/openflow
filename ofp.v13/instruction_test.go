@@ -1,13 +1,14 @@
 package ofp
 
 import (
+	"encoding/gob"
 	"testing"
 
 	"github.com/netrack/openflow/encoding/encodingtest"
 )
 
 func TestInstructionGotoTable(t *testing.T) {
-	tests := []encodingtest.M{
+	tests := []encodingtest.MU{
 		{&InstructionGotoTable{TableID: 15}, []byte{
 			0x00, 0x01, // Instruction type.
 			0x00, 0x08, // Instruction length.
@@ -16,7 +17,7 @@ func TestInstructionGotoTable(t *testing.T) {
 		}},
 	}
 
-	encodingtest.RunM(t, tests)
+	encodingtest.RunMU(t, tests)
 }
 
 func TestIntructionWriteMetadata(t *testing.T) {
@@ -36,12 +37,12 @@ func TestIntructionWriteMetadata(t *testing.T) {
 	encodingtest.RunMU(t, tests)
 }
 
-func TestInstructionActions(t *testing.T) {
-	tests := []encodingtest.M{
+func TestInstructionApplyActions(t *testing.T) {
+	tests := []encodingtest.MU{
 		{&InstructionApplyActions{
 			Actions: Actions{
 				&ActionGroup{GroupID: GroupAll},
-				&Action{Type: ActionTypeCopyTTLOut},
+				&ActionCopyTTLOut{},
 			},
 		}, []byte{
 			0x00, 0x04, // Instruction type.
@@ -58,11 +59,13 @@ func TestInstructionActions(t *testing.T) {
 		}},
 	}
 
-	encodingtest.RunM(t, tests)
+	gob.Register(ActionGroup{})
+	gob.Register(ActionCopyTTLOut{})
+	encodingtest.RunMU(t, tests)
 }
 
 func TestIntructionMeter(t *testing.T) {
-	tests := []encodingtest.M{
+	tests := []encodingtest.MU{
 		{&InstructionMeter{MeterID: 0x6bb97a25}, []byte{
 			0x00, 0x06, // Instruction type.
 			0x00, 0x08, // Instruction length.
@@ -70,5 +73,5 @@ func TestIntructionMeter(t *testing.T) {
 		}},
 	}
 
-	encodingtest.RunM(t, tests)
+	encodingtest.RunMU(t, tests)
 }

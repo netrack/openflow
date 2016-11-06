@@ -1,11 +1,9 @@
 package ofp
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"io"
-	"unsafe"
 
 	"github.com/netrack/openflow/encoding"
 )
@@ -85,59 +83,20 @@ func (i Instructions) WriteTo(w io.Writer) (n int64, err error) {
 
 func (i Instructions) ReadFrom(r io.Reader) (n int64, err error) {
 	var instType InstructionType
-	var num int64
 
-	// Retrieve the size of the instruction type, that preceeds
-	// every instruction body.
-	typeLen := int(unsafe.Sizeof(instType))
-
-	// To keep the implementation of the instruction unmarshaling
-	// consistent with marshaling, we have to put the instruction
-	// type back to the reader during unmarshaling of the list of
-	// instructions.
-	rdbuf := bufio.NewReader(r)
-
-	for {
-		typeBuf, err := rdbuf.Peek(typeLen)
-		if err != nil {
-			return n, encoding.SkipEndOfFile(err)
+	rm := func() (io.ReaderFrom, error) {
+		if rm, ok := instructionMap[instType]; ok {
+			rd, err := rm.MakeReader()
+			i = append(i, rd.(Instruction))
+			return rd, err
 		}
 
-		// Unmarshal the instruction type from the peeked bytes.
-		num, err = encoding.ReadFrom(
-			bytes.NewReader(typeBuf), &instType)
-
-		if err != nil {
-			return n, err
-		}
-
-		maker, ok := instructionMap[instType]
-		if !ok {
-			format := "ofp: unknown instruction type: '%x'"
-			return n, fmt.Errorf(format, instType)
-		}
-
-		// It is defined a corresponding instruction factory for
-		// each instruction type, so we could parse the raw bytes
-		// using the correct implementation of the instruction.
-		instruction := maker.MakeReader()
-
-		// Read the corresponding instruction from the binary
-		// representation.
-		num, err = instruction.ReadFrom(rdbuf)
-		n += num
-
-		if err != nil && err != io.EOF {
-			return n, err
-		}
-
-		i = append(i, instruction.(Instruction))
-		if err == io.EOF {
-			return n, nil
-		}
+		format := "ofp: unknown instruction type: '%x'"
+		return nil, fmt.Errorf(format, instType)
 	}
 
-	return n, err
+	return encoding.ScanFrom(r, &instType,
+		encoding.ReaderMakerFunc(rm))
 }
 
 // InstructionGotoTable represents a packet processing pipeline
@@ -160,7 +119,7 @@ func (i *InstructionGotoTable) WriteTo(w io.Writer) (int64, error) {
 }
 
 func (i *InstructionGotoTable) ReadFrom(r io.Reader) (int64, error) {
-	return encoding.ReadFrom(r, instructionhdr{}, &i.TableID, &defaultPad3)
+	return encoding.ReadFrom(r, &instructionhdr{}, &i.TableID, &defaultPad3)
 }
 
 // InstructionWriteMetadata setups metadata fields to use later in
@@ -227,7 +186,7 @@ func readInstructionActions(r io.Reader, actions Actions) (int64, error) {
 
 	// Limit the reader to the size of actions, so we could know
 	// where is the a border of the message.
-	limrd := io.LimitReader(r, int64(header.Len-instructionLen))
+	limrd := io.LimitReader(r, int64(header.Len-4))
 	num, err = actions.ReadFrom(limrd)
 	read += num
 
