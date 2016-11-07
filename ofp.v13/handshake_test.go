@@ -1,1 +1,75 @@
 package ofp
+
+import (
+	"encoding/gob"
+	"testing"
+
+	"github.com/netrack/openflow/encoding/encodingtest"
+)
+
+func TestHello(t *testing.T) {
+	elems := HelloElems{&HelloElemVersionBitmap{
+		[]uint32{0x10, 0x13, 0x14, 0x15}},
+	}
+
+	tests := []encodingtest.MU{
+		{&Hello{}, []byte{}},
+		{&Hello{elems}, []byte{
+			0x00, 0x01, // Hello element type.
+			0x00, 0x18, // Hello element length.
+			0x00, 0x00, 0x00, 0x10, // OpenFlow versions.
+			0x00, 0x00, 0x00, 0x13,
+			0x00, 0x00, 0x00, 0x14,
+			0x00, 0x00, 0x00, 0x15,
+			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
+		}},
+	}
+
+	gob.Register(HelloElemVersionBitmap{})
+	encodingtest.RunMU(t, tests)
+}
+
+func TestExperimenter(t *testing.T) {
+	tests := []encodingtest.MU{
+		{&Experimenter{
+			Experimenter: 42,
+			ExpType:      43,
+		}, []byte{
+			0x00, 0x00, 0x00, 0x2a, // Experimenter.
+			0x00, 0x00, 0x00, 0x2b, // Experimenter type.
+		}},
+	}
+
+	encodingtest.RunMU(t, tests)
+}
+
+func TestRoleRequest(t *testing.T) {
+	tests := []encodingtest.MU{
+		{&RoleRequest{
+			Role:         ControllerRoleMaster,
+			GenerationID: 0x22e92b72b39cab3a,
+		}, []byte{
+			0x00, 0x00, 0x00, 0x02, // Controller role.
+			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
+			0x22, 0xe9, 0x2b, 0x72, 0xb3, 0x9c, 0xab, 0x3a, // Generation.
+		}},
+	}
+
+	encodingtest.RunMU(t, tests)
+}
+
+func TestAsyncConfig(t *testing.T) {
+	tests := []encodingtest.MU{
+		{&AsyncConfig{
+			[AsyncConfigMaskLen]PacketInReason{PacketInReasonAction},
+			[AsyncConfigMaskLen]PortReason{PortReasonModify},
+			[AsyncConfigMaskLen]FlowRemovedReason{FlowReasonGroupDelete},
+		}, []byte{
+			0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Packet-in.
+			0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Port.
+			0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Flow.
+		}},
+	}
+
+	encodingtest.RunMU(t, tests)
+}
