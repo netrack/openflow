@@ -243,21 +243,7 @@ func (q *QueueGetConfigReply) ReadFrom(r io.Reader) (int64, error) {
 	// OpenFlow message, thus return EOF error when the
 	// messages ends. Otherwise this implementation will
 	// read the packet queues indefinitely.
-	var queues []PacketQueue
-	for {
-		var queue PacketQueue
-		nn, err := queue.ReadFrom(r)
-		n += nn
-
-		if err != nil {
-			return n, encoding.SkipEOF(err)
-		}
-
-		queues = append(queues, queue)
-	}
-
-	// Assign the list of queues back to the reply to
-	// make the unmarshaling reproducable.
-	q.Queues = queues
-	return n, nil
+	queueMaker := encoding.ReaderMakerOf(PacketQueue{})
+	nn, err := encoding.ReadSliceFrom(r, queueMaker, q.Queues)
+	return n + nn, err
 }

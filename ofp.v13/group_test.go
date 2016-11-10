@@ -44,6 +44,56 @@ func TestBucket(t *testing.T) {
 	encodingtest.RunMU(t, tests)
 }
 
+func TestGroupMod(t *testing.T) {
+	actions1 := Actions{&ActionCopyTTLIn{}}
+	actions2 := Actions{&ActionCopyTTLOut{}}
+
+	buckets := []Bucket{
+		{10, PortNo(2), Group(5), actions1},
+		{20, PortNo(3), Group(6), actions2},
+	}
+
+	tests := []encodingtest.MU{
+		{&GroupMod{
+			Command: GroupCommandModify,
+			Type:    GroupTypeIndirect,
+			Group:   Group(3),
+			Buckets: buckets,
+		}, []byte{
+			0x00, 0x01, // Group command.
+			0x02,                   // Group type.
+			0x00,                   // 1-byte padding.
+			0x00, 0x00, 0x00, 0x03, // Group identifier.
+
+			// Buckets.
+			0x00, 0x18, // Length.
+			0x00, 0x0a, // Wight.
+			0x00, 0x00, 0x00, 0x02, // Watch port.
+			0x00, 0x00, 0x00, 0x05, // Watch group.
+			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
+
+			// Actions.
+			0x00, 0x0c, // Copy TTL in.
+			0x00, 0x08, // Action length.
+			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
+
+			0x00, 0x18, // Length.
+			0x00, 0x14, // Wight.
+			0x00, 0x00, 0x00, 0x03, // Watch port.
+			0x00, 0x00, 0x00, 0x06, // Watch group.
+			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
+
+			// Actions.
+			0x00, 0x0b, // Copy TTL out.
+			0x00, 0x08, // Action length.
+			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
+		}},
+	}
+
+	gob.Register(ActionCopyTTLOut{})
+	encodingtest.RunMU(t, tests)
+}
+
 func TestBucketCounter(t *testing.T) {
 	tests := []encodingtest.MU{
 		{&BucketCounter{
@@ -59,6 +109,17 @@ func TestBucketCounter(t *testing.T) {
 		}, []byte{
 			0x4c, 0xa7, 0xfc, 0x26, 0x1b, 0x61, 0xd4, 0xb1,
 			0xcc, 0x2f, 0x60, 0x91, 0xbe, 0x06, 0x98, 0xa7,
+		}},
+	}
+
+	encodingtest.RunMU(t, tests)
+}
+
+func TestGroupStatsRequest(t *testing.T) {
+	tests := []encodingtest.MU{
+		{&GroupStatsRequest{Group(7)}, []byte{
+			0x00, 0x00, 0x00, 0x07, // Group identifier.
+			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
 		}},
 	}
 
