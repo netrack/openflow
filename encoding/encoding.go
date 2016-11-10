@@ -76,6 +76,30 @@ func ReadFrom(r io.Reader, v ...interface{}) (int64, error) {
 	return rd.read, nil
 }
 
+func ReadSliceFrom(r io.Reader, rm ReaderMaker, slice interface{}) (int64, error) {
+	var n int64
+	sliceValue := reflect.ValueOf(slice)
+
+	for {
+		reader, err := rm.MakeReader()
+		if err != nil {
+			return n, err
+		}
+
+		nn, err := reader.ReadFrom(r)
+		n += nn
+
+		if err != nil {
+			return n, SkipEOF(err)
+		}
+
+		elem := reflect.ValueOf(reader).Elem()
+		reflect.Append(sliceValue, elem)
+	}
+
+	return n, nil
+}
+
 // ReaderMaker defines factory types, used to created new exemplars
 // of the io.ReaderFrom interface.
 type ReaderMaker interface {

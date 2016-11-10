@@ -40,9 +40,38 @@ type Group uint32
 type GroupMod struct {
 	Command GroupCommand
 	Type    GroupType
-	_       uint8
-	GroupID uint32
+	Group   Group
 	Buckets []Bucket
+}
+
+func (g *GroupMod) WriteTo(w io.Writer) (int64, error) {
+	n, err := encoding.WriteTo(w, g.Command, g.Type, pad1{}, g.Group)
+	if err != nil {
+		return n, err
+	}
+
+	for _, bucket := range g.Buckets {
+		nn, err := bucket.WriteTo(w)
+		n += nn
+
+		if err != nil {
+			return n, err
+		}
+	}
+
+	return n, err
+}
+
+func (g *GroupMod) ReadFrom(r io.Reader) (int64, error) {
+	n, err := encoding.ReadFrom(r, &g.Command, &g.Type,
+		&defaultPad1, &g.Group)
+	if err != nil {
+		return n, err
+	}
+
+	bucketMaker := encoding.ReaderMakerOf(Bucket{})
+	nn, err := encoding.ReadSliceFrom(r, bucketMaker, g.Buckets)
+	return n + nn, err
 }
 
 const bucketLen = 16
@@ -86,7 +115,15 @@ func (b *Bucket) ReadFrom(r io.Reader) (int64, error) {
 }
 
 type GroupStatsRequest struct {
-	GroupID Group
+	Group Group
+}
+
+func (g *GroupStatsRequest) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, g.Group, pad4{})
+}
+
+func (g *GroupStatsRequest) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &g.Group, &defaultPad4)
 }
 
 type GroupStats struct {
@@ -99,7 +136,7 @@ type GroupStats struct {
 	ByteCount    uint64
 	DurationSec  uint32
 	DurationNSec uint32
-	BucketStast  []BucketCounter
+	BucketStats  []BucketCounter
 }
 
 type BucketCounter struct {
@@ -133,7 +170,7 @@ const (
 type GroupCapability uint32
 
 type GroupFeatures struct {
-	Types        []GroupType
+	Types        [4]GroupType
 	Capabilities GroupCapability
 	MaxGroups    []Group
 	Actions      []ActionType
