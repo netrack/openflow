@@ -1,6 +1,7 @@
 package ofp
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/netrack/openflow/encoding"
@@ -50,16 +51,8 @@ func (g *GroupMod) WriteTo(w io.Writer) (int64, error) {
 		return n, err
 	}
 
-	for _, bucket := range g.Buckets {
-		nn, err := bucket.WriteTo(w)
-		n += nn
-
-		if err != nil {
-			return n, err
-		}
-	}
-
-	return n, err
+	nn, err := encoding.WriteSliceTo(w, g.Buckets)
+	return n + nn, err
 }
 
 func (g *GroupMod) ReadFrom(r io.Reader) (int64, error) {
@@ -74,6 +67,8 @@ func (g *GroupMod) ReadFrom(r io.Reader) (int64, error) {
 	return n + nn, err
 }
 
+// bucketLen is a length of the bucket header, it does not
+// include the length of the actions list.
 const bucketLen = 16
 
 type Bucket struct {
@@ -126,17 +121,49 @@ func (g *GroupStatsRequest) ReadFrom(r io.Reader) (int64, error) {
 	return encoding.ReadFrom(r, &g.Group, &defaultPad4)
 }
 
+// groupStatsLen is a length of the group statistics header,
+// it does not include the length of the bucket counters.
+const groupStatsLen = 40
+
 type GroupStats struct {
-	Length       uint16
-	_            pad2
-	GroupID      Group
+	Group        Group
 	RefCount     uint32
-	_            pad4
 	PacketCount  uint64
 	ByteCount    uint64
 	DurationSec  uint32
 	DurationNSec uint32
 	BucketStats  []BucketCounter
+}
+
+func (g *GroupStats) WriteTo(w io.Writer) (int64, error) {
+	var buf bytes.Buffer
+
+	_, err := encoding.WriteSliceTo(&buf, g.BucketStats)
+	if err != nil {
+		return 0, err
+	}
+
+	return encoding.WriteTo(w, uint16(groupStatsLen+buf.Len()), pad2{},
+		g.Group, g.RefCount, pad4{}, g.PacketCount, g.ByteCount,
+		g.DurationSec, g.DurationNSec, buf.Bytes())
+}
+
+func (g *GroupStats) ReadFrom(r io.Reader) (int64, error) {
+	var length uint16
+
+	n, err := encoding.ReadFrom(r, &length, &defaultPad2,
+		&g.Group, &g.RefCount, &defaultPad4, &g.PacketCount, &g.ByteCount,
+		&g.DurationSec, &g.DurationNSec)
+
+	if err != nil {
+		return n, err
+	}
+
+	limrd := io.LimitReader(r, int64(length-groupStatsLen))
+	counterMaker := encoding.ReaderMakerOf(BucketCounter{})
+
+	nn, err := encoding.ReadSliceFrom(limrd, counterMaker, g.BucketStats)
+	return n + nn, err
 }
 
 type BucketCounter struct {
@@ -152,12 +179,42 @@ func (b *BucketCounter) ReadFrom(r io.Reader) (int64, error) {
 	return encoding.ReadFrom(r, &b.PacketCount, &b.ByteCount)
 }
 
+const groupDescStatsLen = 8
+
 type GroupDescStats struct {
-	Length  uint16
 	Type    GroupType
-	_       pad1
-	GroupID Group
+	Group   Group
 	Buckets []Bucket
+}
+
+func (g *GroupDescStats) WriteTo(w io.Writer) (int64, error) {
+	var buf bytes.Buffer
+
+	// Write the list of buckets to the temporary buffer,
+	// so we could set an appropriate lenght of the message.
+	_, err := encoding.WriteSliceTo(&buf, g.Buckets)
+	if err != nil {
+		return 0, err
+	}
+
+	length := uint16(groupDescStatsLen + buf.Len())
+	return encoding.WriteTo(w, length, g.Type, pad1{},
+		g.Group, buf.Bytes())
+}
+
+func (g *GroupDescStats) ReadFrom(r io.Reader) (int64, error) {
+	var length uint16
+
+	// Read the header of the messages to retrieve the
+	// length of the buckets list.
+	n, err := encoding.ReadFrom(r, &length, &g.Type,
+		&defaultPad1, &g.Group)
+
+	limrd := io.LimitReader(r, int64(length-groupDescStatsLen))
+	bucketMaker := encoding.ReaderMakerOf(Bucket{})
+
+	nn, err := encoding.ReadSliceFrom(limrd, bucketMaker, g.Buckets)
+	return n + nn, err
 }
 
 const (

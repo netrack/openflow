@@ -76,6 +76,36 @@ func ReadFrom(r io.Reader, v ...interface{}) (int64, error) {
 	return rd.read, nil
 }
 
+// WriteSliceTo writes the slice of the types, that implement io.WriterTo
+// interface into the given writer.
+//
+// The function will panic if the given variable is not a slice or elements
+// of the slice does not implement interface io.WriterTo.
+func WriteSliceTo(w io.Writer, slice interface{}) (int64, error) {
+	var n int64
+
+	// Retrieve the lengt of the provided slice.
+	sliceValue := reflect.ValueOf(slice)
+	sliceLen := sliceValue.Len()
+
+	for index := 0; index < sliceLen; index++ {
+		// It is expected, that elements of the slice would not implement
+		// the io.WriterTo interface, but their pointers will.
+		addr := sliceValue.Index(index).Addr()
+		writer := addr.Interface().(io.WriterTo)
+
+		// Write the data to the provided writer instance.
+		nn, err := writer.WriteTo(w)
+		n += nn
+
+		if err != nil {
+			return n, err
+		}
+	}
+
+	return n, nil
+}
+
 func ReadSliceFrom(r io.Reader, rm ReaderMaker, slice interface{}) (int64, error) {
 	var n int64
 	sliceValue := reflect.ValueOf(slice)
