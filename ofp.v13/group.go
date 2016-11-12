@@ -226,9 +226,61 @@ const (
 
 type GroupCapability uint32
 
+const (
+	// groupTypeLen is a length of the group types list
+	// of group features message.
+	groupFeaturesTypeLen = 4
+
+	// maxGroupsLen is a length of the list with maximum numbers
+	// of groups for each type.
+	groupFeaturesMaxGroupsLen = 4
+
+	// actionsLen is a length of the groups features actions types.
+	groupFeaturesActionsLen = 8
+)
+
 type GroupFeatures struct {
-	Types        [4]GroupType
+	Types        []GroupType
 	Capabilities GroupCapability
-	MaxGroups    []Group
+	MaxGroups    []uint32
 	Actions      []ActionType
+}
+
+// init allocates the slices of the size (mentioned in the OpenFlow
+// protocol specification).
+func (g *GroupFeatures) init() ([]GroupType, []uint32, []ActionType) {
+	groupTypes := make([]GroupType, groupFeaturesTypeLen)
+	maxGroups := make([]uint32, groupFeaturesMaxGroupsLen)
+	actions := make([]ActionType, groupFeaturesActionsLen)
+
+	return groupTypes, maxGroups, actions
+}
+
+func (g *GroupFeatures) WriteTo(w io.Writer) (int64, error) {
+	// For each list of features we will allocate the fixed-length
+	// slices and copy the user-defined data into them.
+	//
+	// This actions is required in order to allow to the user define
+	// the features, less than the list could fit. So it is just for
+	// the sake of convenience.
+	types, groups, actions := g.init()
+
+	copy(types, g.Types)
+	copy(groups, g.MaxGroups)
+	copy(actions, g.Actions)
+
+	// TODO: probably, we need to generate an error, when the list
+	// of features exceed the defined in the protocol length, instead
+	// of silently ommiting them.
+	return encoding.WriteTo(w, types, g.Capabilities,
+		groups, actions)
+}
+
+func (g *GroupFeatures) ReadFrom(r io.Reader) (int64, error) {
+	// Allocate the memory for fixed-size lists of features,
+	// so we could read the complete message.
+	g.Types, g.MaxGroups, g.Actions = g.init()
+
+	return encoding.ReadFrom(r, &g.Types, &g.Capabilities,
+		&g.MaxGroups, &g.Actions)
 }
