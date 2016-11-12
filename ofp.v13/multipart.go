@@ -82,10 +82,10 @@ const (
 type MultipartType uint16
 
 const (
-	MultipartRequestMode MultipartRequestFlags = 1 << iota
+	MultipartRequestMode MultipartRequestFlag = 1 << iota
 )
 
-type MultipartRequestFlags uint16
+type MultipartRequestFlag uint16
 
 const (
 	MultipartReplyMode MultipartReplyFlag = 1 << iota
@@ -97,7 +97,7 @@ type MultipartReplyFlag uint16
 // state from the datapath using the T_MULTIPART_REQUEST message
 type MultipartRequest struct {
 	Type  MultipartType
-	Flags MultipartRequestFlags
+	Flags MultipartRequestFlag
 }
 
 func (m *MultipartRequest) Bytes() []byte {
