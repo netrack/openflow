@@ -192,3 +192,50 @@ func TestGroupStats(t *testing.T) {
 
 	encodingtest.RunMU(t, tests)
 }
+
+func TestGroupFeatures(t *testing.T) {
+	types := []GroupType{
+		GroupTypeAll, GroupTypeSelect,
+		GroupTypeIndirect, GroupTypeFastFailover,
+	}
+
+	capabilities := GroupCapabilityChaining |
+		GroupCapabilitySelectWeight
+
+	actions := []ActionType{
+		ActionTypeOutput, ActionTypeGroup,
+		ActionTypePopMPLS, ActionTypePushMPLS,
+		ActionTypePopVLAN, ActionTypePushVLAN,
+		ActionTypeCopyTTLIn, ActionTypeCopyTTLOut,
+	}
+
+	tests := []encodingtest.MU{
+		{&GroupFeatures{
+			Types:        types,
+			Capabilities: capabilities,
+			MaxGroups:    []uint32{4, 5, 6, 7},
+			Actions:      actions,
+		}, []byte{
+			0x00, 0x01, 0x02, 0x03, // Group types.
+			0x00, 0x00, 0x00, 0x05, // Capabilities.
+
+			// Maximum groups.
+			0x00, 0x00, 0x00, 0x04,
+			0x00, 0x00, 0x00, 0x05,
+			0x00, 0x00, 0x00, 0x06,
+			0x00, 0x00, 0x00, 0x07,
+
+			// Actions.
+			0x00, 0x00, // Action output.
+			0x00, 0x16, // Action group.
+			0x00, 0x14, // Action pop MPLS.
+			0x00, 0x13, // Action push MPLS.
+			0x00, 0x12, // Action pop VLAN.
+			0x00, 0x11, // Action push VLAN.
+			0x00, 0x0c, // Action copy TTL in.
+			0x00, 0x0b, // Action copy TTL out.
+		}},
+	}
+
+	encodingtest.RunMU(t, tests)
+}
