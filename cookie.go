@@ -2,8 +2,10 @@ package of
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"reflect"
 )
 
 type CookieJar interface {
@@ -24,14 +26,14 @@ type CookieReader interface {
 // CookieReaderFunc(fn) is a Reader that calls fn.
 type CookieReaderFunc func(io.Reader) (CookieJar, error)
 
-// CookieJar calls the function with the specifier reader argument.
-func (fn CookieReaderFunc) CookiesJar(r io.Reader) (CookieJar, error) {
+// ReadCookie calls the function with the specifier reader argument.
+func (fn CookieReaderFunc) ReadCookie(r io.Reader) (CookieJar, error) {
 	return fn(r)
 }
 
-// CookieFilter provides mechanism to hook up the message handler with an
+// CookieMatcher provides mechanism to hook up the message handler with an
 // opaque data. Filter is safe for concurrent use by multiple goroutines.
-type CookieFilter struct {
+type CookieMatcher struct {
 	Cookies uint64
 
 	// Reader is an OpenFlow message unmarshaler. CookieFilter will use
@@ -46,18 +48,55 @@ type CookieFilter struct {
 // Cookie of each incoming request will be compared to the given cookie
 // jar cookie. If the request cookie matches the registered one, the given
 // handler will be used to process the request.
-func (f *CookieFilter) Filter(r *Request) bool {
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return false
+func (f *CookieMatcher) Matcher(r *Request) bool {
+	rd, ok := r.Body.(*bytes.Buffer)
+
+	if ok {
+		// If the body is a bytes buffer, we will simply reset
+		// it to reduce the amount of memory to allocate.
+		defer rd.Reset()
+	} else {
+		// Otherwise, we will re-create a new one.
+		body, err := ioutil.ReadAll(r.Body)
+		defer func() { r.Body = bytes.NewBuffer(body) }()
+
+		if err != nil {
+			return false
+		}
+
+		rd = bytes.NewBuffer(body)
 	}
 
 	// Parse the incoming request to access the cookies.
-	jar, err := f.Reader.ReadCookie(bytes.NewBuffer(body))
+	jar, err := f.Reader.ReadCookie(rd)
 	if err != nil {
 		return false
 	}
 
-	r.Body = bytes.NewBuffer(body)
 	return jar.Cookies() == f.Cookies
+}
+
+// CookieReaderOf creates a new cookie reader instance from the cookie
+// jar. It uses reflection to create a new examplar of the given type,
+// so the resulting reader is safe to use in multiple go-routines.
+func CookieReaderOf(cj CookieJar) CookieReader {
+	valueType := reflect.TypeOf(cj).Elem()
+
+	cr := func(r io.Reader) (CookieJar, error) {
+		value := reflect.New(valueType)
+		jar, ok := value.Interface().(io.ReaderFrom)
+
+		// The CookieJar have to implement the io.ReaderFrom
+		// interface, so it could be unmarshaled.
+		if !ok {
+			message := "openflow: not a valid cookie reader"
+			return nil, fmt.Errorf(message)
+		}
+
+		// Unmarshal the cookie jar and return it.
+		_, err := jar.ReadFrom(r)
+		return jar.(CookieJar), err
+	}
+
+	return CookieReaderFunc(cr)
 }
