@@ -173,6 +173,8 @@ func (f *FlowMod) WriteTo(w io.Writer) (int64, error) {
 }
 
 func (f *FlowMod) ReadFrom(r io.Reader) (int64, error) {
+	f.Instructions = nil
+
 	return encoding.ReadFrom(r, &f.Cookie, &f.CookieMask, &f.TableID,
 		&f.Command, &f.IdleTimeout, &f.HardTimeout, &f.Priority,
 		&f.BufferID, &f.OutPort, &f.OutGroup, &f.Flags, &defaultPad2,
@@ -353,6 +355,8 @@ func (f *FlowStats) ReadFrom(r io.Reader) (int64, error) {
 	}
 
 	limrd := io.LimitReader(r, int64(len)-n)
+	f.Instructions = nil
+
 	nn, err := f.Instructions.ReadFrom(limrd)
 	return n + nn, err
 }

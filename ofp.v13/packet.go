@@ -129,6 +129,8 @@ func (p *PacketOut) ReadFrom(r io.Reader) (int64, error) {
 	}
 
 	limrd := io.LimitReader(r, int64(len))
+	p.Actions = nil
+
 	nn, err := p.Actions.ReadFrom(limrd)
 	return n + nn, err
 }

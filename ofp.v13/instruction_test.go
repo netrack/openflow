@@ -9,7 +9,7 @@ import (
 
 func TestInstructionGotoTable(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&InstructionGotoTable{TableID: 15}, []byte{
+		{&InstructionGotoTable{Table: Table(15)}, []byte{
 			0x00, 0x01, // Instruction type.
 			0x00, 0x08, // Instruction length.
 			0x0f,             // Table identifier.
@@ -41,7 +41,7 @@ func TestInstructionApplyActions(t *testing.T) {
 	tests := []encodingtest.MU{
 		{&InstructionApplyActions{
 			Actions: Actions{
-				&ActionGroup{GroupID: GroupAll},
+				&ActionGroup{Group: GroupAll},
 				&ActionCopyTTLOut{},
 			},
 		}, []byte{
@@ -66,7 +66,7 @@ func TestInstructionApplyActions(t *testing.T) {
 
 func TestIntructionMeter(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&InstructionMeter{MeterID: 0x6bb97a25}, []byte{
+		{&InstructionMeter{Meter: 0x6bb97a25}, []byte{
 			0x00, 0x06, // Instruction type.
 			0x00, 0x08, // Instruction length.
 			0x6b, 0xb9, 0x7a, 0x25, // Meter identifier.

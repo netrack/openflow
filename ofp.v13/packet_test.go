@@ -48,7 +48,7 @@ func TestPacketOut(t *testing.T) {
 		{&PacketOut{
 			BufferID: NoBuffer,
 			InPort:   PortController,
-			Actions:  Actions{&ActionGroup{GroupID: GroupAll}},
+			Actions:  Actions{&ActionGroup{Group: GroupAll}},
 		}, []byte{
 			0xff, 0xff, 0xff, 0xff, // Buffer identifier.
 			0xff, 0xff, 0xff, 0xfd, // Port number.

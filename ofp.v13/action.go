@@ -124,10 +124,10 @@ type Action interface {
 // Actions groups the set of actions.
 type Actions []Action
 
-func (a Actions) bytes() ([]byte, error) {
+func (a *Actions) bytes() ([]byte, error) {
 	var buf bytes.Buffer
 
-	for _, action := range a {
+	for _, action := range *a {
 		_, err := action.WriteTo(&buf)
 		if err != nil {
 			return nil, err
@@ -138,7 +138,7 @@ func (a Actions) bytes() ([]byte, error) {
 }
 
 // WriteTo writes the list of action to the given writer instance.
-func (a Actions) WriteTo(w io.Writer) (int64, error) {
+func (a *Actions) WriteTo(w io.Writer) (int64, error) {
 	buf, err := a.bytes()
 	if err != nil {
 		return int64(len(buf)), err
@@ -147,13 +147,13 @@ func (a Actions) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, buf)
 }
 
-func (a Actions) ReadFrom(r io.Reader) (int64, error) {
+func (a *Actions) ReadFrom(r io.Reader) (int64, error) {
 	var actionType ActionType
 
 	rm := func() (io.ReaderFrom, error) {
 		if rm, ok := actionMap[actionType]; ok {
 			rd, err := rm.MakeReader()
-			a = append(a, rd.(Action))
+			*a = append(*a, rd.(Action))
 			return rd, err
 		}
 
@@ -363,9 +363,9 @@ func (a *ActionSetQueue) ReadFrom(r io.Reader) (int64, error) {
 // ActionGroup is an action that specifis the group used to process
 // the packet.
 type ActionGroup struct {
-	// The GroupID indicates the group used to process this packet.
+	// The Group indicates the group used to process this packet.
 	// The set of buckets to apply depends on the group type.
-	GroupID Group
+	Group Group
 }
 
 func (a *ActionGroup) Type() ActionType {
@@ -375,11 +375,11 @@ func (a *ActionGroup) Type() ActionType {
 // WriteTo implement the io.WriterTo interface. It serializes
 // the action with a necessary padding.
 func (a *ActionGroup) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, actionhdr{a.Type(), actionLen}, a.GroupID)
+	return encoding.WriteTo(w, actionhdr{a.Type(), actionLen}, a.Group)
 }
 
 func (a *ActionGroup) ReadFrom(r io.Reader) (int64, error) {
-	return encoding.ReadFrom(r, &defaultPad4, &a.GroupID)
+	return encoding.ReadFrom(r, &defaultPad4, &a.Group)
 }
 
 // ActionSetNetworkTTL is an action used to replace the network

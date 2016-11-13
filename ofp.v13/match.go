@@ -3,6 +3,7 @@ package ofp
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 
 	"github.com/netrack/openflow/encoding"
 )
@@ -220,6 +221,36 @@ type XM struct {
 	Mask  XMValue
 }
 
+// readAllXM uses all avaiable bytes retrieved from the reader to
+// unmarshal them to the list of extensible matchers. The caller
+// responsible of passing limited reader to prevent from read of
+// unnecessary data.
+func readAllXM(r io.Reader, xms *[]XM) (int64, error) {
+	// Read all available bytes from the reader, they will be
+	// used to unmarshal them into the list of extensible matchers.
+	buf, err := ioutil.ReadAll(r)
+	n := int64(len(buf))
+
+	if err != nil {
+		return n, err
+	}
+
+	rbuf := bytes.NewBuffer(buf)
+
+	for rbuf.Len() > 7 {
+		var xm XM
+
+		_, err = xm.ReadFrom(rbuf)
+		if err != nil {
+			return n, err
+		}
+
+		*xms = append(*xms, xm)
+	}
+
+	return n, nil
+}
+
 // ReadFrom implements io.ReaderFrom interface. It deserializes
 // the OpenFlow extensible match from the given reader.
 func (xm *XM) ReadFrom(r io.Reader) (n int64, err error) {
@@ -236,7 +267,7 @@ func (xm *XM) ReadFrom(r io.Reader) (n int64, err error) {
 
 	var m int64
 
-	xm.Value = make(XMValue, length)
+	xm.Value, xm.Mask = make(XMValue, length), nil
 	m, err = encoding.ReadFrom(r, &xm.Value)
 	n += m
 
@@ -246,6 +277,8 @@ func (xm *XM) ReadFrom(r io.Reader) (n int64, err error) {
 
 	if hasmask {
 		length /= 2
+		xm.Mask = make(XMValue, length)
+
 		copy(xm.Mask, xm.Value[length:])
 		xm.Value = xm.Value[:length]
 	}
@@ -331,6 +364,7 @@ func (m *Match) Field(mt XMType) *XM {
 // ReadFrom implements io.ReaderFrom interface. It deserializes the
 // bytes from the given reader to the Match structure.
 func (m *Match) ReadFrom(r io.Reader) (n int64, err error) {
+	var nn int64
 	var length uint16
 
 	// Initialize the structure attributes with default
@@ -343,30 +377,10 @@ func (m *Match) ReadFrom(r io.Reader) (n int64, err error) {
 		return
 	}
 
-	var nn int64
+	limrd := io.LimitReader(r, int64(length))
+	nn, err = readAllXM(limrd, &m.Fields)
 
-	buf := make([]byte, length)
-	nn, err = encoding.ReadFrom(r, &buf)
-	n += nn
-
-	if err != nil {
-		return
-	}
-
-	rbuf := bytes.NewBuffer(buf)
-
-	for rbuf.Len() > 7 {
-		var xm XM
-
-		_, err = xm.ReadFrom(rbuf)
-		if err != nil {
-			return
-		}
-
-		m.Fields = append(m.Fields, xm)
-	}
-
-	return
+	return n + nn, err
 }
 
 // WriteTo implements io.WriterTo interface. It serializes the Match

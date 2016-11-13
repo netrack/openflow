@@ -68,10 +68,10 @@ type Instruction interface {
 type Instructions []Instruction
 
 // WriteTo Implements io.WriterTo interface.
-func (i Instructions) WriteTo(w io.Writer) (n int64, err error) {
+func (i *Instructions) WriteTo(w io.Writer) (n int64, err error) {
 	var buf bytes.Buffer
 
-	for _, inst := range i {
+	for _, inst := range *i {
 		_, err = inst.WriteTo(&buf)
 		if err != nil {
 			return
@@ -81,13 +81,13 @@ func (i Instructions) WriteTo(w io.Writer) (n int64, err error) {
 	return encoding.WriteTo(w, buf.Bytes())
 }
 
-func (i Instructions) ReadFrom(r io.Reader) (n int64, err error) {
+func (i *Instructions) ReadFrom(r io.Reader) (n int64, err error) {
 	var instType InstructionType
 
 	rm := func() (io.ReaderFrom, error) {
 		if rm, ok := instructionMap[instType]; ok {
 			rd, err := rm.MakeReader()
-			i = append(i, rd.(Instruction))
+			*i = append(*i, rd.(Instruction))
 			return rd, err
 		}
 
@@ -102,9 +102,9 @@ func (i Instructions) ReadFrom(r io.Reader) (n int64, err error) {
 // InstructionGotoTable represents a packet processing pipeline
 // redirection message.
 type InstructionGotoTable struct {
-	// TableID indicates the next table in the packet processing
+	// Table indicates the next table in the packet processing
 	// pipeline.
-	TableID Table
+	Table Table
 }
 
 // Type implements Instruction interface and returns the type on
@@ -115,11 +115,11 @@ func (i *InstructionGotoTable) Type() InstructionType {
 
 // WriteTo implements WriterTo interface.
 func (i *InstructionGotoTable) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, instructionhdr{i.Type(), 8}, i.TableID, pad3{})
+	return encoding.WriteTo(w, instructionhdr{i.Type(), 8}, i.Table, pad3{})
 }
 
 func (i *InstructionGotoTable) ReadFrom(r io.Reader) (int64, error) {
-	return encoding.ReadFrom(r, &instructionhdr{}, &i.TableID, &defaultPad3)
+	return encoding.ReadFrom(r, &instructionhdr{}, &i.Table, &defaultPad3)
 }
 
 // InstructionWriteMetadata setups metadata fields to use later in
@@ -252,7 +252,7 @@ func (i *InstructionClearActions) ReadFrom(r io.Reader) (int64, error) {
 // Instruction structure for IT_METER
 type InstructionMeter struct {
 	// MeterID indicates which meter to apply on the packet.
-	MeterID uint32
+	Meter Meter
 }
 
 // Type implements Instruction interface and returns type of the
@@ -263,9 +263,9 @@ func (i *InstructionMeter) Type() InstructionType {
 
 // WriteTo implements WriterTo interface.
 func (i *InstructionMeter) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, instructionhdr{i.Type(), 8}, i.MeterID)
+	return encoding.WriteTo(w, instructionhdr{i.Type(), 8}, i.Meter)
 }
 
 func (i *InstructionMeter) ReadFrom(r io.Reader) (int64, error) {
-	return encoding.ReadFrom(r, &instructionhdr{}, &i.MeterID)
+	return encoding.ReadFrom(r, &instructionhdr{}, &i.Meter)
 }
