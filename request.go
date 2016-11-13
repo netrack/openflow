@@ -48,9 +48,9 @@ type Request struct {
 
 // NewRequest returns a new Request given a type, address, and optional
 // body.
-func NewRequest(t Type, body ...io.WriterTo) (*Request, error) {
+func NewRequest(t Type, body io.WriterTo) (*Request, error) {
 	req := &Request{
-		Body:       newReader(body...),
+		Body:       newReader(body),
 		Proto:      "OFP/1.3",
 		ProtoMajor: 1, ProtoMinor: 3,
 	}

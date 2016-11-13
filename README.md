@@ -23,7 +23,7 @@ of.ListenAndServe(":6633", nil)
 ```
 
 ```go
-tm := &TypeMatcher{Type: TypePacketIn}
+tm := &TypeMatcher{Type: of.TypePacketIn}
 m := &of.RequestMatcher{tm}
 
 d := NewRequestDispatcher()
