@@ -2,7 +2,9 @@ package of
 
 import (
 	"bytes"
+	"io"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -10,10 +12,7 @@ import (
 // an OpenFlow Response.
 type ResponseWriter interface {
 	// Write writes the data to the connection as part of an OpenFlow reply.
-	Write([]byte) (int, error)
-
-	// WriteHeader sends an Response header as part of an OpenFlow reply.
-	WriteHeader(*Header) error
+	Write(*Header, io.WriterTo) error
 
 	// Conn returns the instance of the OpenFlow protocol connection.
 	Conn() Conn
@@ -53,49 +52,52 @@ type Response struct {
 
 	// The buf is a response message buffer. We use this buffer
 	// to calculate the length of the payload.
-	buf bytes.Buffer
+	buf   bytes.Buffer
+	bufMu sync.Mutex
 }
 
-// Write writes the given byte slice to the output buffer.
-func (w *Response) Write(b []byte) (n int, err error) {
-	return w.buf.Write(b)
-}
-
-// WriteHeader sends an OpenFlow response.
-func (w *Response) WriteHeader(header *Header) (err error) {
+// Write sends an OpenFlow response.
+func (r *Response) Write(header *Header, w io.WriterTo) (err error) {
 	var buf bytes.Buffer
 
 	// When the version is not configured properly, we will
 	// use the version from the response header, to minimize
 	// manual configuration.
 	if header.Version == 0 {
-		header.Version = w.header.Version
+		header.Version = r.header.Version
 	}
 
-	header.Length = headerlen + uint16(w.buf.Len())
-	defer w.buf.Reset()
+	r.bufMu.Lock()
+	defer r.bufMu.Unlock()
+	defer r.buf.Reset()
 
-	_, err = header.WriteTo(&buf)
+	_, err = w.WriteTo(&buf)
 	if err != nil {
 		return
 	}
 
-	_, err = w.buf.WriteTo(&buf)
+	header.Length = headerlen + uint16(buf.Len())
+	_, err = header.WriteTo(&r.buf)
 	if err != nil {
 		return
 	}
 
-	_, err = w.conn.Write(buf.Bytes())
+	_, err = buf.WriteTo(&r.buf)
 	if err != nil {
 		return
 	}
 
-	return w.conn.Flush()
+	_, err = r.conn.Write(r.buf.Bytes())
+	if err != nil {
+		return
+	}
+
+	return r.conn.Flush()
 }
 
 // Conn returns the OpenFlow connection.
-func (w *Response) Conn() Conn {
-	return w.conn
+func (r *Response) Conn() Conn {
+	return r.conn
 }
 
 // ListenAndServe listens on the given TCP address the handler. When
@@ -104,7 +106,7 @@ func (w *Response) Conn() Conn {
 // A trivial example is:
 //
 //	of.HandleFunc(of.TypeEchoRequest, func(rw of.ResponseWriter, r *of.Request) {
-//		rw.WriteHeader(&of.Header{Type: of.TypeEchoReply})
+//		rw.Write(&of.Header{Type: of.TypeEchoReply}, nil)
 //	})
 //
 //	ListenAndServe(":6633", nil)
