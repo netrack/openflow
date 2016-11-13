@@ -105,6 +105,8 @@ func (b *Bucket) ReadFrom(r io.Reader) (int64, error) {
 	// Created a limited reader to not read more bytes
 	// that it is allocated for the list of actions.
 	limrd := io.LimitReader(r, int64(length-bucketLen))
+	b.Actions = nil
+
 	nn, err := b.Actions.ReadFrom(limrd)
 	return n + nn, err
 }

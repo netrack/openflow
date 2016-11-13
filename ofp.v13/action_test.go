@@ -50,15 +50,15 @@ func TestActionOutput(t *testing.T) {
 
 func TestActionGroup(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&ActionGroup{GroupID: GroupMax}, []byte{
+		{&ActionGroup{Group: GroupMax}, []byte{
 			0x0, 0x16, // Action type.
 			0x0, 0x08, // Action length.
 			0xff, 0xff, 0xff, 0x00}}, // Group identifier.
-		{&ActionGroup{GroupID: GroupAll}, []byte{
+		{&ActionGroup{Group: GroupAll}, []byte{
 			0x0, 0x16,
 			0x0, 0x08,
 			0xff, 0xff, 0xff, 0xfc}},
-		{&ActionGroup{GroupID: GroupAny}, []byte{
+		{&ActionGroup{Group: GroupAny}, []byte{
 			0x0, 0x16,
 			0x0, 0x08,
 			0xff, 0xff, 0xff, 0xff}},
