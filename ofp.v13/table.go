@@ -110,16 +110,6 @@ func (t *TableFeatures) WriteTo(w io.Writer) (int64, error) {
 		t.MaxEntries, buf.Bytes())
 }
 
-func (t *TableFeatures) String() string {
-	var str string
-
-	for _, prop := range t.Properties {
-		str = fmt.Sprintf("%s <%v:%v>", str, prop.Type(), prop)
-	}
-
-	return str
-}
-
 func (t *TableFeatures) ReadFrom(r io.Reader) (int64, error) {
 	var name [maxTableNameLen]byte
 	var length uint16
