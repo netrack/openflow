@@ -22,7 +22,7 @@ func TestFlowMod(t *testing.T) {
 		{&FlowMod{
 			Cookie:       0xdbf7525e57bd7eef,
 			CookieMask:   0x44d8b8f011090dcb,
-			TableID:      TableMax,
+			Table:        TableMax,
 			Command:      FlowAdd,
 			IdleTimeout:  45,
 			HardTimeout:  90,
@@ -79,7 +79,7 @@ func TestFlowRemoved(t *testing.T) {
 			Cookie:       0xf22884334a8def04,
 			Priority:     11,
 			Reason:       FlowReasonHardTimeout,
-			TableID:      TableMax,
+			Table:        TableMax,
 			DurationSec:  929584189,
 			DurationNSec: 1244051003,
 			IdleTimeout:  46,
@@ -122,7 +122,7 @@ func TestFlowStatsRequest(t *testing.T) {
 
 	tests := []encodingtest.MU{
 		{&FlowStatsRequest{
-			TableID:    TableMax,
+			Table:      TableMax,
 			OutPort:    PortFlood,
 			OutGroup:   GroupAny,
 			Cookie:     0xdbf7525e57bd7eef,
@@ -165,7 +165,7 @@ func TestFlowStats(t *testing.T) {
 
 	tests := []encodingtest.MU{
 		{&FlowStats{
-			TableID:      Table(23),
+			Table:        Table(23),
 			DurationSec:  929584189,
 			DurationNSec: 1244051003,
 			Priority:     13,

@@ -72,11 +72,11 @@ type FlowMod struct {
 	// no restriction
 	CookieMask uint64
 
-	// The TableID is an id of the table to put the flow in.
+	// The Table is an id of the table to put the flow in.
 	//
 	// For FC_DELETE_* commands, TT_ALL can also be used to delete matching
 	// flows from all tables.
-	TableID Table
+	Table Table
 
 	// Command specifies a flow modifications command.
 	Command FlowModCommand
@@ -165,7 +165,7 @@ func (f *FlowMod) Bytes() []byte {
 
 // WriteTo implements WriterTo interface.
 func (f *FlowMod) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, f.Cookie, f.CookieMask, f.TableID,
+	return encoding.WriteTo(w, f.Cookie, f.CookieMask, f.Table,
 		f.Command, f.IdleTimeout, f.HardTimeout, f.Priority,
 		f.BufferID, f.OutPort, f.OutGroup, f.Flags, pad2{},
 		&f.Match, &f.Instructions,
@@ -175,7 +175,7 @@ func (f *FlowMod) WriteTo(w io.Writer) (int64, error) {
 func (f *FlowMod) ReadFrom(r io.Reader) (int64, error) {
 	f.Instructions = nil
 
-	return encoding.ReadFrom(r, &f.Cookie, &f.CookieMask, &f.TableID,
+	return encoding.ReadFrom(r, &f.Cookie, &f.CookieMask, &f.Table,
 		&f.Command, &f.IdleTimeout, &f.HardTimeout, &f.Priority,
 		&f.BufferID, &f.OutPort, &f.OutGroup, &f.Flags, &defaultPad2,
 		&f.Match, &f.Instructions,
@@ -213,8 +213,8 @@ type FlowRemoved struct {
 	// The Reason stores specifies the reason of the flow entry removal.
 	Reason FlowRemovedReason
 
-	// TableID is an id of the table.
-	TableID Table
+	// Table is an id of the table.
+	Table Table
 
 	// DurationSec is a time flow was alive in seconds.
 	DurationSec uint32
@@ -255,7 +255,7 @@ func (f *FlowRemoved) SetCookies(cookies uint64) {
 
 func (f *FlowRemoved) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, f.Cookie, f.Priority, f.Reason,
-		f.TableID, f.DurationSec, f.DurationNSec, f.IdleTimeout,
+		f.Table, f.DurationSec, f.DurationNSec, f.IdleTimeout,
 		f.HardTimeout, f.PacketCount, f.ByteCount, &f.Match,
 	)
 }
@@ -263,13 +263,13 @@ func (f *FlowRemoved) WriteTo(w io.Writer) (int64, error) {
 // ReadFrom implements ReaderFrom interface.
 func (f *FlowRemoved) ReadFrom(r io.Reader) (int64, error) {
 	return encoding.ReadFrom(r, &f.Cookie, &f.Priority, &f.Reason,
-		&f.TableID, &f.DurationSec, &f.DurationNSec, &f.IdleTimeout,
+		&f.Table, &f.DurationSec, &f.DurationNSec, &f.IdleTimeout,
 		&f.HardTimeout, &f.PacketCount, &f.ByteCount, &f.Match,
 	)
 }
 
 type FlowStatsRequest struct {
-	TableID Table
+	Table Table
 
 	OutPort  PortNo
 	OutGroup Group
@@ -288,19 +288,19 @@ func (f *FlowStatsRequest) SetCookies(cookies uint64) {
 }
 
 func (f *FlowStatsRequest) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, f.TableID, pad3{}, f.OutPort,
+	return encoding.WriteTo(w, f.Table, pad3{}, f.OutPort,
 		f.OutGroup, pad4{}, f.Cookie, f.CookieMask, &f.Match,
 	)
 }
 
 func (f *FlowStatsRequest) ReadFrom(r io.Reader) (int64, error) {
-	return encoding.ReadFrom(r, &f.TableID, &defaultPad3, &f.OutPort,
+	return encoding.ReadFrom(r, &f.Table, &defaultPad3, &f.OutPort,
 		&f.OutGroup, &defaultPad4, &f.Cookie, &f.CookieMask, &f.Match,
 	)
 }
 
 type FlowStats struct {
-	TableID Table
+	Table Table
 
 	DurationSec  uint32
 	DurationNSec uint32
@@ -329,7 +329,7 @@ func (f *FlowStats) SetCookies(cookies uint64) {
 func (f *FlowStats) WriteTo(w io.Writer) (int64, error) {
 	var buf bytes.Buffer
 
-	_, err := encoding.WriteTo(&buf, f.TableID, pad1{}, f.DurationSec,
+	_, err := encoding.WriteTo(&buf, f.Table, pad1{}, f.DurationSec,
 		f.DurationNSec, f.Priority, f.IdleTimeout, f.HardTimeout,
 		f.Flags, pad4{}, f.Cookie, f.PacketCount, f.ByteCount,
 		&f.Match, &f.Instructions,
@@ -345,7 +345,7 @@ func (f *FlowStats) WriteTo(w io.Writer) (int64, error) {
 func (f *FlowStats) ReadFrom(r io.Reader) (int64, error) {
 	var len uint16
 
-	n, err := encoding.ReadFrom(r, &len, &f.TableID, &defaultPad1,
+	n, err := encoding.ReadFrom(r, &len, &f.Table, &defaultPad1,
 		&f.DurationSec, &f.DurationNSec, &f.Priority, &f.IdleTimeout,
 		&f.HardTimeout, &f.Flags, &defaultPad4, &f.Cookie, &f.PacketCount,
 		&f.ByteCount, &f.Match)
