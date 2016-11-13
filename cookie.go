@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"reflect"
+	"time"
 )
 
 type CookieJar interface {
@@ -41,6 +43,28 @@ type CookieMatcher struct {
 	// registered handler will be called to process the request. Otherwise
 	// the request will be skipped.
 	Reader CookieReader
+}
+
+// NewCookieMatcher creates a new cookie matcher. The cookie value will
+// be randomly generated using the functions from the standard library.
+func NewCookieMatcher(j CookieJar) *CookieMatcher {
+	var cookies uint64
+
+	// Update the seed every time.
+	rand.Seed(time.Now().UnixNano())
+
+	// The default random generator does not allow to create unsigned
+	// 64-bit integers, therefore, we will glue that type from the
+	// two 32-bit pieces.
+	cookiesLow := rand.Uint32()
+	cookiesHigh := rand.Uint32()
+
+	cookies = uint64(cookiesHigh<<32) | uint64(cookiesLow)
+
+	// Set the generated cookies to the given cookie jar and also
+	// put this value to the matcher.
+	j.SetCookies(cookies)
+	return &CookieMatcher{cookies, CookieReaderOf(j)}
 }
 
 // Filter compares the cookie from the message with the given one.
@@ -79,8 +103,8 @@ func (f *CookieMatcher) Matcher(r *Request) bool {
 // CookieReaderOf creates a new cookie reader instance from the cookie
 // jar. It uses reflection to create a new examplar of the given type,
 // so the resulting reader is safe to use in multiple go-routines.
-func CookieReaderOf(cj CookieJar) CookieReader {
-	valueType := reflect.TypeOf(cj).Elem()
+func CookieReaderOf(j CookieJar) CookieReader {
+	valueType := reflect.TypeOf(j).Elem()
 
 	cr := func(r io.Reader) (CookieJar, error) {
 		value := reflect.New(valueType)

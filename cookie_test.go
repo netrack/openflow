@@ -42,3 +42,12 @@ func TestCookieReaderOf(t *testing.T) {
 		t.Fatalf("Invalid cookie returned: %d", jar.Cookies)
 	}
 }
+
+func TestNewCookieMatcher(t *testing.T) {
+	jar := &fakeCookieJar{}
+	m := NewCookieMatcher(jar)
+
+	if m.Cookies != jar.Cookies() {
+		t.Fatalf("Cookies are not set: %d != %d", m.Cookies, jar.Cookies())
+	}
+}
