@@ -159,10 +159,10 @@ type XMClass uint16
 
 const (
 	// Bit that indicate that a VLAN id is set.
-	VID_NONE VlanID = iota << 12
+	VlanNone VlanID = iota << 12
 
 	// No VLAN id was set.
-	VID_PRESENT VlanID = iota << 12
+	VlanPresent VlanID = iota << 12
 )
 
 // VlanID represents bit definitions for VLAN id values. It allows matching
@@ -173,40 +173,46 @@ const (
 type VlanID uint16
 
 const (
-	// "No next header" encountered.
-	IEH_NONEXT IPv6ExtHdrFlags = 1 << iota
+	// IPv6ExtensionHeaderNoNext bit is set when "no next header"
+	// encountered.
+	IPv6ExtensionHeaderNoNext IPv6ExtensionHeader = 1 << iota
 
-	// Encrypted Sec Payload header present.
-	IEH_ESP IPv6ExtHdrFlags = 1 << iota
+	// IPv6ExtensionHeaderESP bit is set when Encrypted Sec Payload header
+	// present.
+	IPv6ExtensionHeaderESP IPv6ExtensionHeader = 1 << iota
 
-	// Authentication header present.
-	IEH_AUTH IPv6ExtHdrFlags = 1 << iota
+	// IPv6ExtensionHeaderAuth bit is set when authentication header
+	// present.
+	IPv6ExtensionHeaderAuth IPv6ExtensionHeader = 1 << iota
 
-	// One or two destination headers present.
-	IEH_DEST IPv6ExtHdrFlags = 1 << iota
+	// IPv6ExtensionHeaderDest bit is set when one or two destination
+	// headers present.
+	IPv6ExtensionHeaderDest IPv6ExtensionHeader = 1 << iota
 
-	// Fragment header present.
-	IEH_FRAG IPv6ExtHdrFlags = 1 << iota
+	// IPv6ExtensionHeaderFrag bit is set when fragment header present.
+	IPv6ExtensionHeaderFrag IPv6ExtensionHeader = 1 << iota
 
-	// Router header present.
-	IEH_ROUTER IPv6ExtHdrFlags = 1 << iota
+	// IPv6ExtensionHeaderRouter bit is set when router header present.
+	IPv6ExtensionHeaderRouter IPv6ExtensionHeader = 1 << iota
 
-	// Hop-by-hop header present.
-	IEH_HOP IPv6ExtHdrFlags = 1 << iota
+	// IPv6ExtensionHeaderHop bit is set when hop-by-hop header present.
+	IPv6ExtensionHeaderHop IPv6ExtensionHeader = 1 << iota
 
-	// Unexpected repeats encountered.
-	IEH_UNREP IPv6ExtHdrFlags = 1 << iota
+	// IPv6ExtensionHeaderUnrep bit is set when unexpected repeats
+	// encountered.
+	IPv6ExtensionHeaderUnrep IPv6ExtensionHeader = 1 << iota
 
-	// Unexpected sequencing encountered.
-	IEH_UNSEQ IPv6ExtHdrFlags = 1 << iota
+	// IPv6ExtensionHeaderUnseq bit is set when unexpected sequencing
+	// encountered.
+	IPv6ExtensionHeaderUnseq IPv6ExtensionHeader = 1 << iota
 )
 
-// IPv6ExtHdrFlags represents bit definitions for IPv6 Extension Header
-// pseudo field. It indicates the presence of various IPv6 extension
-// headers in the packet header.
+// IPv6ExtensionHeader represents bit definitions for IPv6 Extension
+// Header pseudo field. It indicates the presence of various IPv6
+// extension headers in the packet header.
 //
-// Values of this type could be used as OXM matching values.
-type IPv6ExtHdrFlags uint16
+// Values of this type could be used as XM matching values.
+type IPv6ExtensionHeader uint16
 
 // The XM defines the flow match fields are described using
 // the OpenFlow Extensible Match (OXM) format, which is a
