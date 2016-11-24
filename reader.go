@@ -3,6 +3,7 @@ package of
 import (
 	"bytes"
 	"io"
+	"sync"
 )
 
 type writerToFunc func(io.Writer) (int64, error)
@@ -18,22 +19,19 @@ func (fn readerFunc) Read(b []byte) (int, error) {
 }
 
 func newReader(w ...io.WriterTo) io.Reader {
+	var buf bytes.Buffer
+	var mulErr error
+
+	var once sync.Once
+	mulW := MultiWriterTo(w...)
+
 	fn := func(b []byte) (int, error) {
-		var buf bytes.Buffer
-		var err error
+		once.Do(func() {
+			_, mulErr = mulW.WriteTo(&buf)
+		})
 
-		for _, wt := range w {
-			if wt == nil {
-				continue
-			}
-
-			if _, err = wt.WriteTo(&buf); err != nil {
-				break
-			}
-		}
-
-		if err != nil {
-			return 0, err
+		if mulErr != nil {
+			return 0, mulErr
 		}
 
 		return buf.Read(b)
@@ -47,6 +45,10 @@ func MultiWriterTo(w ...io.WriterTo) io.WriterTo {
 		var n int64
 
 		for _, writer := range w {
+			if writer == nil {
+				continue
+			}
+
 			nn, err := writer.WriteTo(wr)
 			n += nn
 

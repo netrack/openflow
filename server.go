@@ -129,6 +129,14 @@ type Server struct {
 
 	// Maximum duration before timing out the write of the response.
 	WriteTimeout time.Duration
+
+	ConnState func(Conn, ConnState)
+}
+
+func (srv *Server) setState(conn Conn, state ConnState) {
+	if cb := srv.ConnState; cb != nil {
+		cb(conn, state)
+	}
 }
 
 // ListenAndServe listens on the network address and then calls Server
@@ -164,6 +172,7 @@ func (srv *Server) Serve(l net.Listener) error {
 		c.ReadTimeout = srv.ReadTimeout
 		c.WriteTimeout = srv.WriteTimeout
 
+		srv.setState(c, StateNew)
 		go srv.serve(c, handler)
 	}
 }
@@ -180,10 +189,19 @@ func (srv *Server) serve(c *conn, h Handler) {
 			return
 		}
 
+		state := StateActive
+		if req.Header.Type == TypeHello {
+			state = StateHelloReceived
+		}
+
+		srv.setState(c, state)
 		// Define a response version from the request version, so
 		// it will potentially reduce the amount of additional
 		// header configurations.
-		header := Header{Version: req.Header.Version}
+		header := Header{
+			Version:     req.Header.Version,
+			Transaction: req.Header.Transaction,
+		}
 
 		// Construct a new response instance with some default
 		// attributes and execute respective handler for it.
@@ -193,5 +211,10 @@ func (srv *Server) serve(c *conn, h Handler) {
 		// Write the buffer content to the connection, so the
 		// pending messages will written.
 		c.Flush()
+
+		// Update the state as the handler just processed the
+		// received request and now the server will wait for a
+		// new one.
+		srv.setState(c, StateIdle)
 	}
 }
