@@ -68,14 +68,14 @@ type Header struct {
 	// Length including this Header.
 	Length uint16
 
-	// XId is an transaction id associated with this packet.
+	// Transaction is an transaction ID associated with this packet.
 	//
 	// Replies use the same id as was in the request to facilitate pairing.
-	XID uint32
+	Transaction uint32
 }
 
 func (h *Header) Copy() *Header {
-	return &Header{h.Version, h.Type, h.Length, h.XID}
+	return &Header{h.Version, h.Type, h.Length, h.Transaction}
 }
 
 // Length of the packet payload including header.
@@ -90,5 +90,5 @@ func (h *Header) WriteTo(w io.Writer) (int64, error) {
 
 // ReadFrom reads the header from the given reader in the wire format.
 func (h *Header) ReadFrom(r io.Reader) (int64, error) {
-	return encoding.ReadFrom(r, &h.Version, &h.Type, &h.Length, &h.XID)
+	return encoding.ReadFrom(r, &h.Version, &h.Type, &h.Length, &h.Transaction)
 }

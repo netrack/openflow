@@ -4,7 +4,18 @@ import (
 	"bufio"
 	"crypto/tls"
 	"net"
+	"sync"
 	"time"
+)
+
+type ConnState int
+
+const (
+	StateNew ConnState = iota
+	StateHelloReceived
+	StateActive
+	StateIdle
+	StateClosed
 )
 
 // Conn is an generic OpenFlow connection.
@@ -52,6 +63,7 @@ type conn struct {
 
 	// An input and output buffer.
 	buf *bufio.ReadWriter
+	mu  sync.Mutex
 
 	// Maximum duration before timing out the read of the request.
 	ReadTimeout time.Duration
@@ -86,7 +98,7 @@ func (c *conn) Receive() (*Request, error) {
 	}
 
 	r := &Request{Addr: c.rwc.RemoteAddr()}
-	_, err := r.ReadFrom(c.buf)
+	_, err := r.ReadFrom(c)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +124,7 @@ func (c *conn) Send(r *Request) error {
 		}()
 	}
 
-	_, err := r.WriteTo(c.buf)
+	_, err := r.WriteTo(c)
 	return err
 }
 
