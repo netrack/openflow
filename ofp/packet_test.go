@@ -3,7 +3,7 @@ package ofp
 import (
 	"testing"
 
-	"github.com/netrack/openflow/encoding/encodingtest"
+	"github.com/netrack/openflow/internal/encodingtest"
 )
 
 func TestPacketIn(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/netrack/openflow/encoding"
+	"github.com/netrack/openflow/internal/encoding"
 )
 
 const (

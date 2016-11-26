@@ -4,7 +4,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/netrack/openflow/encoding/encodingtest"
+	"github.com/netrack/openflow/internal/encodingtest"
 )
 
 var hwaddr, _ = net.ParseMAC("0123.4567.89ab")

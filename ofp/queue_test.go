@@ -4,7 +4,7 @@ import (
 	"encoding/gob"
 	"testing"
 
-	"github.com/netrack/openflow/encoding/encodingtest"
+	"github.com/netrack/openflow/internal/encodingtest"
 )
 
 func TestPacketQueue(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/netrack/openflow/encoding"
+	"github.com/netrack/openflow/internal/encoding"
 	"github.com/netrack/openflow/ofp"
 )
 
