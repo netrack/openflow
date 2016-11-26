@@ -27,7 +27,7 @@ of.ListenAndServe(":6633", nil)
 ```
 
 ```go
-matcher := of.TypeMatcher(of.TypePacketIn)
+pattern := of.TypeMatcher(of.TypePacketIn)
 
 mux := of.NewServeMux()
 mux.HandleFunc(pattern, func(rw of.ResponseWriter, r *of.Request) {
