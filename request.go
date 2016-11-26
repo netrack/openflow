@@ -44,11 +44,14 @@ type Request struct {
 	// Values >= 0 indicate that the given number of bytes may
 	// be read from Body.
 	ContentLength int64
+
+	// Connection instance.
+	conn Conn
 }
 
 // NewRequest returns a new Request given a type, address, and optional
 // body.
-func NewRequest(t Type, body io.WriterTo) (*Request, error) {
+func NewRequest(t Type, body io.WriterTo) *Request {
 	req := &Request{
 		Body:       newReader(body),
 		Proto:      "OFP/1.3",
@@ -58,7 +61,7 @@ func NewRequest(t Type, body io.WriterTo) (*Request, error) {
 	req.Header.Version = uint8(req.ProtoMajor + req.ProtoMinor)
 	req.Header.Type = t
 
-	return req, nil
+	return req
 }
 
 // ProtoAtLeast reports whether the OpenFlow protocol used in the request
@@ -66,6 +69,11 @@ func NewRequest(t Type, body io.WriterTo) (*Request, error) {
 func (r *Request) ProtoAtLeast(major, minor int) bool {
 	return r.ProtoMajor > major ||
 		r.ProtoMajor == major && r.ProtoMinor >= minor
+}
+
+// Conn returns the instance of the OpenFlow protocol connection.
+func (r *Request) Conn() Conn {
+	return r.conn
 }
 
 // WriteTo implements WriterTo interface. Writes the request in wire format

@@ -35,6 +35,27 @@ func TestResponseWrite(t *testing.T) {
 	nreqs := 3
 	ch := make(chan struct{}, nreqs)
 
+	helloHandler := func(rw of.ResponseWriter, r *of.Request) {
+		rw.Write(r.Header.Copy(), nil)
+
+		// Send a few multipart requests to retrieve
+		// statistics from the connected switch.
+		req := &ofp.MultipartRequest{
+			Type:  ofp.MultipartTypeAggregate,
+			Flags: ofp.MultipartRequestMode,
+		}
+
+		stats := of.MultiWriterTo(req, &ofp.AggregateStatsRequest{
+			OutPort: ofp.PortAny, OutGroup: ofp.GroupAny,
+			Match: ofputil.ExtendedMatch(ofputil.MatchInPort(1)),
+		})
+
+		header := r.Header.Copy()
+		header.Type = of.TypeMultipartRequest
+
+		rw.Write(header, stats)
+	}
+
 	echoHandler := func(rw of.ResponseWriter, r *of.Request) {
 		var req ofp.EchoRequest
 		req.ReadFrom(r.Body)
@@ -47,35 +68,11 @@ func TestResponseWrite(t *testing.T) {
 	}
 
 	td := of.NewTypeDispatcher()
+	td.HandleFunc(of.TypeHello, helloHandler)
 	td.HandleFunc(of.TypeEchoRequest, echoHandler)
 
 	ln, _ := net.Listen("tcp", ":6633")
 	s := ofptest.NewUnstartedServer(td, ln)
-
-	s.Config.ConnState = func(conn of.Conn, state of.ConnState) {
-		if state != of.StateHelloReceived {
-			return
-		}
-
-		req, _ := of.NewRequest(of.TypeHello, &ofp.Hello{})
-		conn.Send(req)
-
-		// Send a few multipart requests to retrieve
-		// statistics from the connected switch.
-		mreq := &ofp.MultipartRequest{
-			Type:  ofp.MultipartTypeAggregate,
-			Flags: ofp.MultipartRequestMode,
-		}
-
-		m := of.MultiWriterTo(mreq, &ofp.AggregateStatsRequest{
-			OutPort: ofp.PortAny, OutGroup: ofp.GroupAny,
-			Match: ofputil.ExtendedMatch(ofputil.MatchInPort(1)),
-		})
-
-		req, _ = of.NewRequest(of.TypeMultipartRequest, m)
-		conn.Send(req)
-		conn.Flush()
-	}
 
 	s.Start()
 	defer s.Close()

@@ -13,9 +13,6 @@ import (
 type ResponseWriter interface {
 	// Write writes the data to the connection as part of an OpenFlow reply.
 	Write(*Header, io.WriterTo) error
-
-	// Conn returns the instance of the OpenFlow protocol connection.
-	Conn() Conn
 }
 
 // A Handler responds to an OpenFlow request.
@@ -40,9 +37,9 @@ func (h HandlerFunc) Serve(rw ResponseWriter, r *Request) {
 // requests.
 var DiscardHandler = HandlerFunc(func(rw ResponseWriter, r *Request) {})
 
-// Response implements ResponseWriter interface and represents the
+// response implements ResponseWriter interface and represents the
 // response from an OpenFlow request.
-type Response struct {
+type response struct {
 	// conn is an OpenFlow connection instance.
 	conn *conn
 
@@ -57,7 +54,7 @@ type Response struct {
 }
 
 // Write sends an OpenFlow response.
-func (r *Response) Write(header *Header, w io.WriterTo) (err error) {
+func (r *response) Write(header *Header, w io.WriterTo) (err error) {
 	var buf bytes.Buffer
 
 	// When the version is not configured properly, we will
@@ -71,9 +68,10 @@ func (r *Response) Write(header *Header, w io.WriterTo) (err error) {
 	defer r.bufMu.Unlock()
 	defer r.buf.Reset()
 
-	_, err = w.WriteTo(&buf)
-	if err != nil {
-		return
+	if w != nil {
+		if _, err = w.WriteTo(&buf); err != nil {
+			return
+		}
 	}
 
 	header.Length = headerlen + uint16(buf.Len())
@@ -93,11 +91,6 @@ func (r *Response) Write(header *Header, w io.WriterTo) (err error) {
 	}
 
 	return r.conn.Flush()
-}
-
-// Conn returns the OpenFlow connection.
-func (r *Response) Conn() Conn {
-	return r.conn
 }
 
 // ListenAndServe listens on the given TCP address the handler. When
@@ -205,7 +198,7 @@ func (srv *Server) serve(c *conn, h Handler) {
 
 		// Construct a new response instance with some default
 		// attributes and execute respective handler for it.
-		resp := &Response{conn: c, header: header}
+		resp := &response{conn: c, header: header}
 		h.Serve(resp, req)
 
 		// Write the buffer content to the connection, so the
