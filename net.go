@@ -97,7 +97,7 @@ func (c *conn) Receive() (*Request, error) {
 		c.SetReadDeadline(time.Now().Add(d))
 	}
 
-	r := &Request{Addr: c.rwc.RemoteAddr()}
+	r := &Request{Addr: c.rwc.RemoteAddr(), conn: c}
 	_, err := r.ReadFrom(c)
 	if err != nil {
 		return nil, err
