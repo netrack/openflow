@@ -18,6 +18,7 @@ we are using message types.
 ```go
 // Define the OpenFlow handler for hello messages.
 of.HandleFunc(of.TypeHello, func(rw of.ResponseWriter, r *of.Request) {
+        // Send back hello response.
         rw.Write(&of.Header{Type: of.TypeHello}, nil)
 })
 
@@ -26,13 +27,12 @@ of.ListenAndServe(":6633", nil)
 ```
 
 ```go
-tm := &TypeMatcher{Type: of.TypePacketIn}
-m := &of.RequestMatcher{tm}
+matcher := of.TypeMatcher(of.TypePacketIn)
 
-d := NewRequestDispatcher()
-d.HandleFunc(m, func(rw of.ResponseWriter, r *of.Request) {
-        // Send back hello response.
-        rw.Write(&of.Header{Type: of.TypeHello}, nil)
+mux := of.NewServeMux()
+mux.HandleFunc(pattern, func(rw of.ResponseWriter, r *of.Request) {
+        // Send back the packet-out message.
+        rw.Write(&of.Header{Type: of.TypePacketOut}, nil)
 })
 ```
 
