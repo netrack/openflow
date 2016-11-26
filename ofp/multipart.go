@@ -3,7 +3,7 @@ package ofp
 import (
 	"io"
 
-	"github.com/netrack/openflow/encoding"
+	"github.com/netrack/openflow/internal/encoding"
 )
 
 const (
