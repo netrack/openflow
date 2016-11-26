@@ -67,12 +67,12 @@ func TestResponseWrite(t *testing.T) {
 		ch <- struct{}{}
 	}
 
-	td := of.NewTypeDispatcher()
-	td.HandleFunc(of.TypeHello, helloHandler)
-	td.HandleFunc(of.TypeEchoRequest, echoHandler)
+	mux := of.NewTypeMux()
+	mux.HandleFunc(of.TypeHello, helloHandler)
+	mux.HandleFunc(of.TypeEchoRequest, echoHandler)
 
 	ln, _ := net.Listen("tcp", ":6633")
-	s := ofptest.NewUnstartedServer(td, ln)
+	s := ofptest.NewUnstartedServer(mux, ln)
 
 	s.Start()
 	defer s.Close()

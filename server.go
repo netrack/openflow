@@ -152,7 +152,7 @@ func (srv *Server) Serve(l net.Listener) error {
 	// will be used instead.
 	handler := srv.Handler
 	if handler == nil {
-		handler = DefaultDispatcher
+		handler = DefaultMux
 	}
 
 	for {
