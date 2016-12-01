@@ -1,5 +1,7 @@
 # openflow - The OpenFlow protocol library
 
+[![Build Status][BuildStatus]](https://travis-ci.org/netrack/openflow)
+
 The openflow library is a pure Go implementation of the OpenFlow protocol.
 The ideas of the programming interface mostly borrowed from the Go standard
 HTTP library.
@@ -41,3 +43,6 @@ mux.HandleFunc(pattern, func(rw of.ResponseWriter, r *of.Request) {
 The openflow library is distributed under MIT license, therefore you are free
 to do with code whatever you want. See the [LICENSE](LICENSE) file for full
 license text.
+
+
+[BuildStatus]: https://travis-ci.org/netrack/openflow.svg?branch=master
