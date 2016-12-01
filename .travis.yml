@@ -1,0 +1,10 @@
+---
+# A configuration of the continuous integration server.
+
+language: go
+
+go:
+  - 1.7.3
+
+notifications:
+  email: false
