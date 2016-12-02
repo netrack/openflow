@@ -13,11 +13,13 @@ type Matcher interface {
 
 // MatcherFunc type is an adapter to allow the use of ordinary functions
 // as OpenFlow request matchers.
-type MatcherFunc func(*Request) bool
+type MatcherFunc struct {
+	Func func(*Request) bool
+}
 
 // Match implements Matcher interface and calls fn(r).
-func (fn MatcherFunc) Match(r *Request) bool {
-	return fn(r)
+func (m *MatcherFunc) Match(r *Request) bool {
+	return m.Func(r)
 }
 
 // TypeMatcher used to match requests by their types.
@@ -41,7 +43,7 @@ func MultiMatcher(m ...Matcher) Matcher {
 		return true
 	}
 
-	return MatcherFunc(fn)
+	return &MatcherFunc{fn}
 }
 
 type muxEntry struct {

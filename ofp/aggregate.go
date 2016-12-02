@@ -19,6 +19,18 @@ type AggregateStatsRequest struct {
 	Match Match
 }
 
+// Cookies implements of.CookieJar interface and returns the cookies of
+// the aggregate statistics request
+func (a *AggregateStatsRequest) Cookies() uint64 {
+	return a.Cookie
+}
+
+// SetCookies implements of.CookieJar interface and sets the specified
+// cookies to the aggregate statistics request.
+func (a *AggregateStatsRequest) SetCookies(cookies uint64) {
+	a.Cookie = cookies
+}
+
 func (a *AggregateStatsRequest) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w,
 		a.Table,

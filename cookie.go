@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"reflect"
-	"time"
 )
 
 type CookieJar interface {
@@ -49,9 +48,6 @@ type CookieMatcher struct {
 // be randomly generated using the functions from the standard library.
 func NewCookieMatcher(j CookieJar) *CookieMatcher {
 	var cookies uint64
-
-	// Update the seed every time.
-	rand.Seed(time.Now().UnixNano())
 
 	// The default random generator does not allow to create unsigned
 	// 64-bit integers, therefore, we will glue that type from the

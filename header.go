@@ -2,6 +2,7 @@ package of
 
 import (
 	"io"
+	"math/rand"
 
 	"github.com/netrack/openflow/internal/encoding"
 )
@@ -91,4 +92,25 @@ func (h *Header) WriteTo(w io.Writer) (int64, error) {
 // ReadFrom reads the header from the given reader in the wire format.
 func (h *Header) ReadFrom(r io.Reader) (int64, error) {
 	return encoding.ReadFrom(r, &h.Version, &h.Type, &h.Length, &h.Transaction)
+}
+
+// TransactionMatcher creates a new matcher that matches the request
+// by the transaction identifier.
+//
+// If the header has non-zero transaction identifier, it will be used
+// to create a new matcher, otherwise a random number will be generated.
+func TransactionMatcher(h *Header) Matcher {
+	// When the trasnaction is not defined, we will generate a
+	// random number, that will be used to match the response.
+	if h.Transaction == 0 {
+		h.Transaction = rand.Uint32()
+	}
+
+	transaction := h.Transaction
+	matcher := func(r *Request) bool {
+		return r.Header.Transaction == transaction
+	}
+
+	// Return a function wrapped into the function adapter.
+	return &MatcherFunc{matcher}
 }
