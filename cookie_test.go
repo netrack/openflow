@@ -25,6 +25,10 @@ func (f *fakeCookieJar) ReadFrom(r io.Reader) (int64, error) {
 	return encoding.ReadFrom(r, &f.Cookie)
 }
 
+func (f *fakeCookieJar) WriteTo(w io.Writer) (int64, error) {
+	return encoding.WriteTo(w, f.Cookie)
+}
+
 func TestCookieReaderOf(t *testing.T) {
 	// Write a fake cookie into the buffer.
 	var rbuf bytes.Buffer
@@ -49,5 +53,17 @@ func TestNewCookieMatcher(t *testing.T) {
 
 	if m.Cookies != jar.Cookies() {
 		t.Fatalf("Cookies are not set: %d != %d", m.Cookies, jar.Cookies())
+	}
+
+	// Create a request that we are going to match with the matcher.
+	r := NewRequest(TypeHello, &fakeCookieJar{jar.Cookie})
+	if !m.Match(r) {
+		t.Fatalf("Request expected to match the cookie: %d", jar.Cookie)
+	}
+
+	// Create a new request with a message, that have distinct cookie.
+	r = NewRequest(TypeHello, &fakeCookieJar{jar.Cookie + 1})
+	if m.Match(r) {
+		t.Fatalf("Request is not expected to match the cookie: %d", jar.Cookie)
 	}
 }

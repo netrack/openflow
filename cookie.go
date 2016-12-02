@@ -67,12 +67,12 @@ func NewCookieMatcher(j CookieJar) *CookieMatcher {
 	return &CookieMatcher{cookies, CookieReaderOf(j)}
 }
 
-// Filter compares the cookie from the message with the given one.
+// Match compares the cookie from the message with the given one.
 //
 // Cookie of each incoming request will be compared to the given cookie
 // jar cookie. If the request cookie matches the registered one, the given
 // handler will be used to process the request.
-func (f *CookieMatcher) Matcher(r *Request) bool {
+func (f *CookieMatcher) Match(r *Request) bool {
 	rd, ok := r.Body.(*bytes.Buffer)
 
 	if ok {
