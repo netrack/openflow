@@ -1,6 +1,7 @@
 # openflow - The OpenFlow protocol library
 
 [![Build Status][BuildStatus]](https://travis-ci.org/netrack/openflow)
+[![Documentation][Documentation]](https://godoc.org/github.com/netrack/openflow)
 
 The openflow library is a pure Go implementation of the OpenFlow protocol.
 The ideas of the programming interface mostly borrowed from the Go standard
@@ -45,4 +46,5 @@ to do with code whatever you want. See the [LICENSE](LICENSE) file for full
 license text.
 
 
-[BuildStatus]: https://travis-ci.org/netrack/openflow.svg?branch=master
+[BuildStatus]:   https://travis-ci.org/netrack/openflow.svg?branch=master
+[Documentation]: https://godoc.org/github.com/netrack/openflow?status.svg
