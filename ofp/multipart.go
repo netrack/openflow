@@ -1,10 +1,14 @@
 package ofp
 
 import (
+	"bytes"
 	"io"
+	"sync"
 
 	"github.com/netrack/openflow/internal/encoding"
 )
+
+type MultipartType uint16
 
 const (
 	// Description of this OpenFlow switch.
@@ -79,37 +83,92 @@ const (
 	MultipartTypeExperimenter MultipartType = 0xffff
 )
 
-type MultipartType uint16
+type MultipartRequestFlag uint16
 
 const (
 	MultipartRequestMode MultipartRequestFlag = 1 << iota
 )
 
-type MultipartRequestFlag uint16
+type MultipartReplyFlag uint16
 
 const (
 	MultipartReplyMode MultipartReplyFlag = 1 << iota
 )
 
-type MultipartReplyFlag uint16
+// reader is a wrapper around the io.WriterTo type.
+type reader struct {
+	io.WriterTo
+
+	buf  *bytes.Buffer
+	bufE error
+
+	once sync.Once
+}
+
+func (r *reader) read(b []byte) (int, error) {
+	// Initialize a buffer only once, to dump
+	// the content of the writer to the buffer.
+	r.once.Do(func() {
+		r.buf = new(bytes.Buffer)
+		_, r.bufE = r.WriterTo.WriteTo(r.buf)
+	})
+
+	if r.bufE != nil {
+		return 0, r.bufE
+	}
+
+	// And then read the data from the buffer back.
+	return r.buf.Read(b)
+}
+
+// Read implements io.Reader interface.
+func (r *reader) Read(b []byte) (int, error) {
+	switch r := r.WriterTo.(type) {
+	case io.Reader:
+		return r.Read(b)
+	}
+
+	return r.read(b)
+}
 
 // While the system is running, the controller may request
-// state from the datapath using the T_MULTIPART_REQUEST message
+// state from the datapath using the multipart request message.
 type MultipartRequest struct {
 	Type  MultipartType
 	Flags MultipartRequestFlag
+
+	// Body is the request's body.
+	//
+	// For receiver requests a nil body means the request has no
+	// body.
+	Body io.Reader
 }
 
-func (m *MultipartRequest) Bytes() []byte {
-	return Bytes(m)
+// NewMultipartRequest creates a new multipart request.
+func NewMultipartRequest(t MultipartType, body io.WriterTo) *MultipartRequest {
+	return &MultipartRequest{
+		Type: t, Flags: MultipartRequestMode,
+		Body: &reader{WriterTo: body},
+	}
 }
 
 func (m *MultipartRequest) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, m.Type, m.Flags, pad4{})
+	// By default, body will be embedded into the reader type.
+	return encoding.WriteTo(w, m.Type, m.Flags, pad4{}, m.Body)
 }
 
 func (m *MultipartRequest) ReadFrom(r io.Reader) (int64, error) {
-	return encoding.ReadFrom(r, &m.Type, &m.Flags, &defaultPad4)
+	n, err := encoding.ReadFrom(r, &m.Type, &m.Flags, &defaultPad4)
+	if err != nil {
+		return n, err
+	}
+
+	// Just copy the rest of the body to the requet.
+	buf := new(bytes.Buffer)
+	m.Body = buf
+
+	nn, err := io.Copy(buf, r)
+	return n + nn, err
 }
 
 // The switch responds on T_MULTIPART_REQUEST with one

@@ -31,29 +31,39 @@ func waitAll(ch chan struct{}, n int, t time.Duration) error {
 }
 
 func TestResponseWrite(t *testing.T) {
-	// Wait for 3 successfull echo-request replies.
-	nreqs := 3
+	// Wait for 3 successfull echo-request replies and a
+	// reply on the multipart aggregated statistics.
+	nreqs := 4
 	ch := make(chan struct{}, nreqs)
+	mux := of.NewServeMux()
+
+	statsHandler := func(rw of.ResponseWriter, r *of.Request) {
+		ch <- struct{}{}
+	}
 
 	helloHandler := func(rw of.ResponseWriter, r *of.Request) {
 		rw.Write(r.Header.Copy(), nil)
 
-		// Send a few multipart requests to retrieve
-		// statistics from the connected switch.
-		req := &ofp.MultipartRequest{
-			Type:  ofp.MultipartTypeAggregate,
-			Flags: ofp.MultipartRequestMode,
+		// Send a multipart request to retrieve statistics from
+		// the connected switch.
+		body := &ofp.AggregateStatsRequest{
+			OutPort:  ofp.PortAny,
+			OutGroup: ofp.GroupAny,
+			Match: ofputil.ExtendedMatch(
+				ofputil.MatchInPort(1),
+			),
 		}
 
-		stats := of.MultiWriterTo(req, &ofp.AggregateStatsRequest{
-			OutPort: ofp.PortAny, OutGroup: ofp.GroupAny,
-			Match: ofputil.ExtendedMatch(ofputil.MatchInPort(1)),
-		})
+		req := ofp.NewMultipartRequest(
+			ofp.MultipartTypeAggregate, body)
 
-		header := r.Header.Copy()
-		header.Type = of.TypeMultipartRequest
+		header := &of.Header{Type: of.TypeMultipartRequest}
+		pattern := of.TransactionMatcher(header)
 
-		rw.Write(header, stats)
+		// Create a matcher based on the header transaction. It
+		// will be used to handle the multipart response.
+		mux.HandleOnce(pattern, of.HandlerFunc(statsHandler))
+		rw.Write(header, req)
 	}
 
 	echoHandler := func(rw of.ResponseWriter, r *of.Request) {
@@ -67,9 +77,8 @@ func TestResponseWrite(t *testing.T) {
 		ch <- struct{}{}
 	}
 
-	mux := of.NewTypeMux()
-	mux.HandleFunc(of.TypeHello, helloHandler)
-	mux.HandleFunc(of.TypeEchoRequest, echoHandler)
+	mux.HandleFunc(of.TypeMatcher(of.TypeHello), helloHandler)
+	mux.HandleFunc(of.TypeMatcher(of.TypeEchoRequest), echoHandler)
 
 	ln, _ := net.Listen("tcp", ":6633")
 	s := ofptest.NewUnstartedServer(mux, ln)

@@ -29,6 +29,40 @@ type ReadWriter interface {
 	io.WriterTo
 }
 
+// nopWriter is a wrapper around the WriterTo that implements
+// ReaderFrom interface.
+type nopWriter struct {
+	io.WriterTo
+}
+
+// ReadFrom implements io.ReaderFrom interface.
+func (nopWriter) ReadFrom(r io.Reader) (int64, error) {
+	return 0, io.EOF
+}
+
+// NopWriter returns a ReadWriter with no-op ReadFrom method wrapping
+// the provided WriterTo w.
+func NopWriter(w io.WriterTo) ReadWriter {
+	return nopWriter{w}
+}
+
+// nopReader is a wrapper around the ReaderFrom that implements
+// WriterTo interface.
+type nopReader struct {
+	io.ReaderFrom
+}
+
+// WriteTo implements io.WriterTo interface.
+func (nopReader) WriteTo(w io.Writer) (int64, error) {
+	return 0, nil
+}
+
+// NopReader returns a ReadWriter with no-op WriteTo method wrapping
+// the provided ReaderFrom r.
+func NopReader(r io.ReaderFrom) ReadWriter {
+	return nopReader{r}
+}
+
 func WriteTo(w io.Writer, v ...interface{}) (int64, error) {
 	var (
 		wbuf bytes.Buffer
@@ -37,6 +71,8 @@ func WriteTo(w io.Writer, v ...interface{}) (int64, error) {
 
 	for _, elem := range v {
 		switch elem := elem.(type) {
+		case nil:
+			continue
 		case io.WriterTo:
 			_, err = elem.WriteTo(&wbuf)
 		default:

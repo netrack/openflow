@@ -21,7 +21,7 @@ func TestMultiMatcher(t *testing.T) {
 		return r.Header.Transaction == txn
 	}
 
-	matcher := MultiMatcher(MatcherFunc(mf1), MatcherFunc(mf2))
+	matcher := MultiMatcher(&MatcherFunc{mf1}, &MatcherFunc{mf2})
 
 	r := NewRequest(TypePacketIn, nil)
 	if matcher.Match(r) {
