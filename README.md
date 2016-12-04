@@ -19,24 +19,54 @@ The usage is pretty similar to the handling HTTP request, but instead of routes
 we are using message types.
 
 ```go
-// Define the OpenFlow handler for hello messages.
-openflow.HandleFunc(openflow.TypeHello, func(rw openflow.ResponseWriter, r *openflow.Request) {
-        // Send back hello response.
-        rw.Write(&openflow.Header{Type: openflow.TypeHello}, nil)
-})
+package main
 
-// Start the TCP server on 6633 port.
-openflow.ListenAndServe(":6633", nil)
+import (
+    of "github.com/netrack/openflow"
+)
+
+func main() {
+    // Define the OpenFlow handler for hello messages.
+    of.HandleFunc(of.TypeHello, func(rw of.ResponseWriter, r *of.Request) {
+        // Send back hello response.
+        rw.Write(&of.Header{Type: of.TypeHello}, nil)
+    })
+
+    // Start the TCP server on 6633 port.
+    of.ListenAndServe(":6633", nil)
+}
 ```
 
 ```go
-pattern := openflow.TypeMatcher(openflow.TypePacketIn)
+package main
 
-mux := openflow.NewServeMux()
-mux.HandleFunc(pattern, func(rw openflow.ResponseWriter, r *openflow.Request) {
-        // Send back the packet-out message.
-        rw.Write(&openflow.Header{Type: openflow.TypePacketOut}, nil)
-})
+import (
+    "github.com/netrack/openflow/ofp"
+    of "github.com/netrack/openflow"
+)
+
+func main() {
+    pattern := of.TypeMatcher(of.TypePacketIn)
+
+    mux := of.NewServeMux()
+    mux.HandleFunc(pattern, func(rw of.ResponseWriter, r *of.Request) {
+        var packet ofp.PacketIn
+        packet.ReadFrom(r.Body)
+
+        apply := &ofp.InstructionApplyActions{
+            ofp.Actions{&ofp.ActionOutput{ofp.PortFlood, 0}},
+        }
+
+        // For each incoming packet-in request, create a
+        // respective flow modification command.
+        fmod := ofp.NewFlowMod(ofp.FlowAdd, packet)
+        fmod.Instructions = ofp.Instructions{apply}
+
+        rw.Write(&of.Header{Type: of.TypeFlowMod}, body)
+    })
+
+    of.ListenAndServe(":6633", mux)
+}
 ```
 
 # License

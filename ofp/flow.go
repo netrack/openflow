@@ -148,6 +148,37 @@ type FlowMod struct {
 	Instructions Instructions
 }
 
+// NewFlowMod creates a flow modification message based on the specified
+// packet-in message.
+//
+// It is responsbility of the caller to assign the missing instructions
+// and the rest of parameters.
+func NewFlowMod(c FlowModCommand, p *PacketIn) *FlowMod {
+	var flags FlowModFlag
+
+	switch c {
+	case FlowDelete, FlowDeleteStrict:
+		// For flow delete requests we cannot set the same flags
+		// as for flow insertion and modification.
+	default:
+		// Use the overlap checking and flow removed notification
+		// flags by default for generated message.
+		flags = FlowFlagSendFlowRem | FlowFlagCheckOverlap
+	}
+
+	return &FlowMod{
+		Command:  c,
+		BufferID: p.BufferID,
+		Match:    p.Match,
+		Flags:    flags,
+
+		// For FlowDelete command, define the output port and
+		// group values as "any" to indicate no restrictions.
+		OutPort:  PortAny,
+		OutGroup: GroupAny,
+	}
+}
+
 // Cookies implements CookieJar interface. It returns flow mod message
 // cookies.
 func (f *FlowMod) Cookies() uint64 {
