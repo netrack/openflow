@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/netrack/openflow"
+	of "github.com/netrack/openflow"
 )
 
 // Server is an OpenFlow server listening on a system-chosen port

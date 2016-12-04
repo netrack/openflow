@@ -1,8 +1,8 @@
 package ofputil
 
 import (
-	"github.com/netrack/openflow"
 	"github.com/netrack/openflow/ofp"
+	of "github.com/netrack/openflow"
 )
 
 func TableFlush(table ofp.Table) *of.Request {

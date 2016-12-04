@@ -1,4 +1,4 @@
-package of
+package openflow
 
 import (
 	"io"
