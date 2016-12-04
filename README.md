@@ -20,22 +20,22 @@ we are using message types.
 
 ```go
 // Define the OpenFlow handler for hello messages.
-of.HandleFunc(of.TypeHello, func(rw of.ResponseWriter, r *of.Request) {
+openflow.HandleFunc(openflow.TypeHello, func(rw openflow.ResponseWriter, r *openflow.Request) {
         // Send back hello response.
-        rw.Write(&of.Header{Type: of.TypeHello}, nil)
+        rw.Write(&openflow.Header{Type: openflow.TypeHello}, nil)
 })
 
 // Start the TCP server on 6633 port.
-of.ListenAndServe(":6633", nil)
+openflow.ListenAndServe(":6633", nil)
 ```
 
 ```go
-pattern := of.TypeMatcher(of.TypePacketIn)
+pattern := openflow.TypeMatcher(openflow.TypePacketIn)
 
-mux := of.NewServeMux()
-mux.HandleFunc(pattern, func(rw of.ResponseWriter, r *of.Request) {
+mux := openflow.NewServeMux()
+mux.HandleFunc(pattern, func(rw openflow.ResponseWriter, r *openflow.Request) {
         // Send back the packet-out message.
-        rw.Write(&of.Header{Type: of.TypePacketOut}, nil)
+        rw.Write(&openflow.Header{Type: openflow.TypePacketOut}, nil)
 })
 ```
 
