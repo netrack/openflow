@@ -1,6 +1,6 @@
 // +build integration
 
-package of_test
+package openflow_test
 
 import (
 	"fmt"

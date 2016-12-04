@@ -3,8 +3,8 @@ package ofputil
 import (
 	"log"
 
-	"github.com/netrack/openflow"
 	"github.com/netrack/openflow/ofp"
+	of "github.com/netrack/openflow"
 )
 
 // EchoHandler returns a request handler that replies on
