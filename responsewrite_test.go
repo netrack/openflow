@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/netrack/openflow"
+	of "github.com/netrack/openflow"
 	"github.com/netrack/openflow/ofp"
 	"github.com/netrack/openflow/ofptest"
 	"github.com/netrack/openflow/ofputil"

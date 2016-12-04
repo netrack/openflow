@@ -2,6 +2,7 @@ package ofp
 
 import (
 	"encoding/gob"
+	"reflect"
 	"testing"
 
 	"github.com/netrack/openflow/internal/encodingtest"
@@ -209,4 +210,30 @@ func TestFlowStats(t *testing.T) {
 	}
 
 	encodingtest.RunMU(t, tests)
+}
+
+func TestNewFlowMod(t *testing.T) {
+	match := Match{MatchTypeXM, []XM{{
+		Class: XMClassOpenflowBasic,
+		Type:  XMTypeInPort,
+		Value: XMValue{0x00, 0x00, 0x00, 0x03},
+	}}}
+
+	packet := &PacketIn{BufferID: 42, Match: match}
+	fmod := NewFlowMod(FlowAdd, packet)
+
+	// Ensure that all default parameters of the created
+	// flow modification message have been defined.
+	if fmod.Flags^(FlowFlagSendFlowRem|FlowFlagCheckOverlap) != 0 {
+		t.Errorf("Default flags are not set: %b", fmod.Flags)
+	}
+
+	if fmod.BufferID != packet.BufferID {
+		t.Errorf("Buffer identifier does not match expected one: "+
+			"%d is not equal to %d", fmod.BufferID, packet.BufferID)
+	}
+
+	if !reflect.DeepEqual(fmod.Match, match) {
+		t.Errorf("Flow match is not the same as in packet-in")
+	}
 }
