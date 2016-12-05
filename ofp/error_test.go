@@ -6,12 +6,12 @@ import (
 	"github.com/netrack/openflow/internal/encodingtest"
 )
 
-func TestErrorMsg(t *testing.T) {
+func TestError(t *testing.T) {
 	data := []byte{0x00, 0x01, 0x02, 0x03}
 	tests := []encodingtest.MU{
-		{&ErrorMsg{
-			Type: ErrorTypePortModFailed,
-			Code: ErrorCodePortModFailedBadPort,
+		{&Error{
+			Type: ErrTypePortModFailed,
+			Code: ErrCodePortModFailedBadPort,
 			Data: data,
 		}, append([]byte{
 			0x00, 0x07, // Error type.
@@ -25,8 +25,7 @@ func TestErrorMsg(t *testing.T) {
 func TestErrorExperimenterMsg(t *testing.T) {
 	data := []byte{0x03, 0x02, 0x01, 0x00}
 	tests := []encodingtest.MU{
-		{&ErrorExperimenterMsg{
-			Type:         ErrorTypeExperimenter,
+		{&ErrorExperimenter{
 			ExpType:      4,
 			Experimenter: 42,
 			Data:         data,
