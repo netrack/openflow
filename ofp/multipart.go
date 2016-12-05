@@ -146,10 +146,15 @@ type MultipartRequest struct {
 
 // NewMultipartRequest creates a new multipart request.
 func NewMultipartRequest(t MultipartType, body io.WriterTo) *MultipartRequest {
-	return &MultipartRequest{
-		Type: t, Flags: MultipartRequestMode,
-		Body: &reader{WriterTo: body},
+	var rd io.Reader
+
+	// When the body is not defined then bypass wrapping
+	// it with a reader type.
+	if body != nil {
+		rd = &reader{WriterTo: body}
 	}
+
+	return &MultipartRequest{t, MultipartRequestMode, rd}
 }
 
 func (m *MultipartRequest) WriteTo(w io.Writer) (int64, error) {
