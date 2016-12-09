@@ -7,56 +7,79 @@ import (
 	"github.com/netrack/openflow/internal/encoding"
 )
 
-const (
-	// New flow.
-	FlowAdd FlowModCommand = iota
-
-	// Modify all matching flows.
-	FlowModity
-
-	// Modify entry strictly matching wildcards and priority.
-	FlowModifyStrict
-
-	// Delete all matching flows.
-	FlowDelete
-
-	// Delete entry strictly matching wildcards and priority.
-	FlowDeleteStrict
-)
-
 // FlowModCommand represents a type of the flow table modification
 // message.
 type FlowModCommand uint8
 
 const (
-	// When the FF_SEND_FLOW_REM flag is set, the switch must send a
-	// flow removed message when the flow entry expires or is deleted.
+	// FlowAdd is a command used to add a new flow.
+	FlowAdd FlowModCommand = iota
+
+	// FlowModify is a command used to modify all matching flows.
+	FlowModity
+
+	// FlowModifyStrict is a command used to modify entry strictly
+	// matching wildcards and priority.
+	FlowModifyStrict
+
+	// FlowDelete is a command used to delete all matching flows.
+	FlowDelete
+
+	// FlowDeleteStrict is a command used to delete entry strictly
+	// matching wildcards and priority.
+	FlowDeleteStrict
+)
+
+// FlowModFlag defines flags used in flow modification message.
+type FlowModFlag uint16
+
+const (
+	// FlowFlagSendFlowRem instructs the switch to send a flow removed
+	// message when the flow entry expires or is deleted.
 	FlowFlagSendFlowRem FlowModFlag = 1 << iota
 
-	// When the FF_CHECK_OVERLAP flag is set, the switch must check that
-	// there are no conflicting entries with the same priority prior to
-	// inserting it in the flow table.
+	// FlowFlagCheckOverlap instructs the switch to check that there are
+	// no conflicting entries with the same priority prior to inserting it
+	// in the flow table.
 	//
 	// If there is one, the flow mod fails and an error message is
 	// returned.
-	FlowFlagCheckOverlap FlowModFlag = 1 << iota
+	FlowFlagCheckOverlap
 
-	// Reset flow packet and byte counts.
-	FlowFlagResetCounts FlowModFlag = 1 << iota
+	// FlowFlagResetCounts instructs the switch to resets flow packet and
+	// byte counts.
+	FlowFlagResetCounts
 
-	// When the FF_NO_PKT_COUNTS flag is set, the switch does not need to
-	// keep track of the flow packet count.
-	FlowFlagNoPktCounts FlowModFlag = 1 << iota
+	// FlowFlagNoPktCounts instructs the switch to not keep track of the
+	// flow packet count.
+	FlowFlagNoPktCounts
 
-	// When the FF_NO_BYT_COUNTS flag is set, the switch does not need to
-	// keep track of the flow byte count.
-	FlowFlagNoBytCounts FlowModFlag = 1 << iota
+	// FlowFlagNoByte instructs the switch to no keep track of the flow
+	// byte count.
+	FlowFlagNoByteCounts
 )
-
-type FlowModFlag uint16
 
 // FlowMod represents a modification message to a flow table from the
 // controller.
+//
+// For example, to create a flow entry to forward all packets arriving
+// on the first port to the second port:
+//
+//	fmod := ofp.NewFlowMod(ofp.FlowAdd, nil)
+//
+//	// Match all packets that arrive on port number 1.
+//	fmod.Match = ofputil.ExtendedMatch(ofputil.MatchInPort(1))
+//
+//	// Apply the output action, that will forward all
+//	// matching packets to the port number 2.
+//	fmod.Instructions = ofp.Instructions{
+//		&InstructionApplyActions{ofp.Actions{
+//			&ofp.ActionOutput{2, 0},
+//		}},
+//	}
+//
+//	// Create a request from the assembled message.
+//	req := of.NewRequest(of.FlowMod, &fmod)
 type FlowMod struct {
 	// The Cookie is an opaque data value chosen by the controller.
 	//
@@ -68,14 +91,14 @@ type FlowMod struct {
 	// The CookieMask is used with the cookie field to restrict flow
 	// matching while modifying or deleting flow entries.
 	//
-	// This field is ignored by FC_ADD messages. A value of 0 indicates
-	// no restriction
+	// This field is ignored by flow addition messages. A value of 0
+	// indicates no restriction.
 	CookieMask uint64
 
 	// The Table is an id of the table to put the flow in.
 	//
-	// For FC_DELETE_* commands, TT_ALL can also be used to delete matching
-	// flows from all tables.
+	// For flow deletion commands, TableAll can also be used to delete
+	// matching flows from all tables.
 	Table Table
 
 	// Command specifies a flow modifications command.
@@ -107,8 +130,8 @@ type FlowMod struct {
 	// table.
 	//
 	// Higher numbers indicate higher priorities. This field is used only
-	// for FC_ADD messages when matching and adding flow entries, and for
-	// FC_MODIFY_STRICT or FC_DELETE_STRICT messages when matching flow
+	// for flow addition messages when matching and adding flow entries,
+	// and for flow modification and deletion messages when matching flow
 	// entries.
 	Priority uint16
 
@@ -116,22 +139,20 @@ type FlowMod struct {
 	// to the controller by a packet-in message.
 	//
 	// If no buffered packet is associated with the flow mod, it must be
-	// set to NO_BUFFER.
+	// set to NoBuffer.
 	//
 	// A flow mod that includes a valid BufferID is effectively equivalent
 	// to sending a two-message sequence of a flow mod and a packet-out to
-	// P_TABLE, with the requirement that the switch must fully process
+	// PortTable, with the requirement that the switch must fully process
 	// the flow mod before the packet out.
 	BufferID uint32
 
-	// For FC_DELETE* commands, require matching entries to
-	// include this as an output port. A value of P_ANY
-	// indicates no restriction
+	// For flow deletion commands, require matching entries to include
+	// this as an output port. A value of PortAny indicates no restriction.
 	OutPort PortNo
 
-	// For FC_DELETE* commands, require matching entries to
-	// include this as an output group. A value of G_ANY
-	// indicates no restriction.
+	// For flow deletion commands, require matching entries to include this
+	// as an output group. A value of GroupAny indicates no restriction.
 	OutGroup Group
 
 	// Flags specifies a set of flow modification flags.
@@ -151,7 +172,7 @@ type FlowMod struct {
 // NewFlowMod creates a flow modification message based on the specified
 // packet-in message.
 //
-// It is responsbility of the caller to assign the missing instructions
+// It is responsibility of the caller to assign the missing instructions
 // and the rest of parameters.
 func NewFlowMod(c FlowModCommand, p *PacketIn) *FlowMod {
 	var flags FlowModFlag
@@ -166,10 +187,19 @@ func NewFlowMod(c FlowModCommand, p *PacketIn) *FlowMod {
 		flags = FlowFlagSendFlowRem | FlowFlagCheckOverlap
 	}
 
+	// When the packet-in message was not provided into
+	// the constructor, we will use the default values.
+	buffer := NoBuffer
+	var match Match
+
+	if p != nil {
+		buffer, match = p.BufferID, p.Match
+	}
+
 	return &FlowMod{
 		Command:  c,
-		BufferID: p.BufferID,
-		Match:    p.Match,
+		BufferID: buffer,
+		Match:    match,
 		Flags:    flags,
 
 		// For FlowDelete command, define the output port and
@@ -190,11 +220,8 @@ func (f *FlowMod) SetCookies(cookies uint64) {
 	f.Cookie = cookies
 }
 
-func (f *FlowMod) Bytes() []byte {
-	return Bytes(f)
-}
-
-// WriteTo implements WriterTo interface.
+// WriteTo implements io.WriterTo interface. It serializes the flow
+// modification command into the wire format with a necessary padding.
 func (f *FlowMod) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, f.Cookie, f.CookieMask, f.Table,
 		f.Command, f.IdleTimeout, f.HardTimeout, f.Priority,
@@ -203,7 +230,11 @@ func (f *FlowMod) WriteTo(w io.Writer) (int64, error) {
 	)
 }
 
+// ReadFrom implements io.ReaderFrom interface. It deserializes the flow
+// modification command from the wire format.
 func (f *FlowMod) ReadFrom(r io.Reader) (int64, error) {
+	// Set the list of instructions to nil, if someone will decide
+	// to reuse the same exemplar for multiple deserializations.
 	f.Instructions = nil
 
 	return encoding.ReadFrom(r, &f.Cookie, &f.CookieMask, &f.Table,
@@ -213,38 +244,39 @@ func (f *FlowMod) ReadFrom(r io.Reader) (int64, error) {
 	)
 }
 
-const (
-	// Flow idle time exceeded IdleTimeout.
-	FlowReasonIdleTimeout FlowRemovedReason = iota
-
-	// Time exceeded HardTimeout.
-	FlowReasonHardTimeout
-
-	// Evicted by a delete flow mod.
-	FlowReasonDelete
-
-	// Group was removed.
-	FlowReasonGroupDelete
-)
-
 // FlowRemovedReason specifies the reason of the flow entry removal.
 type FlowRemovedReason uint8
 
+const (
+	// FlowReasonIdleTimeout is set when flow was removed because of idle
+	// time have been exceeded IdleTimeout.
+	FlowReasonIdleTimeout FlowRemovedReason = iota
+
+	// FlowReasonHardTimeout is set when flow was removed because of time
+	// have been exceeded HardTimeout.
+	FlowReasonHardTimeout
+
+	// FlowReasonDelete is set when flow was evicted by a delete flow mod.
+	FlowReasonDelete
+
+	// FlowReasonGroupDelete is set when associated group was removed.
+	FlowReasonGroupDelete
+)
+
 // FlowRemoved represents an OpenFlow message that is send if the
-// controller has requested to be notified when flow entries time out or
-// are deleted from tables.
+// controller has requested to be notified when flow entries are timed
+// out or are deleted from tables.
 type FlowRemoved struct {
 	// The Cookie is an opaque data value chosen by the controller.
 	Cookie uint64
 
-	// The Priority indicates priority within the specified flow table
-	// table.
+	// The Priority indicates priority within the specified flow table.
 	Priority uint16
 
-	// The Reason stores specifies the reason of the flow entry removal.
+	// The Reason specifies the reason of the flow entry removal.
 	Reason FlowRemovedReason
 
-	// Table is an id of the table.
+	// Table is an identifier of the table.
 	Table Table
 
 	// DurationSec is a time flow was alive in seconds.
@@ -254,11 +286,11 @@ type FlowRemoved struct {
 	// DurationSec.
 	DurationNSec uint32
 
-	// The IdleTimeoute specifies time before discarding a flow entry
+	// The IdleTimeout specifies time before discarding a flow entry
 	// (in seconds).
 	IdleTimeout uint16
 
-	// HardTimeout specifis max time before discarding a flow entry (in
+	// HardTimeout specifies max time before discarding a flow entry (in
 	// seconds).
 	HardTimeout uint16
 
@@ -284,6 +316,8 @@ func (f *FlowRemoved) SetCookies(cookies uint64) {
 	f.Cookie = cookies
 }
 
+// WriteTo implements io.WriterTo interface. It serializes the flow
+// removed message into the wire format with necessary padding.
 func (f *FlowRemoved) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, f.Cookie, f.Priority, f.Reason,
 		f.Table, f.DurationSec, f.DurationNSec, f.IdleTimeout,
@@ -291,7 +325,8 @@ func (f *FlowRemoved) WriteTo(w io.Writer) (int64, error) {
 	)
 }
 
-// ReadFrom implements ReaderFrom interface.
+// ReadFrom implements ReaderFrom interface. It serializes the flow
+// removed message from the wire format.
 func (f *FlowRemoved) ReadFrom(r io.Reader) (int64, error) {
 	return encoding.ReadFrom(r, &f.Cookie, &f.Priority, &f.Reason,
 		&f.Table, &f.DurationSec, &f.DurationNSec, &f.IdleTimeout,
@@ -299,64 +334,131 @@ func (f *FlowRemoved) ReadFrom(r io.Reader) (int64, error) {
 	)
 }
 
+// FlowStatsRequest is a multipart request used to retrieve information
+// about individual flow entries.
+//
+// For example, to retrieve information about the flow entries that are
+// matching the second ingress port, the following request could be
+// sent:
+//
+//	body := &ofp.FlowStatsRequest{
+//		Table:    ofp.TableAll,
+//		OutPort:  ofp.PortAny,
+//		OutGroup: ofp.GropAny,
+//		Match:    ofputil.ExtendedMatch(
+//			ofputil.MatchInPort(2),
+//		),
+//	}
+//
+//	req := ofp.NewMultipartRequest(
+//		ofp.MultipartTypeFlow, body)
 type FlowStatsRequest struct {
+	// Table is an identifier of the table to read or TableAll for
+	// inspect all tables of the datapath.
 	Table Table
 
-	OutPort  PortNo
+	// Require matching entries to include this as an output port.
+	// A value PortAny indicates no restrictions.
+	OutPort PortNo
+
+	// Require matching entries to include this as an output group.
+	// A value GroupAny indicates no restrictions.
 	OutGroup Group
 
-	Cookie     uint64
+	// Require matching entries to contain this cookie value.
+	Cookie uint64
+
+	// Mask used to retstrict the cookie bits that must match. A zero
+	// value indicates no restrictions.
 	CookieMask uint64
-	Match      Match
+
+	// Fields to match.
+	Match Match
 }
 
+// Cookies implements openflow.CookieJar interface. It returns the
+// cookie assigned to the flow statistic request.
 func (f *FlowStatsRequest) Cookies() uint64 {
 	return f.Cookie
 }
 
+// SetCookies implements openflow.CookieJar interface. It sets the
+// specified cookie to the flow statistics request.
 func (f *FlowStatsRequest) SetCookies(cookies uint64) {
 	f.Cookie = cookies
 }
 
+// WriteTo implements io.WriterTo interface. It serializes the flow
+// statistics request into the wire format.
 func (f *FlowStatsRequest) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, f.Table, pad3{}, f.OutPort,
 		f.OutGroup, pad4{}, f.Cookie, f.CookieMask, &f.Match,
 	)
 }
 
+// ReadFrom implements io.ReadFrom interface. It deserializes the flow
+// statistics request from the wire format.
 func (f *FlowStatsRequest) ReadFrom(r io.Reader) (int64, error) {
 	return encoding.ReadFrom(r, &f.Table, &defaultPad3, &f.OutPort,
 		&f.OutGroup, &defaultPad4, &f.Cookie, &f.CookieMask, &f.Match,
 	)
 }
 
+// FlowStats is a body returned within the multipart flow statistics
+// reply.
 type FlowStats struct {
+	// Idenfitier of the table this statistics came from.
 	Table Table
 
-	DurationSec  uint32
+	// DurationSec is a time flow has been alive in seconds.
+	DurationSec uint32
+
+	// DurationNSec is a time flow has been alive in nanoseconds
+	// beyond DurationSec.
 	DurationNSec uint32
 
-	Priority    uint16
+	// Priority of the entry.
+	Priority uint16
+
+	// IdleTimeout is a number of seconds IDLE before expiration.
 	IdleTimeout uint16
+
+	// HardTimeout is a number of seconds before expiration.
 	HardTimeout uint16
-	Flags       FlowModFlag
 
-	Cookie      uint64
+	// Flags configured for the returned flow entry.
+	Flags FlowModFlag
+
+	// Opaque controller-issued identifier.
+	Cookie uint64
+
+	// Number of packets in the flow.
 	PacketCount uint64
-	ByteCount   uint64
 
-	Match        Match
+	// Number of bytes in the flow.
+	ByteCount uint64
+
+	// Description of the fields.
+	Match Match
+
+	// The set of instructions associated with a flow entry.
 	Instructions Instructions
 }
 
+// Cookies implements openflow.CookieJar interface. It returns the
+// assigned cookies to the flow statistics.
 func (f *FlowStats) Cookies() uint64 {
 	return f.Cookie
 }
 
+// SetCookies implements openflow.CookieJar interface. It sets the
+// specified cookies into the flow statistics message.
 func (f *FlowStats) SetCookies(cookies uint64) {
 	f.Cookie = cookies
 }
 
+// WriteTo implements io.WriterTo interface. It serializes the flow
+// statistics into the wire format.
 func (f *FlowStats) WriteTo(w io.Writer) (int64, error) {
 	var buf bytes.Buffer
 
@@ -373,6 +475,8 @@ func (f *FlowStats) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, uint16(buf.Len()+2), buf.Bytes())
 }
 
+// ReadFrom implements io.ReaderFrom interface. It deserializes
+// the flow statistics from the wire format.
 func (f *FlowStats) ReadFrom(r io.Reader) (int64, error) {
 	var len uint16
 
