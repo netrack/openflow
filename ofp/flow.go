@@ -16,7 +16,7 @@ const (
 	FlowAdd FlowModCommand = iota
 
 	// FlowModify is a command used to modify all matching flows.
-	FlowModity
+	FlowModify
 
 	// FlowModifyStrict is a command used to modify entry strictly
 	// matching wildcards and priority.
@@ -54,8 +54,8 @@ const (
 	// flow packet count.
 	FlowFlagNoPktCounts
 
-	// FlowFlagNoByte instructs the switch to no keep track of the flow
-	// byte count.
+	// FlowFlagNoByteCounts instructs the switch to no keep track of the
+	// flow byte count.
 	FlowFlagNoByteCounts
 )
 
@@ -215,7 +215,7 @@ func (f *FlowMod) Cookies() uint64 {
 	return f.Cookie
 }
 
-// Cookies implements CookieJar. It sets cookies to flow mod message.
+// SetCookies implements CookieJar. It sets cookies to flow mod message.
 func (f *FlowMod) SetCookies(cookies uint64) {
 	f.Cookie = cookies
 }
