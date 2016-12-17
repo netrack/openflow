@@ -8,144 +8,129 @@ import (
 	"github.com/netrack/openflow/internal/encoding"
 )
 
-const (
-	// Switch input port.
-	XMTypeInPort XMType = iota // 0
-
-	// Switch physical input port.
-	XMTypeInPhyPort
-
-	// Metadata passed between tables.
-	XMTypeMetadata
-
-	// Ethernet destination address.
-	XMTypeEthDst
-
-	// Ethernet source address.
-	XMTypeEthSrc
-
-	// Ethernet frame type.
-	XMTypeEthType // 5
-
-	// VLAN identificator.
-	XMTypeVlanID
-
-	// VLAN priority.
-	XMTypeVlanPCP
-
-	// IP DSCP (6 bits in ToS field).
-	XMTypeIPDSCP
-
-	// IP ECN (2 bits in ToS field).
-	XMTypeIPECN
-
-	// IP protocol.
-	XMTypeIPProto // 10
-
-	// IPv4 source address.
-	XMTypeIPv4Src
-
-	// IPv4 destination address.
-	XMTypeIPv4Dst
-
-	// TCP source port.
-	XMTypeTCPSrc
-
-	// TCP destination port.
-	XMTypeTCPDst
-
-	// UDP source port.
-	XMTypeUDPSrc // 15
-
-	// UDP destination port.
-	XMTypeUDPDst
-
-	// SCTP source port.
-	XMTypeSCTPSrc
-
-	// SCTP destination port.
-	XMTypeSCTPDst
-
-	// ICMPv4 type.
-	XMTypeICMPv4Type
-
-	// ICMPv4 code.
-	XMTypeICMPv4Code // 20
-
-	// ARP opcode.
-	XMTypeARPOpcode
-
-	// ARP source IPv4 address.
-	XMTypeARPSPA
-
-	// ARP target IPv4 address.
-	XMTypeARPTPA
-
-	// ARP source hardware address.
-	XMTypeARPSHA
-
-	// ARP target hardware address.
-	XMTypeARPTHA // 25
-
-	// IPv6 source address.
-	XMTypeIPv6Src
-
-	// IPv6 destination address.
-	XMTypeIPv6Dst
-
-	// IPv6 Flow Label.
-	XMTypeIPv6Flabel
-
-	// ICMPv6 type.
-	XMTypeICMPv6Type
-
-	// ICMPv6 code.
-	XMTypeICMPv6Code // 30
-
-	// Target address for ND.
-	XMTypeIPv6NDTarget
-
-	// Source link-layer for ND.
-	XMTypeIPv6NDSLL
-
-	// Target link-layer for ND.
-	XMTypeNDTLL
-
-	// MPLS label.
-	XMTypeMPLSLabel
-
-	// MPLS TC.
-	XMTypeMPLSTC // 35
-
-	// MPLS BoS bit.
-	XMTypeMPLSBOS
-
-	// PBB I-SID.
-	XMTypePBBISID
-
-	// Logical Port Metadata.
-	XMTypeTunnelID
-
-	// IPv6 Extension Header pseudo-field.
-	XMTypeIPv6EXTHDR
-)
-
+// XMType defines the flow match field types for OpenFlow basic class.
 type XMType uint8
 
 const (
-	// Backward compatibility with NXM.
-	XMClassNicira0 XMClass = iota
+	// XMTypeInPort matches switch input port.
+	XMTypeInPort XMType = iota
 
-	// Backward compatibility with NXM.
-	XMClassNicira1
+	// XMTypeInPhyPort matches switch physical input port.
+	XMTypeInPhyPort
 
-	// The class XMC_OPENFLOW_BASIC contains the basic set of OpenFlow
-	// match fields.
-	XMClassOpenflowBasic XMClass = 0x8000
+	// XMTypeMetadata matches metadata passed between tables.
+	XMTypeMetadata
 
-	// The optional class XMC_EXPERIMENTER is used for experimenter
-	// matches.
-	XMClassExperimenter XMClass = 0xffff
+	// XMTypeEthDst matches ethernet destination address.
+	XMTypeEthDst
+
+	// XMTypeEthSrc matches ethernet source address.
+	XMTypeEthSrc
+
+	// XMTypeEthType matches ethernet frame type.
+	XMTypeEthType
+
+	// XMTypeVlanID matches VLAN identifier.
+	XMTypeVlanID
+
+	// XMTypeVlanPCP matches VLAN priority.
+	XMTypeVlanPCP
+
+	// XMTypeIPDSCP matches IP DSCP (6 bits in ToS field).
+	XMTypeIPDSCP
+
+	// XMTypeIPECN matches IP ECN (2 bits in ToS field).
+	XMTypeIPECN
+
+	// XMTypeIPProto matches IP protocol.
+	XMTypeIPProto
+
+	// XMTypeIPv4Src matches IPv4 source address.
+	XMTypeIPv4Src
+
+	// XMTypeIPv4Dst matches IPv4 destination address.
+	XMTypeIPv4Dst
+
+	// XMTypeTCPSrc matches TCP source port.
+	XMTypeTCPSrc
+
+	// XMTypeTCPDst matches TCP destination port.
+	XMTypeTCPDst
+
+	// XMTypeUDPSrc matches UDP source port.
+	XMTypeUDPSrc
+
+	// XMTypeUDPDst matches UDP destination port.
+	XMTypeUDPDst
+
+	// XMTypeSCTPSrc matches SCTP source port.
+	XMTypeSCTPSrc
+
+	// XMTypeSCTPDst matches SCTP destination port.
+	XMTypeSCTPDst
+
+	// XMTypeICMPv4Type matches ICMPv4 type.
+	XMTypeICMPv4Type
+
+	// XMTypeICMPv4Code matches ICMPv4 code.
+	XMTypeICMPv4Code
+
+	// XMTypeARPOpcode matches ARP opcode.
+	XMTypeARPOpcode
+
+	// XMTypeARPSPA matches ARP source IPv4 address.
+	XMTypeARPSPA
+
+	// XMTypeARPTPA matches ARP target IPv4 address.
+	XMTypeARPTPA
+
+	// XMTypeARPSHA matches ARP source hardware address.
+	XMTypeARPSHA
+
+	// XMTypeARPTHA matches ARP target hardware address.
+	XMTypeARPTHA
+
+	// XMTypeIPv6Src matches IPv6 source address.
+	XMTypeIPv6Src
+
+	// XMTypeIPv6Dst matches IPv6 destination address.
+	XMTypeIPv6Dst
+
+	// XMTypeIPv6FLabel matches IPv6 Flow Label.
+	XMTypeIPv6FLabel
+
+	// XMTypeICMPv6Type matches ICMPv6 type.
+	XMTypeICMPv6Type
+
+	// XMTypeICMPv6Code matches ICMPv6 code.
+	XMTypeICMPv6Code
+
+	// XMTypeIPv6NDTarget matches IPv6 target address for ND.
+	XMTypeIPv6NDTarget
+
+	// XMTypeIPv6NDSLL matches IPv6 source link-layer for ND.
+	XMTypeIPv6NDSLL
+
+	// XMTypeIPv6NDTLL matches IPv6 target link-layer for ND.
+	XMTypeIPv6NDTLL
+
+	// XMTypeMPLSLabel matches MPLS label.
+	XMTypeMPLSLabel
+
+	// XMTypeMPLSTC matches MPLS TC.
+	XMTypeMPLSTC
+
+	// XMTypeMPLSBOS matches MPLS BoS bit.
+	XMTypeMPLSBOS
+
+	// XMTypePBBISID matches PBB I-SID.
+	XMTypePBBISID
+
+	// XMTypeTunnelID matches logical Port Metadata.
+	XMTypeTunnelID
+
+	// XMTypeIPv6ExtHeader matches IPv6 extension Header pseudo-field.
+	XMTypeIPv6ExtHeader
 )
 
 // XMClass represents an OXM Class ID. The high order bit differentiate
@@ -158,14 +143,21 @@ const (
 type XMClass uint16
 
 const (
-	// Bit that indicate that a VLAN id is set.
-	VlanNone VlanID = iota << 12
+	// XMClassNicira0 defines a backward compatibility class with NXM.
+	XMClassNicira0 XMClass = iota
 
-	// No VLAN id was set.
-	VlanPresent VlanID = iota << 12
+	// XMClassNicira1 defines a backward compatibility class with NXM.
+	XMClassNicira1
+
+	// XMClassOpenflowBasic defines a class with the basic set of
+	// OpenFlow match fields.
+	XMClassOpenflowBasic XMClass = 0x8000
+
+	// XMClassExperimenter defines a class of experimenter matches.
+	XMClassExperimenter XMClass = 0xffff
 )
 
-// VlanID represents bit definitions for VLAN id values. It allows matching
+// VlanID represents bit definitions for VLAN ID values. It allows matching
 // of packets with any tag, independent of the tag's value, and to supports
 // matching packets without a VLAN tag.
 //
@@ -173,38 +165,11 @@ const (
 type VlanID uint16
 
 const (
-	// IPv6ExtensionHeaderNoNext bit is set when "no next header"
-	// encountered.
-	IPv6ExtensionHeaderNoNext IPv6ExtensionHeader = 1 << iota
+	// VlanNone indicates that no VLAN ID was set.
+	VlanNone VlanID = iota << 12
 
-	// IPv6ExtensionHeaderESP bit is set when Encrypted Sec Payload header
-	// present.
-	IPv6ExtensionHeaderESP IPv6ExtensionHeader = 1 << iota
-
-	// IPv6ExtensionHeaderAuth bit is set when authentication header
-	// present.
-	IPv6ExtensionHeaderAuth IPv6ExtensionHeader = 1 << iota
-
-	// IPv6ExtensionHeaderDest bit is set when one or two destination
-	// headers present.
-	IPv6ExtensionHeaderDest IPv6ExtensionHeader = 1 << iota
-
-	// IPv6ExtensionHeaderFrag bit is set when fragment header present.
-	IPv6ExtensionHeaderFrag IPv6ExtensionHeader = 1 << iota
-
-	// IPv6ExtensionHeaderRouter bit is set when router header present.
-	IPv6ExtensionHeaderRouter IPv6ExtensionHeader = 1 << iota
-
-	// IPv6ExtensionHeaderHop bit is set when hop-by-hop header present.
-	IPv6ExtensionHeaderHop IPv6ExtensionHeader = 1 << iota
-
-	// IPv6ExtensionHeaderUnrep bit is set when unexpected repeats
-	// encountered.
-	IPv6ExtensionHeaderUnrep IPv6ExtensionHeader = 1 << iota
-
-	// IPv6ExtensionHeaderUnseq bit is set when unexpected sequencing
-	// encountered.
-	IPv6ExtensionHeaderUnseq IPv6ExtensionHeader = 1 << iota
+	// VlanPresent indicates that a VLAN ID is set.
+	VlanPresent VlanID = iota << 12
 )
 
 // IPv6ExtensionHeader represents bit definitions for IPv6 Extension
@@ -214,20 +179,67 @@ const (
 // Values of this type could be used as XM matching values.
 type IPv6ExtensionHeader uint16
 
-// The XM defines the flow match fields are described using
-// the OpenFlow Extensible Match (OXM) format, which is a
-// compact type-length-value (TLV) format.
+const (
+	// IPv6ExtensionHeaderNoNext bit is set when "no next header"
+	// encountered.
+	IPv6ExtensionHeaderNoNext IPv6ExtensionHeader = 1 << iota
+
+	// IPv6ExtensionHeaderESP bit is set when Encrypted Sec Payload header
+	// present.
+	IPv6ExtensionHeaderESP
+
+	// IPv6ExtensionHeaderAuth bit is set when authentication header
+	// present.
+	IPv6ExtensionHeaderAuth
+
+	// IPv6ExtensionHeaderDest bit is set when one or two destination
+	// headers present.
+	IPv6ExtensionHeaderDest
+
+	// IPv6ExtensionHeaderFrag bit is set when fragment header present.
+	IPv6ExtensionHeaderFrag
+
+	// IPv6ExtensionHeaderRouter bit is set when router header present.
+	IPv6ExtensionHeaderRouter
+
+	// IPv6ExtensionHeaderHop bit is set when hop-by-hop header present.
+	IPv6ExtensionHeaderHop
+
+	// IPv6ExtensionHeaderUnrep bit is set when unexpected repeats
+	// encountered.
+	IPv6ExtensionHeaderUnrep
+
+	// IPv6ExtensionHeaderUnseq bit is set when unexpected sequencing
+	// encountered.
+	IPv6ExtensionHeaderUnseq
+)
+
+// The XM defines the flow match fields are described using the OpenFlow
+// Extensible Match (OXM) format, which is a compact type-length-value
+// (TLV) format.
+//
+// For example, to match the packets arrived at the first switch port,
+// the following extensible match can be created:
+//
+//	m := ofp.XM{
+//		Class: ofp.XMClassOpenflowBasic,
+//		Type:  ofp.XMTypeInPort,
+//		Value: ofp.XMValue{0, 0, 0, 1},
+//	}
 type XM struct {
 	// Match class that contains related match type
 	Class XMClass
+
 	// Class-specific value, identifying one of the
 	// match types within the match class.
-	Type  XMType
+	Type XMType
+
+	// Type-specific value and mask.
 	Value XMValue
 	Mask  XMValue
 }
 
-// readAllXM uses all avaiable bytes retrieved from the reader to
+// readAllXM uses all available bytes retrieved from the reader to
 // unmarshal them to the list of extensible matchers. The caller
 // responsible of passing limited reader to prevent from read of
 // unnecessary data.
@@ -292,7 +304,7 @@ func (xm *XM) ReadFrom(r io.Reader) (n int64, err error) {
 	return
 }
 
-// WriteTo implements io.WriterTo interface. It serializes the Openflow
+// WriteTo implements io.WriterTo interface. It serializes the OpenFlow
 // extensible match into given writer.
 func (xm *XM) WriteTo(w io.Writer) (int64, error) {
 	var hasmask XMType
@@ -308,33 +320,33 @@ func (xm *XM) WriteTo(w io.Writer) (int64, error) {
 		xm.Value, xm.Mask)
 }
 
+// XMValue is a value of the extensible match.
 type XMValue []byte
 
+// UInt32 returns the value of extensible match as int32.
 func (val XMValue) UInt32() (v uint32) {
 	encoding.ReadFrom(bytes.NewBuffer(val), &v)
 	return
 }
 
+// UInt16 returns the value of extensible match as int16.
 func (val XMValue) UInt16() (v uint16) {
 	encoding.ReadFrom(bytes.NewBuffer(val), &v)
 	return
 }
 
+// UInt8 returns the value of extensible match as uint8.
 func (val XMValue) UInt8() (v uint8) {
 	encoding.ReadFrom(bytes.NewBuffer(val), &v)
 	return
 }
 
-type XMExperimenterHeader struct {
-	XM           XM
-	Experimenter uint32
-}
-
 const (
-	// OpenFlow 1.1 match type MT_STANDARD is deprecated.
+	// MatchTypeStandard is an OpenFlow 1.1 match type MT_STANDARD is
+	// deprecated.
 	MatchTypeStandard MatchType = iota
 
-	// OpenFlow Extensible Match type.
+	// MatchTypeXM is an OpenFlow Extensible Match type.
 	MatchTypeXM
 )
 
@@ -368,7 +380,7 @@ func (m *Match) Field(mt XMType) *XM {
 }
 
 // ReadFrom implements io.ReaderFrom interface. It deserializes the
-// bytes from the given reader to the Match structure.
+// match from the wire format.
 func (m *Match) ReadFrom(r io.Reader) (n int64, err error) {
 	var nn int64
 	var length uint16
@@ -389,8 +401,8 @@ func (m *Match) ReadFrom(r io.Reader) (n int64, err error) {
 	return n + nn, err
 }
 
-// WriteTo implements io.WriterTo interface. It serializes the Match
-// structure to the given writer.
+// WriteTo implements io.WriterTo interface. It serializes the match
+// into the wire format.
 func (m *Match) WriteTo(w io.Writer) (n int64, err error) {
 	var buf bytes.Buffer
 
