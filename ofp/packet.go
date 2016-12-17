@@ -99,9 +99,6 @@ type PacketOut struct {
 	// field in the header.
 }
 
-// Bytes returns the message in the binary format.
-func (p *PacketOut) Bytes() (b []byte) { return Bytes(p) }
-
 // WriteTo implements io.WriterTo interface. It serializes the message
 // in the binary format.
 func (p *PacketOut) WriteTo(w io.Writer) (n int64, err error) {
