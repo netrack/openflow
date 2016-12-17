@@ -258,7 +258,7 @@ func (rr *RoleRequest) ReadFrom(r io.Reader) (int64, error) {
 // controllers, the following request could be constructed:
 //
 //	req := of.NewRequest(of.TypeAsyncConfig, &ofp.AsyncConfig{
-//		PortStatusMask: ofputil.AsyncConfigMask(
+//		PortStatusMask: ofputil.Bitmap64(
 //			// Master will receive PortStats message when
 //			// a new port will be added.
 //			ofputil.PortReasonBitmap(ofp.PortReasonAdd),

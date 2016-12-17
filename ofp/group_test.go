@@ -55,7 +55,7 @@ func TestGroupMod(t *testing.T) {
 
 	tests := []encodingtest.MU{
 		{&GroupMod{
-			Command: GroupCommandModify,
+			Command: GroupModify,
 			Type:    GroupTypeIndirect,
 			Group:   Group(3),
 			Buckets: buckets,
@@ -194,30 +194,28 @@ func TestGroupStats(t *testing.T) {
 }
 
 func TestGroupFeatures(t *testing.T) {
-	types := []GroupType{
-		GroupTypeAll, GroupTypeSelect,
-		GroupTypeIndirect, GroupTypeFastFailover,
-	}
+	one := uint32(1)
 
-	capabilities := GroupCapabilityChaining |
-		GroupCapabilitySelectWeight
+	types := one<<uint32(GroupTypeAll) |
+		one<<uint32(GroupTypeSelect) |
+		one<<uint32(GroupTypeIndirect) |
+		one<<uint32(GroupTypeFastFailover)
 
-	actions := []ActionType{
-		ActionTypeOutput, ActionTypeGroup,
-		ActionTypePopMPLS, ActionTypePushMPLS,
-		ActionTypePopVLAN, ActionTypePushVLAN,
-		ActionTypeCopyTTLIn, ActionTypeCopyTTLOut,
-	}
+	capabilities := one<<uint32(GroupCapabilityChaining) |
+		uint32(GroupCapabilitySelectWeight)
+
+	actions := one<<uint32(ActionTypePopMPLS) |
+		one<<uint32(ActionTypePushMPLS)
 
 	tests := []encodingtest.MU{
 		{&GroupFeatures{
 			Types:        types,
 			Capabilities: capabilities,
-			MaxGroups:    []uint32{4, 5, 6, 7},
-			Actions:      actions,
+			MaxGroups:    [4]uint32{4, 5, 6, 7},
+			Actions:      [4]uint32{actions, 0, 0, 0},
 		}, []byte{
-			0x00, 0x01, 0x02, 0x03, // Group types.
-			0x00, 0x00, 0x00, 0x05, // Capabilities.
+			0x00, 0x00, 0x00, 0x0f, // Group types.
+			0x00, 0x00, 0x00, 0x11, // Capabilities.
 
 			// Maximum groups.
 			0x00, 0x00, 0x00, 0x04,
@@ -226,14 +224,10 @@ func TestGroupFeatures(t *testing.T) {
 			0x00, 0x00, 0x00, 0x07,
 
 			// Actions.
-			0x00, 0x00, // Action output.
-			0x00, 0x16, // Action group.
-			0x00, 0x14, // Action pop MPLS.
-			0x00, 0x13, // Action push MPLS.
-			0x00, 0x12, // Action pop VLAN.
-			0x00, 0x11, // Action push VLAN.
-			0x00, 0x0c, // Action copy TTL in.
-			0x00, 0x0b, // Action copy TTL out.
+			0x00, 0x18, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00,
 		}},
 	}
 

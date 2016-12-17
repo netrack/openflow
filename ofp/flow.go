@@ -101,7 +101,7 @@ type FlowMod struct {
 	// matching flows from all tables.
 	Table Table
 
-	// Command specifies a flow modifications command.
+	// Command specifies a flow modification command.
 	Command FlowModCommand
 
 	// The IdleTimeoute specifies time before discarding a flow entry
