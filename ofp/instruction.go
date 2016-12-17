@@ -9,25 +9,30 @@ import (
 )
 
 const (
-	// Setup the next table in the lookup pipeline.
+	// InstructionTypeGotoTable is used to setup the next table in
+	// the lookup pipeline.
 	InstructionTypeGotoTable InstructionType = 1 + iota
 
-	// Setup the metadata field for use later in pipeline.
+	// InstructionTypeWriteMetadata is used to setup the metadata
+	// field for use later in pipeline.
 	InstructionTypeWriteMetadata InstructionType = 1 + iota
 
-	// Write the action(s) onto the datapath action set.
+	// InstructionTypeWriteActions is used to write the action(s)
+	// onto the datapath action set.
 	InstructionTypeWriteActions InstructionType = 1 + iota
 
-	// Applies the action(s) immediately.
+	// InstructionTypeApplyActions is used to apply the action(s)
+	// immediately.
 	InstructionTypeApplyActions InstructionType = 1 + iota
 
-	// Clears all actions from the datapath action set.
+	// InstructionTypeClearActions is used to clear all actions from
+	// the datapath action set.
 	InstructionTypeClearActions InstructionType = 1 + iota
 
-	// Apply meter (rate limiter).
+	// InstructionTypeMeter is used to apply meter (rate limiter).
 	InstructionTypeMeter InstructionType = 1 + iota
 
-	// Experimenter instruction.
+	// InstructionTypeExperimenter is an experimenter instruction.
 	InstructionTypeExperimenter InstructionType = 0xffff
 )
 
@@ -48,7 +53,7 @@ var instructionMap = map[InstructionType]encoding.ReaderMaker{
 // 64-bit aligned.
 //
 // NB: The length of an instruction *must* always be a multiple of eight.
-type instructionhdr struct {
+type instruction struct {
 	// Type is an instruction type.
 	Type InstructionType
 
@@ -58,6 +63,7 @@ type instructionhdr struct {
 
 const instructionLen uint16 = 8
 
+// Instruction is an interface representing an OpenFlow action.
 type Instruction interface {
 	encoding.ReadWriter
 
@@ -65,9 +71,11 @@ type Instruction interface {
 	Type() InstructionType
 }
 
+// Instructions group the set of instructions.
 type Instructions []Instruction
 
-// WriteTo Implements io.WriterTo interface.
+// WriteTo implements io.WriterTo interface. It serializes the set of
+// instructions into the wire format.
 func (i *Instructions) WriteTo(w io.Writer) (n int64, err error) {
 	var buf bytes.Buffer
 
@@ -81,6 +89,8 @@ func (i *Instructions) WriteTo(w io.Writer) (n int64, err error) {
 	return encoding.WriteTo(w, buf.Bytes())
 }
 
+// ReadFrom implements io.ReaderFrom interface. It deserializes the set
+// of actions from the wire format.
 func (i *Instructions) ReadFrom(r io.Reader) (n int64, err error) {
 	var instType InstructionType
 
@@ -113,13 +123,18 @@ func (i *InstructionGotoTable) Type() InstructionType {
 	return InstructionTypeGotoTable
 }
 
-// WriteTo implements WriterTo interface.
+// WriteTo implements io.WriterTo interface. It serializes the
+// instruction used to redirect the processing pipeline into the
+// wire format.
 func (i *InstructionGotoTable) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, instructionhdr{i.Type(), 8}, i.Table, pad3{})
+	return encoding.WriteTo(w, instruction{i.Type(), 8}, i.Table, pad3{})
 }
 
+// ReadFrom implements io.ReadFrom interface. It deserializes the
+// instruction used to redirect the processing pipeline from the wire
+// format.
 func (i *InstructionGotoTable) ReadFrom(r io.Reader) (int64, error) {
-	return encoding.ReadFrom(r, &instructionhdr{}, &i.Table, &defaultPad3)
+	return encoding.ReadFrom(r, &instruction{}, &i.Table, &defaultPad3)
 }
 
 // InstructionWriteMetadata setups metadata fields to use later in
@@ -143,17 +158,22 @@ func (i *InstructionWriteMetadata) Type() InstructionType {
 	return InstructionTypeWriteMetadata
 }
 
-// WriteTo implements WriterTo interface.
+// WriteTo implements io.WriterTo interface. It serializes instruction
+// used to write metadata into the wire format.
 func (i *InstructionWriteMetadata) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, instructionhdr{i.Type(), 24},
+	return encoding.WriteTo(w, instruction{i.Type(), 24},
 		pad4{}, i.Metadata, i.MetadataMask)
 }
 
+// ReadFrom implements io.ReaderFrom interface. It deserializes instruction
+// used to write metadata from the wire format.
 func (i *InstructionWriteMetadata) ReadFrom(r io.Reader) (int64, error) {
-	return encoding.ReadFrom(r, &instructionhdr{},
+	return encoding.ReadFrom(r, &instruction{},
 		&defaultPad4, &i.Metadata, &i.MetadataMask)
 }
 
+// writeIntructionActions serializes the instruction with actinon.
+// It is shared among the Appply/Clear/Write instructions.
 func writeInstructionActions(w io.Writer, t InstructionType,
 	actions Actions) (int64, error) {
 
@@ -167,16 +187,18 @@ func writeInstructionActions(w io.Writer, t InstructionType,
 
 	// Write the header of the instruction with the length,
 	// that includes the list of instruction actions.
-	header := instructionhdr{t, uint16(len(buf)) + instructionLen}
+	header := instruction{t, uint16(len(buf)) + instructionLen}
 	return encoding.WriteTo(w, header, pad4{}, buf)
 }
 
+// readInstructionActions deserializes the instructin with actions.
+// It is shared among the Apply/Clear/Write instructions.
 func readInstructionActions(r io.Reader, actions Actions) (int64, error) {
 	var read int64
 
 	// Read the header of the instruction at first to retrieve
 	// the size of actions in the packet.
-	var header instructionhdr
+	var header instruction
 	num, err := encoding.ReadFrom(r, &header)
 	read += num
 
@@ -193,65 +215,82 @@ func readInstructionActions(r io.Reader, actions Actions) (int64, error) {
 	return read, err
 }
 
-// InstructionActions represents a bundle of action instructions.
-//
-// For the Apply-Actions instruction, the actions field is treated as a
-// list and the actions are applied to the packet in-order.
+// InstructionApplyActions is an instruction used to apply the
+// list of actions to the processing packet in-order.
 type InstructionApplyActions struct {
-	// Actions associated with IT_WRITE_ACTIONS and IT_APPLY_ACTIONS.
+	// Actions is a list of actions to apply.
 	Actions Actions
 }
 
+// Type implements Instruction interface and returns the type of the
+// instruction.
 func (i *InstructionApplyActions) Type() InstructionType {
 	return InstructionTypeApplyActions
 }
 
-// WriteTo implements WriterTo interface.
+// WriteTo implements io.WriterTo interface. It serializes the
+// instruction used to apply actions into the wire format.
 func (i *InstructionApplyActions) WriteTo(w io.Writer) (int64, error) {
 	return writeInstructionActions(w, i.Type(), i.Actions)
 }
 
+// ReadFrom implements io.ReadFrom interface. It deserializes
+// the instruction used to apply actions from the wire format.
 func (i *InstructionApplyActions) ReadFrom(r io.Reader) (int64, error) {
 	return readInstructionActions(r, i.Actions)
 }
 
-// For the Write-Actions instruction, the actions field is treated as a set
-// and the actions are merged into the current action set.
+// InstructionWriteActions represents a bundle of actions that should
+// be merged into the current action set.
 type InstructionWriteActions struct {
+	// Actions is a list of actions to write.
 	Actions Actions
 }
 
+// Type implements Instruction interface. It returns the type of
+// instruction.
 func (i *InstructionWriteActions) Type() InstructionType {
 	return InstructionTypeWriteActions
 }
 
+// WriteTo implements io.WriterTo interface. It serializes instruction
+// used to write actions into the wire format.
 func (i *InstructionWriteActions) WriteTo(w io.Writer) (int64, error) {
 	return writeInstructionActions(w, i.Type(), i.Actions)
 }
 
+// ReadFrom implements io.ReadFrom interface. It serializes instruction
+// used to write actions from the wire format.
 func (i *InstructionWriteActions) ReadFrom(r io.Reader) (int64, error) {
 	return readInstructionActions(r, i.Actions)
 }
 
-// For the Clear-Actions instruction, the structure does not contain any
-// actions.
+// InstructionClearActions is an instruction used to clear the set
+// of actions.
 type InstructionClearActions struct{}
 
+// Type implements Instruction interface. It returns the type of the
+// instruction.
 func (i *InstructionClearActions) Type() InstructionType {
 	return InstructionTypeClearActions
 }
 
+// WriteTo implements io.WriterTo interface. It serializes the
+// instruction used to clear actions into the wire format.
 func (i *InstructionClearActions) WriteTo(w io.Writer) (int64, error) {
 	return writeInstructionActions(w, i.Type(), nil)
 }
 
+// ReadFrom implements io.ReadFrom interface. It deserializes the
+// instruction used to clear actions from the wire format.
 func (i *InstructionClearActions) ReadFrom(r io.Reader) (int64, error) {
 	return encoding.ReadFrom(r, &defaultPad8)
 }
 
-// Instruction structure for IT_METER
+// InstructionMeter is an instruction used to apply meter (rate
+// limiter).
 type InstructionMeter struct {
-	// MeterID indicates which meter to apply on the packet.
+	// Meter indicates which meter to apply on the packet.
 	Meter Meter
 }
 
@@ -261,11 +300,14 @@ func (i *InstructionMeter) Type() InstructionType {
 	return InstructionTypeMeter
 }
 
-// WriteTo implements WriterTo interface.
+// WriteTo implements io.WriterTo interface. It serializes the
+// instruction used to apply meter into the wire format.
 func (i *InstructionMeter) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, instructionhdr{i.Type(), 8}, i.Meter)
+	return encoding.WriteTo(w, instruction{i.Type(), 8}, i.Meter)
 }
 
+// ReadFrom implements io.ReadFrom interface. It deserializes the
+// instruction used to apply meter from the wire format.
 func (i *InstructionMeter) ReadFrom(r io.Reader) (int64, error) {
-	return encoding.ReadFrom(r, &instructionhdr{}, &i.Meter)
+	return encoding.ReadFrom(r, &instruction{}, &i.Meter)
 }

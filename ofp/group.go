@@ -49,7 +49,7 @@ const (
 	// GroupAll represents all groups for group delete commands.
 	GroupAll Group = 0xfffffffc
 
-	// GropAny is a wildcard group used only for flow stats requests.
+	// GroupAny is a wildcard group used only for flow stats requests.
 	// Selects all flows regardless of group (including flows with no
 	// group)
 	GroupAny Group = 0xffffffff

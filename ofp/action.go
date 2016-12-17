@@ -157,7 +157,7 @@ type Action interface {
 	Type() ActionType
 }
 
-// Actions groups the set of actions.
+// Actions group the set of actions.
 type Actions []Action
 
 func (a *Actions) bytes() ([]byte, error) {
