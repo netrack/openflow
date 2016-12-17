@@ -243,7 +243,7 @@ func (rr *RoleRequest) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, rr.Role, pad4{}, rr.GenerationID)
 }
 
-// WriteTo implements io.WriterTo interface. It deserializes the role
+// ReadFrom implements io.ReaderFrom interface. It deserializes the role
 // request from the wire format.
 func (rr *RoleRequest) ReadFrom(r io.Reader) (int64, error) {
 	return encoding.ReadFrom(r, &rr.Role, &defaultPad4, &rr.GenerationID)
