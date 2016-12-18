@@ -16,7 +16,7 @@ func TestMeterMod(t *testing.T) {
 
 	tests := []encodingtest.MU{
 		{&MeterMod{
-			Command: MeterCommandModify,
+			Command: MeterModify,
 			Flags:   MeterFlagStats | MeterFlagBurst,
 			Meter:   Meter(42),
 			Bands:   bands,
@@ -91,23 +91,20 @@ func TestMeterConfig(t *testing.T) {
 }
 
 func TestMeterFeatures(t *testing.T) {
-	types := []MeterBandType{
-		MeterBandTypeDrop,
-		MeterBandTypeDSCPRemark,
-	}
+	types := uint32(1<<MeterBandTypeDrop) |
+		uint32(1<<MeterBandTypeDSCPRemark)
 
 	tests := []encodingtest.MU{
 		{&MeterFeatures{
 			MaxMeter:     45,
 			BandTypes:    types,
-			Capabilities: MeterFlagBurst,
+			Capabilities: uint32(1 << MeterFlagBurst),
 			MaxBands:     128,
 			MaxColor:     16,
 		}, []byte{
 			0x00, 0x00, 0x00, 0x2d, // Max meter.
-			0x00, 0x01, // Band types.
-			0x00, 0x02,
-			0x00, 0x04, // Capabilities.
+			0x00, 0x00, 0x00, 0x06, // Band types.
+			0x00, 0x00, 0x00, 0x10, // Capabilities.
 			0x80,       // Max bands.
 			0x10,       // Max color.
 			0x00, 0x00, // 2-byte padding.
