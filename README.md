@@ -62,7 +62,7 @@ func main() {
         fmod := ofp.NewFlowMod(ofp.FlowAdd, packet)
         fmod.Instructions = ofp.Instructions{apply}
 
-        rw.Write(&of.Header{Type: of.TypeFlowMod}, body)
+        rw.Write(&of.Header{Type: of.TypeFlowMod}, fmod)
     })
 
     of.ListenAndServe(":6633", mux)

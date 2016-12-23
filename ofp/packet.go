@@ -8,34 +8,51 @@ import (
 )
 
 const (
-	// NoBuffer used, when there is no buffered packet
+	// NoBuffer used as buffer identifier when there is no buffered packet
 	// associated with the message.
 	NoBuffer uint32 = 0xffffffff
 )
 
 const (
-	// PacketInReasonNoMatch used when there is no matching flow
+	// PacketInReasonNoMatch is set when there is no matching flow
 	// (table-miss flow entry).
 	PacketInReasonNoMatch PacketInReason = iota
 
-	// PacketInreasonAction used, when flow entry explicitly
-	// outputs to controller.
+	// PacketInReasonAction is set when flow entry explicitly outputs to
+	// controller.
 	PacketInReasonAction
 
-	// PacketInReasonInvalidTTL used when packet has invalid TTL
+	// PacketInReasonInvalidTTL is set when packet has invalid TTL.
 	PacketInReasonInvalidTTL
 )
 
-// PacketInReason represents the reason why this packet have
-// been sent to the controller.
+// PacketInReason represents the reason why this packet have been sent
+// to the controller.
 type PacketInReason uint8
 
 // PacketIn used by the datapath to sent the processing packet to
 // controller.
+//
+// For example, to create rule used to flood all unknown packets through
+// all ports of the switch, the following request can be sent:
+//
+//	var packet ofp.PacketIn
+//	packet.ReadFrom(r.Body)
+//
+//	apply := ofp.InstructionApplyActions{
+//		ofp.Actions{&of.ActionOutput{ofp.PortFlood, 0}},
+//	}
+//
+//	// For each incoming packet-in request, create a
+//	// respective flow modification command.
+//	fmod := ofp.NewFlowMod(ofp.FlowAdd, packet)
+//	fmod.Instructions = ofp.Instructions{apply}
+//
+//	req := of.NewRequest(TypeFlowMod, fmod)
 type PacketIn struct {
-	// BufferID is an identifier of the buffer, assigned by
+	// Buffer is an identifier of the buffer, assigned by
 	// datapath, that holds the processing packet.
-	BufferID uint32
+	Buffer uint32
 
 	// Length is the total length of the frame.
 	Length uint16
@@ -43,8 +60,8 @@ type PacketIn struct {
 	// Reason is the reason why packet is being sent.
 	Reason PacketInReason
 
-	// TableID is an identifier of the table that was looked up.
-	TableID Table
+	// Table is an identifier of the table that was looked up.
+	Table Table
 
 	// Cookie of the flow entry that was looked up.
 	Cookie uint64
@@ -53,8 +70,8 @@ type PacketIn struct {
 	Match Match
 }
 
-// Cookies returns the cookie assigned to the rule, that triggered
-// the packet-in message to controller.
+// Cookies returns the cookie assigned to the rule, that triggered the
+// packet-in message to controller.
 func (p *PacketIn) Cookies() uint64 {
 	return p.Cookie
 }
@@ -64,26 +81,28 @@ func (p *PacketIn) SetCookies(cookies uint64) {
 	p.Cookie = cookies
 }
 
+// WriteTo implements io.WriterTo interface. It serializes the packet-in
+// message into the wire format.
 func (p *PacketIn) WriteTo(w io.Writer) (int64, error) {
-	return encoding.WriteTo(w, p.BufferID, p.Length,
-		p.Reason, p.TableID, p.Cookie, &p.Match, pad2{})
+	return encoding.WriteTo(w, p.Buffer, p.Length,
+		p.Reason, p.Table, p.Cookie, &p.Match, pad2{})
 }
 
-// ReadFrom implements io.ReaderFrom interface. It de-serializes the
-// packet-in message from binary format.
+// ReadFrom implements io.ReaderFrom interface. It deserializes the
+// packet-in message from wire format.
 func (p *PacketIn) ReadFrom(r io.Reader) (int64, error) {
 	// Read the packet-in header, then the list of match
 	// rules, that used to match the processing packet.
-	return encoding.ReadFrom(r, &p.BufferID, &p.Length,
-		&p.Reason, &p.TableID, &p.Cookie, &p.Match, &defaultPad2)
+	return encoding.ReadFrom(r, &p.Buffer, &p.Length,
+		&p.Reason, &p.Table, &p.Cookie, &p.Match, &defaultPad2)
 }
 
 // PacketOut used by the controller to send a packet out through the
 // datapath.
 type PacketOut struct {
-	// BufferID is an identifier assigned by datapath (NoBuffer if none).
-	// The BufferID is the same given in the PacketIn message.
-	BufferID uint32
+	// Buffer is an identifier assigned by datapath (NoBuffer if none).
+	// The Buffer is the same given in the PacketIn message.
+	Buffer uint32
 
 	// InPort is the ingress port that must be associated with the packet
 	// for OpenFlow processing. It must be set to either a valid standard
@@ -100,7 +119,7 @@ type PacketOut struct {
 }
 
 // WriteTo implements io.WriterTo interface. It serializes the message
-// in the binary format.
+// into the wire format.
 func (p *PacketOut) WriteTo(w io.Writer) (n int64, err error) {
 	var buf bytes.Buffer
 
@@ -111,14 +130,16 @@ func (p *PacketOut) WriteTo(w io.Writer) (n int64, err error) {
 		return
 	}
 
-	return encoding.WriteTo(w, p.BufferID, p.InPort,
+	return encoding.WriteTo(w, p.Buffer, p.InPort,
 		uint16(buf.Len()), pad6{}, buf.Bytes())
 }
 
+// ReadFrom implements io.ReaderFrom interface. It deserializes the
+// packet-out message from the wire format.
 func (p *PacketOut) ReadFrom(r io.Reader) (int64, error) {
 	var len uint16
 
-	n, err := encoding.ReadFrom(r, &p.BufferID, &p.InPort,
+	n, err := encoding.ReadFrom(r, &p.Buffer, &p.InPort,
 		&len, &defaultPad6)
 
 	if err != nil {

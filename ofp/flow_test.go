@@ -28,7 +28,7 @@ func TestFlowMod(t *testing.T) {
 			IdleTimeout:  45,
 			HardTimeout:  90,
 			Priority:     10,
-			BufferID:     NoBuffer,
+			Buffer:       NoBuffer,
 			OutPort:      PortFlood,
 			OutGroup:     GroupAny,
 			Flags:        flags,
@@ -219,7 +219,7 @@ func TestNewFlowMod(t *testing.T) {
 		Value: XMValue{0x00, 0x00, 0x00, 0x03},
 	}}}
 
-	packet := &PacketIn{BufferID: 42, Match: match}
+	packet := &PacketIn{Buffer: 42, Match: match}
 	fmod := NewFlowMod(FlowAdd, packet)
 
 	// Ensure that all default parameters of the created
@@ -228,9 +228,9 @@ func TestNewFlowMod(t *testing.T) {
 		t.Errorf("Default flags are not set: %b", fmod.Flags)
 	}
 
-	if fmod.BufferID != packet.BufferID {
+	if fmod.Buffer != packet.Buffer {
 		t.Errorf("Buffer identifier does not match expected one: "+
-			"%d is not equal to %d", fmod.BufferID, packet.BufferID)
+			"%d is not equal to %d", fmod.Buffer, packet.Buffer)
 	}
 
 	if !reflect.DeepEqual(fmod.Match, match) {
