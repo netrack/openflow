@@ -135,17 +135,17 @@ type FlowMod struct {
 	// entries.
 	Priority uint16
 
-	// The BufferID refers to a packet buffered at the switch and sent
+	// The Buffer refers to a packet buffered at the switch and sent
 	// to the controller by a packet-in message.
 	//
 	// If no buffered packet is associated with the flow mod, it must be
 	// set to NoBuffer.
 	//
-	// A flow mod that includes a valid BufferID is effectively equivalent
+	// A flow mod that includes a valid Buffer is effectively equivalent
 	// to sending a two-message sequence of a flow mod and a packet-out to
 	// PortTable, with the requirement that the switch must fully process
 	// the flow mod before the packet out.
-	BufferID uint32
+	Buffer uint32
 
 	// For flow deletion commands, require matching entries to include
 	// this as an output port. A value of PortAny indicates no restriction.
@@ -193,14 +193,14 @@ func NewFlowMod(c FlowModCommand, p *PacketIn) *FlowMod {
 	var match Match
 
 	if p != nil {
-		buffer, match = p.BufferID, p.Match
+		buffer, match = p.Buffer, p.Match
 	}
 
 	return &FlowMod{
-		Command:  c,
-		BufferID: buffer,
-		Match:    match,
-		Flags:    flags,
+		Command: c,
+		Buffer:  buffer,
+		Match:   match,
+		Flags:   flags,
 
 		// For FlowDelete command, define the output port and
 		// group values as "any" to indicate no restrictions.
@@ -225,7 +225,7 @@ func (f *FlowMod) SetCookies(cookies uint64) {
 func (f *FlowMod) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, f.Cookie, f.CookieMask, f.Table,
 		f.Command, f.IdleTimeout, f.HardTimeout, f.Priority,
-		f.BufferID, f.OutPort, f.OutGroup, f.Flags, pad2{},
+		f.Buffer, f.OutPort, f.OutGroup, f.Flags, pad2{},
 		&f.Match, &f.Instructions,
 	)
 }
@@ -239,7 +239,7 @@ func (f *FlowMod) ReadFrom(r io.Reader) (int64, error) {
 
 	return encoding.ReadFrom(r, &f.Cookie, &f.CookieMask, &f.Table,
 		&f.Command, &f.IdleTimeout, &f.HardTimeout, &f.Priority,
-		&f.BufferID, &f.OutPort, &f.OutGroup, &f.Flags, &defaultPad2,
+		&f.Buffer, &f.OutPort, &f.OutGroup, &f.Flags, &defaultPad2,
 		&f.Match, &f.Instructions,
 	)
 }

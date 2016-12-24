@@ -9,11 +9,11 @@ import (
 func TestPacketIn(t *testing.T) {
 	tests := []encodingtest.MU{
 		{&PacketIn{
-			BufferID: NoBuffer,
-			Length:   0x20,
-			Reason:   PacketInReasonAction,
-			TableID:  Table(2),
-			Cookie:   0xdeadbeef,
+			Buffer: NoBuffer,
+			Length: 0x20,
+			Reason: PacketInReasonAction,
+			Table:  Table(2),
+			Cookie: 0xdeadbeef,
 			Match: Match{MatchTypeXM, []XM{{
 				Class: XMClassOpenflowBasic,
 				Type:  XMTypeInPort,
@@ -46,9 +46,9 @@ func TestPacketIn(t *testing.T) {
 func TestPacketOut(t *testing.T) {
 	tests := []encodingtest.MU{
 		{&PacketOut{
-			BufferID: NoBuffer,
-			InPort:   PortController,
-			Actions:  Actions{&ActionGroup{Group: GroupAll}},
+			Buffer:  NoBuffer,
+			InPort:  PortController,
+			Actions: Actions{&ActionGroup{Group: GroupAll}},
 		}, []byte{
 			0xff, 0xff, 0xff, 0xff, // Buffer identifier.
 			0xff, 0xff, 0xff, 0xfd, // Port number.
