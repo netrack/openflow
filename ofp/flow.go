@@ -368,7 +368,7 @@ type FlowStatsRequest struct {
 	// Require matching entries to contain this cookie value.
 	Cookie uint64
 
-	// Mask used to retstrict the cookie bits that must match. A zero
+	// Mask used to restrict the cookie bits that must match. A zero
 	// value indicates no restrictions.
 	CookieMask uint64
 

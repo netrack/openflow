@@ -18,7 +18,7 @@ const (
 	// MeterModify is a command used to modify specified meter.
 	MeterModify
 
-	// MeterDelete is a command used to delete specicifed meter.
+	// MeterDelete is a command used to delete specified meter.
 	MeterDelete
 )
 
@@ -167,7 +167,7 @@ func (m *MeterBandDrop) ReadFrom(r io.Reader) (int64, error) {
 		&m.Rate, &m.BurstSize, &defaultPad4)
 }
 
-// MeterBandDSCPRemark defines a simple differentiated services policer
+// MeterBandDSCPRemark defines a simple differentiated services police
 // that remark the drop procedure of the DSCP field in the IP header of
 // the packets that exceed the band rate value.
 type MeterBandDSCPRemark struct {
@@ -215,7 +215,7 @@ type MeterBandExperimenter struct {
 	Experimenter uint32
 }
 
-// Type implements MeterBand interface. It returs the type of the
+// Type implements MeterBand interface. It returns the type of the
 // meter band.
 func (m *MeterBandExperimenter) Type() MeterBandType {
 	return MeterBandTypeExperimenter
@@ -468,7 +468,7 @@ func (m *MeterStats) WriteTo(w io.Writer) (int64, error) {
 	var buf bytes.Buffer
 
 	// Write the list of meter band statistics into
-	// the termporary buffer to calculate the total
+	// the temporary buffer to calculate the total
 	// message length.
 	_, err := encoding.WriteSliceTo(&buf, m.BandStats)
 	if err != nil {

@@ -87,7 +87,7 @@ func (q QueueProps) ReadFrom(r io.Reader) (int64, error) {
 		encoding.ReaderMakerFunc(rm))
 }
 
-// packetQueueLen defines the lenght of the packet queue header.
+// packetQueueLen defines the length of the packet queue header.
 const packetQueueLen = 16
 
 // PacketQueue decribes the packet processing queue.
