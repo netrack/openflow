@@ -72,7 +72,7 @@ const (
 	PortFeaturePause
 
 	// PortFeaturePauseAsym is set when the port supports flow control
-	// through the assymetric pause frames.
+	// through the asymmetric pause frames.
 	PortFeaturePauseAsym
 )
 
@@ -163,7 +163,7 @@ var portConfigText = []struct {
 func (c PortConfig) String() string {
 	var configs []string
 
-	// When the port is not DOWN, we will atomatically assume
+	// When the port is not DOWN, we will automatically assume
 	// it is UP and append the respective text message.
 	if PortConfigDown&c == 0 {
 		configs = append(configs, "up")
@@ -238,7 +238,7 @@ const (
 	// PortController used to send the received packet to controller.
 	PortController PortNo = 0xfffffff8 + iota
 
-	// PortLocal is a local openflow port.
+	// PortLocal is a local OpenFlow port.
 	PortLocal PortNo = 0xfffffff8 + iota
 
 	// PortAny is a wildcard port used only for flow mod (delete) and
@@ -255,10 +255,10 @@ const portNameLen = 16
 
 // Port defines the description of the switch port. This structure is
 // returned within a body of the multipart request, used to get a
-// description of all the ports in the sytem that support OpenFlow.
+// description of all the ports in the system that support OpenFlow.
 //
-// For example, to retireve the description of port on the system, the
-// following requet can be created:
+// For example, to retrieve the description of port on the system, the
+// following request can be created:
 //
 //	body := ofp.NewMultipartRequest(ofp.MultipartTypePortDescription, nil)
 //	req := of.NewRequest(of.TypeMultipartRequest, body)
@@ -303,7 +303,7 @@ func (p *Port) WriteTo(w io.Writer) (int64, error) {
 }
 
 // ReadFrom implements io.ReaderFrom interface. It deserializes the
-// port desecription from the wire format.
+// port description from the wire format.
 func (p *Port) ReadFrom(r io.Reader) (int64, error) {
 	p.HWAddr = make(net.HardwareAddr, 6)
 	var name [portNameLen]byte
@@ -393,11 +393,11 @@ func (p *PortMod) ReadFrom(r io.Reader) (int64, error) {
 	)
 }
 
-// PortReason defines types of changes beign made about physical port.
+// PortReason defines types of changes being made about physical port.
 type PortReason uint8
 
 const (
-	// PortReasonAdd indecates that port was added.
+	// PortReasonAdd indicates that port was added.
 	PortReasonAdd PortReason = iota
 
 	// PortReasonDelete indicates that port was removed.
@@ -409,7 +409,7 @@ const (
 )
 
 // PortStatus is the message used by the switch to inform the controller
-// about the port beign added, modified or removed.
+// about the port being added, modified or removed.
 type PortStatus struct {
 	// Reason is the reason of this message.
 	Reason PortReason
@@ -474,7 +474,7 @@ type PortStats struct {
 	// RxBytes is a number of received bytes.
 	RxBytes uint64
 
-	// TxBytes is anumber of transmitted bytes.
+	// TxBytes is a number of transmitted bytes.
 	TxBytes uint64
 
 	// RxDropped is a number of packets dropped by RX.

@@ -57,7 +57,7 @@ func (h HelloElems) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, buf.Bytes())
 }
 
-// ReadFrom implements io.ReaderFrom interface. It desrializes the
+// ReadFrom implements io.ReaderFrom interface. It deserializes the
 // list of hello elements from the wire format.
 func (h HelloElems) ReadFrom(r io.Reader) (int64, error) {
 	var helloElemType HelloElemType
@@ -77,13 +77,13 @@ func (h HelloElems) ReadFrom(r io.Reader) (int64, error) {
 		encoding.ReaderMakerFunc(rm))
 }
 
-// Hello is a message used to performat an initial handshake right after
+// Hello is a message used to perform an initial handshake right after
 // establishing the connection. It is used to negotiate the version of
 // the protocol to communicate.
 //
 // For example, to create a hello message in order to response on the
 // incoming message from the datapath, the following request could be
-// consucted to inform that controller supports only OpenFlow 1.3:
+// constructed to inform that controller supports only OpenFlow 1.3:
 //
 //	req := of.NewRequest(of.HelloType, &ofp.Hello{
 //		ofp.HelloElems{&ofp.HelloElemVersionBitmap{
@@ -138,7 +138,7 @@ func (h *HelloElemVersionBitmap) WriteTo(w io.Writer) (int64, error) {
 	// used to align the message to 64-bits border.
 	totalLen := helloElemLen + maplen + len(padding)
 
-	// Compose the healder of the element and marshal it
+	// Compose the header of the element and marshal it
 	// altogether with a version bitmaps and required padding.
 	header := helloElem{h.Type(), uint16(totalLen)}
 	return encoding.WriteTo(w, header, h.Bitmaps, padding)
@@ -147,7 +147,7 @@ func (h *HelloElemVersionBitmap) WriteTo(w io.Writer) (int64, error) {
 // ReadFrom implements io.ReaderFrom interface. It deserializes the
 // version bitmap from the wire format.
 func (h *HelloElemVersionBitmap) ReadFrom(r io.Reader) (int64, error) {
-	// Read the header of the version bitmaps to retireve
+	// Read the header of the version bitmaps to retrieve
 	// the total length of the message.
 	var header helloElem
 	n, err := encoding.ReadFrom(r, &header)

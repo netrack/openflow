@@ -172,7 +172,7 @@ func (i *InstructionWriteMetadata) ReadFrom(r io.Reader) (int64, error) {
 		&defaultPad4, &i.Metadata, &i.MetadataMask)
 }
 
-// writeIntructionActions serializes the instruction with actinon.
+// writeIntructionActions serializes the instruction with action.
 // It is shared among the Appply/Clear/Write instructions.
 func writeInstructionActions(w io.Writer, t InstructionType,
 	actions Actions) (int64, error) {
@@ -191,7 +191,7 @@ func writeInstructionActions(w io.Writer, t InstructionType,
 	return encoding.WriteTo(w, header, pad4{}, buf)
 }
 
-// readInstructionActions deserializes the instructin with actions.
+// readInstructionActions deserializes the instruction with actions.
 // It is shared among the Apply/Clear/Write instructions.
 func readInstructionActions(r io.Reader, actions Actions) (int64, error) {
 	var read int64

@@ -81,7 +81,7 @@ type GroupMod struct {
 	// Group identifier.
 	Group Group
 
-	// Buckets is an array of buckets. For inderect group type, the
+	// Buckets is an array of buckets. For indirect group type, the
 	// array must contain exactly one bucket, other group types may
 	// have multiple buckets in the array.
 	//
@@ -103,7 +103,7 @@ func (g *GroupMod) WriteTo(w io.Writer) (int64, error) {
 	return n + nn, err
 }
 
-// ReadFrom implementa io.ReaderFrom interface. It deserializes the
+// ReadFrom implements io.ReaderFrom interface. It deserializes the
 // groups modification message from the wire format.
 func (g *GroupMod) ReadFrom(r io.Reader) (int64, error) {
 	n, err := encoding.ReadFrom(r, &g.Command, &g.Type,

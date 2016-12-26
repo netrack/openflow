@@ -222,7 +222,7 @@ func (m *MultipartRequest) ReadFrom(r io.Reader) (int64, error) {
 		return n, err
 	}
 
-	// Just copy the rest of the body to the requet.
+	// Just copy the rest of the body to the request.
 	buf := new(bytes.Buffer)
 	m.Body = buf
 

@@ -146,7 +146,7 @@ type action struct {
 	Len uint16
 }
 
-// actionLen is a minum length of the action.
+// actionLen is a minimum length of the action.
 const actionLen uint16 = 8
 
 // Action is an interface representing an OpenFlow action.
@@ -183,7 +183,7 @@ func (a *Actions) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, buf)
 }
 
-// ReadFrom decores the list of actions from the wire format into
+// ReadFrom decodes the list of actions from the wire format into
 // the list of types that implement Action interface.
 func (a *Actions) ReadFrom(r io.Reader) (int64, error) {
 	var actionType ActionType
@@ -450,7 +450,7 @@ func (a *ActionSetQueue) ReadFrom(r io.Reader) (int64, error) {
 	return encoding.ReadFrom(r, &defaultPad4, &a.QueueID)
 }
 
-// ActionGroup is an action that specifis the group used to process
+// ActionGroup is an action that specifies the group used to process
 // the packet.
 type ActionGroup struct {
 	// The Group indicates the group used to process this packet.

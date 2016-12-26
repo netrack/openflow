@@ -52,7 +52,7 @@ const (
 	//
 	// This type of fragments handling means that an attempt should be
 	// made to pass the fragments through the OpenFlow tables. If any
-	// field is not present (e.g., the TCP/UDP ports didn’t fit), then
+	// field is not present (e.g., the TCP/UDP ports didn't fit), then
 	// the packet should not match any entry that has that field set.
 	ConfigFlagFragNormal ConfigFlag = iota
 
