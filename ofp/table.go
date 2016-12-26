@@ -9,86 +9,125 @@ import (
 	"github.com/netrack/openflow/internal/encoding"
 )
 
+// maxTableNameLen defines the maximum length of the table name.
 const maxTableNameLen = 32
+
+// Table defines a switch table number.
+type Table uint8
 
 const (
 	// TableMax defines the last usable table number.
 	TableMax Table = 0xfe
 
-	// TableAll defines the fake table.
+	// TableAll defines the wildcard table used for table config, flow
+	// stats and flow deletes.
 	TableAll Table = 0xff
 )
 
-type Table uint8
+// TableConfig defines the flags to configure the table. Reserved for
+// future use.
+type TableConfig uint32
 
 const (
+	// TableConfigDeprecatedMask defines the deprecated bits of the
+	// table configuration.
 	TableConfigDeprecatedMask TableConfig = 3
 )
 
-type TableConfig uint32
-
-// Configure/Modify behavior of a flow table
+// TableMod is a message used to configure or modify behavior of a
+// flow table.
 type TableMod struct {
-	// The table_id chooses the table to which the configuration
-	// change should be applied. If the TableID is OFPTT_ALL,
-	// the configuration is applied to all tables in the switch.
+	// The Table chooses the table to which the configuration change should
+	// be applied. If the Table is TableAll, the configuration is applied
+	// to all tables in the switch.
 	Table Table
 
 	// The config field is a bitmap that is provided for backward
-	// compatibility with earlier version of the specification,
-	// it is reserved for future use.
+	// compatibility with earlier version of the specification, it is
+	// reserved for future use.
 	Config TableConfig
 }
 
+// WriteTo implements io.WriterTo interface. It serializes the table
+// modification message into the wire format.
 func (t *TableMod) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, t.Table, pad3{}, t.Config)
 }
 
+// ReadFrom implements io.ReaderFrom interface. It deserializes the
+// table modification message from the wire format.
 func (t *TableMod) ReadFrom(r io.Reader) (int64, error) {
 	return encoding.ReadFrom(r, &t.Table, &pad3{}, &t.Config)
 }
 
-// Information about tables is requested with the MP_TABLE multipart
-// request type. The request does not contain any data in the body.
-// The body of the reply consists of an array of the TableStats
+// TableStats defines a multipart request body used to query information
+// about tables presented within a switch.
 type TableStats struct {
-	// Identifier of table. Lower numbered tables are consulted first
+	// Table identifies a table within a switch. Lower numbered tables
+	// are consulted first.
 	Table Table
 
-	// Number of active entries
+	// ActiveCount is a number of active entries.
 	ActiveCount uint32
 
-	// Number of packets looked up in table
+	// LookupCount is a number of packets looked up in table.
 	LookupCount uint64
 
-	// Number of packets that hit table
+	// MatchedCount is a number of packets that hit table.
 	MatchedCount uint64
 }
 
+// WriteTo implements io.WriterTo interface. It serializes the table
+// statistics into the wire format.
 func (t *TableStats) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, t.Table, pad3{},
 		t.ActiveCount, t.LookupCount, t.MatchedCount)
 }
 
+// ReadFrom implements io.ReaderFrom interface. It deserializes the
+// table statistics from the wire format.
 func (t *TableStats) ReadFrom(r io.Reader) (int64, error) {
 	return encoding.ReadFrom(r, &t.Table, &defaultPad3,
 		&t.ActiveCount, &t.LookupCount, &t.MatchedCount)
 }
 
+// tableFeaturesLen defines the length of the table features header.
 const tableFeaturesLen = 64
 
+// TableFeatures is a body of multipart request and reply. It is used
+// to query for the capabilities of existing table, and to optionally
+// ask the switch to reconfigure its tables to match a supplied
+// configuration.
+//
+// In general, the table feature capabilities represents all possible
+// features of a table, however some features may be mutually exclusive
+// and the current capabilities structures do not allow us to represent
+// such exclusions.
 type TableFeatures struct {
+	// Table identifies a table within a switch.
 	Table Table
-	Name  string
 
+	// Name is human-readable name of the table.
+	Name string
+
+	// MetadataMatch specifies bits of metadata can match.
 	MetadataMatch uint64
-	MetadataWrite uint64
-	Config        TableConfig
 
+	// MetadataWrite specifies bits of metadata can write.
+	MetadataWrite uint64
+
+	// Config is a bitmap of table configurations.
+	Config TableConfig
+
+	// MaxEntries is a maximum number of entries supported.
 	MaxEntries uint32
+
+	// Properties is a list of table properties.
 	Properties []TableProp
 }
 
+// WriteTo implements io.WriterTo interface. It serializes the table
+// features into the wire format.
 func (t *TableFeatures) WriteTo(w io.Writer) (int64, error) {
 	var buf bytes.Buffer
 
@@ -110,6 +149,8 @@ func (t *TableFeatures) WriteTo(w io.Writer) (int64, error) {
 		t.MaxEntries, buf.Bytes())
 }
 
+// ReadFrom implements io.ReaderFrom interface. It deserializes the
+// table features from the wire format.
 func (t *TableFeatures) ReadFrom(r io.Reader) (int64, error) {
 	var name [maxTableNameLen]byte
 	var length uint16
@@ -144,26 +185,68 @@ func (t *TableFeatures) ReadFrom(r io.Reader) (int64, error) {
 	return n + nn, err
 }
 
+// TablePropType defines the table property types.
+//
+// Low order bit cleared indicates a property for a regular Flow Entry.
+// Low order bit set indicates a property for the Table-Miss Flow Entry.
+type TablePropType uint16
+
 const (
+	// TablePropTypeInstructions indicates instructions property.
 	TablePropTypeInstructions TablePropType = iota
+
+	// TablePropTypeInstructionsMiss indicates instructions property for
+	// table-miss.
 	TablePropTypeInstructionsMiss
+
+	// TablePropTypeNextTables indicates next table property.
 	TablePropTypeNextTables
+
+	// TablePropTypeNextTablesMiss indicates next table property for
+	// table-miss.
 	TablePropTypeNextTablesMiss
+
+	// TablePropTypeWriteActions indicates write actions property.
 	TablePropTypeWriteActions
+
+	// TablePropTypeWriteActionsMiss indicates write actions property for
+	// table-miss.
 	TablePropTypeWriteActionsMiss
+
+	// TablePropTypeApplyActions indicates apply actions property.
 	TablePropTypeApplyActions
+
+	// TablePropTypeApplyActionsMiss indicates apply actions property for
+	// table-miss.
 	TablePropTypeApplyActionsMiss
+
+	// TablePropTypeMatch indicates match property.
 	TablePropTypeMatch
+
+	// TablePropTypeWildcards indicates wildcards property.
 	TablePropTypeWildcards
+
+	// TablePropTypeWriteSetField indicates write set-field property.
 	TablePropTypeWriteSetField
+
+	// TablePropTypeWriteSetFieldMiss indicates write set-field property
+	// for table-miss.
 	TablePropTypeWriteSetFieldMiss
+
+	// TablePropTypeApplySetField indicates apply set-field property.
 	TablePropTypeApplySetField
+
+	// TablePropTypeApplySetFieldMiss indicates apply set-field property
+	// for table-miss.
 	TablePropTypeApplySetFieldMiss
-	TablePropTypeExperimenter     TablePropType = 0xfffe
+
+	// TablePropTypeExperimenter indicates experimenter property.
+	TablePropTypeExperimenter TablePropType = 0xfffe
+
+	// TablePropTypeExperimenterMiss indicates experimenter property for
+	// table-miss.
 	TablePropTypeExperimenterMiss TablePropType = 0xffff
 )
-
-type TablePropType uint16
 
 var tablePropMap = map[TablePropType]encoding.ReaderMaker{
 	TablePropTypeInstructions:      encoding.ReaderMakerOf(TablePropInstructions{}),
@@ -184,12 +267,15 @@ var tablePropMap = map[TablePropType]encoding.ReaderMaker{
 	TablePropTypeExperimenterMiss:  encoding.ReaderMakerOf(TablePropExperimenter{}),
 }
 
+// TableProp is an interface representing OpenFlow table property.
 type TableProp interface {
 	encoding.ReadWriter
 
+	// Type returns the type of the table property.
 	Type() TablePropType
 }
 
+// tableProp defines a common header for all table properties.
 type tableProp struct {
 	Type TablePropType
 	Len  uint16
@@ -238,7 +324,7 @@ func readTablePropXM(r io.Reader, xms *[]XM) (tableProp, int64, error) {
 
 func writeTablePropActions(w io.Writer, tp TableProp, a Actions) (int64, error) {
 	// Write the list of actions into the temporary buffer
-	// to be able cacluate the total message length.
+	// to be able calculates the total message length.
 	buf, err := a.bytes()
 	if err != nil {
 		return 0, err
@@ -274,17 +360,26 @@ func readTablePropActions(r io.Reader, a *Actions) (tableProp, int64, error) {
 	return header, n + nn, err
 }
 
+// TablePropInstructions defines the instructions property of the table.
 type TablePropInstructions struct {
-	Miss         bool
+	// Miss is set to true when it is a property for table-miss.
+	Miss bool
+
+	// Instructions specifies a list of instructions supported by the
+	// table.
 	Instructions Instructions
 }
 
+// Type implements TableProp interface. It returns the type of the
+// table property.
 func (t *TablePropInstructions) Type() TablePropType {
 	return tablePropType(t.Miss,
 		TablePropTypeInstructions,
 		TablePropTypeInstructionsMiss)
 }
 
+// WriteTo implements io.WriterTo interface. It serializes the table
+// instruction property into the wire format.
 func (t *TablePropInstructions) WriteTo(w io.Writer) (int64, error) {
 	var buf bytes.Buffer
 
@@ -301,6 +396,8 @@ func (t *TablePropInstructions) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, header, buf.Bytes(), padding)
 }
 
+// ReadFrom implements io.ReaderFrom interface. It serializes the table
+// instruction property from the wire format.
 func (t *TablePropInstructions) ReadFrom(r io.Reader) (int64, error) {
 	var header tableProp
 	n, err := encoding.ReadFrom(r, &header)
@@ -317,7 +414,7 @@ func (t *TablePropInstructions) ReadFrom(r io.Reader) (int64, error) {
 		return n, err
 	}
 
-	// If the unmarshaled property describes miss flow-entry
+	// If the deserialized property describes miss flow-entry
 	// we will assign the respective flag in the structure.
 	t.Miss = header.Type == TablePropTypeInstructionsMiss
 	if err != nil {
@@ -330,22 +427,31 @@ func (t *TablePropInstructions) ReadFrom(r io.Reader) (int64, error) {
 	return n + nn, err
 }
 
+// TablePropNextTables defines the table next table property.
 type TablePropNextTables struct {
-	Miss       bool
+	// Miss is set to true when it is a property for table-miss.
+	Miss bool
+
+	// NextTables is the list of tables that can be directly reached from
+	// the present table using InstructionGotoTable instruction.
 	NextTables []Table
 }
 
+// Type implements TableProp interface. It returns the type of the
+// table property.
 func (t *TablePropNextTables) Type() TablePropType {
 	return tablePropType(t.Miss,
 		TablePropTypeNextTables,
 		TablePropTypeNextTablesMiss)
 }
 
+// WriteTo implements io.WriterTo interface. It serializes the next
+// tables property into the wire format.
 func (t *TablePropNextTables) WriteTo(w io.Writer) (int64, error) {
 	var buf bytes.Buffer
 
-	// Write the list of table identifier to the temorary buffer
-	// to calculate the totale length of the message.
+	// Write the list of table identifier to the temporary buffer
+	// to calculate the total length of the message.
 	_, err := encoding.WriteTo(&buf, t.NextTables)
 	if err != nil {
 		return 0, err
@@ -357,6 +463,8 @@ func (t *TablePropNextTables) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, header, buf.Bytes(), padding)
 }
 
+// ReadFrom implements io.ReaderFrom interface. It deserializes the
+// next tables property from the wire format.
 func (t *TablePropNextTables) ReadFrom(r io.Reader) (int64, error) {
 	var header tableProp
 
@@ -376,137 +484,210 @@ func (t *TablePropNextTables) ReadFrom(r io.Reader) (int64, error) {
 	return n + nn, err
 }
 
+// TablePropWriteActions defines the write actions property of the
+// table.
 type TablePropWriteActions struct {
-	Miss    bool
+	// Miss is set to true when it is a property for table-miss.
+	Miss bool
+
+	// Actions is a list of actions for the feature.
 	Actions Actions
 }
 
+// Type implements TableProp interface. It returns the type of the
+// table property.
 func (t *TablePropWriteActions) Type() TablePropType {
 	return tablePropType(t.Miss,
 		TablePropTypeWriteActions,
 		TablePropTypeWriteActionsMiss)
 }
 
+// WriteTo implements io.WriterTo interface. It serializes the write
+// actions property into the wire format.
 func (t *TablePropWriteActions) WriteTo(w io.Writer) (int64, error) {
 	return writeTablePropActions(w, t, t.Actions)
 }
 
+// ReadFrom implements io.ReaderFrom interface. It deserializes the
+// write actions property from the wire format.
 func (t *TablePropWriteActions) ReadFrom(r io.Reader) (int64, error) {
 	header, n, err := readTablePropActions(r, &t.Actions)
 	t.Miss = header.Type == TablePropTypeWriteActionsMiss
 	return n, err
 }
 
+// TablePropApplyActions defines the apply actions property of the
+// table.
 type TablePropApplyActions struct {
-	Miss    bool
+	// Miss is set to true when it is a property for table-miss.
+	Miss bool
+
+	// Actions is a list of actions for the feature.
 	Actions Actions
 }
 
+// Type implements TableProp interface. It returns the type of the
+// table property.
 func (t *TablePropApplyActions) Type() TablePropType {
 	return tablePropType(t.Miss,
 		TablePropTypeApplyActions,
 		TablePropTypeApplyActionsMiss)
 }
 
+// WriteTo implements io.WriterTo interface. It serializes the
+// apply actions property into the wire format.
 func (t *TablePropApplyActions) WriteTo(w io.Writer) (int64, error) {
 	return writeTablePropActions(w, t, t.Actions)
 }
 
+// ReadFrom implements io.ReaderFrom interface. It deserializes the
+// apply actions property from the wire format.
 func (t *TablePropApplyActions) ReadFrom(r io.Reader) (int64, error) {
 	header, n, err := readTablePropActions(r, &t.Actions)
 	t.Miss = header.Type == TablePropTypeApplyActionsMiss
 	return n, err
 }
 
+// TablePropMatch  defines the match property of the table.
 type TablePropMatch struct {
+	// Fields is an array of extensible matches.
 	Fields []XM
 }
 
+// Type implements TableProp interface. It returns the type of the
+// table property.
 func (t *TablePropMatch) Type() TablePropType {
 	return TablePropTypeMatch
 }
 
+// WriteTo implements io.WriterTo interface. It serializes the
+// match property into the wire format.
 func (t *TablePropMatch) WriteTo(w io.Writer) (int64, error) {
 	return writeTablePropXM(w, t, t.Fields)
 }
 
+// ReadFrom implements io.ReaderFrom interface. It deserializes the
+// match property from the wire format.
 func (t *TablePropMatch) ReadFrom(r io.Reader) (int64, error) {
 	_, n, err := readTablePropXM(r, &t.Fields)
 	return n, err
 }
 
+// TablePropWildcards defines the wildcard property of the table.
 type TablePropWildcards struct {
+	// Fields is an array of extensible matches.
 	Fields []XM
 }
 
+// Type implements TableProp interface. It returns the type of the
+// table property.
 func (t *TablePropWildcards) Type() TablePropType {
 	return TablePropTypeWildcards
 }
 
+// WriteTo implements io.WriterTo interface. It serializes the wildcard
+// property into the wire format.
 func (t *TablePropWildcards) WriteTo(w io.Writer) (int64, error) {
 	return writeTablePropXM(w, t, t.Fields)
 }
 
+// ReadFrom implements io.ReaderFrom interface. It deserializes the
+// wildcard property from the wire format.
 func (t *TablePropWildcards) ReadFrom(r io.Reader) (int64, error) {
 	_, n, err := readTablePropXM(r, &t.Fields)
 	return n, err
 }
 
+// TablePropWriteSetField defines the write set-field property of the
+// table.
 type TablePropWriteSetField struct {
-	Miss   bool
+	// Miss is set to true when it is a property for table-miss.
+	Miss bool
+
+	// Fields is an array of extensible matches.
 	Fields []XM
 }
 
+// Type implements TableProp interface. It returns the type of the
+// table property.
 func (t *TablePropWriteSetField) Type() TablePropType {
 	return tablePropType(t.Miss,
 		TablePropTypeWriteSetField,
 		TablePropTypeWriteSetFieldMiss)
 }
 
+// WriteTo implements io.WriterTo interface. It serializes the write
+// set-field into the wire format.
 func (t *TablePropWriteSetField) WriteTo(w io.Writer) (int64, error) {
 	return writeTablePropXM(w, t, t.Fields)
 }
 
+// ReadFrom implements io.ReadFrom interface. It deserializes the write
+// set-field from the wire format.
 func (t *TablePropWriteSetField) ReadFrom(r io.Reader) (int64, error) {
 	header, n, err := readTablePropXM(r, &t.Fields)
 	t.Miss = header.Type == TablePropTypeWriteSetFieldMiss
 	return n, err
 }
 
+// TablePropApplySetField defines the apply set-field property of the
+// table.
 type TablePropApplySetField struct {
-	Miss   bool
+	// Miss is set to true when it is a property for table-miss.
+	Miss bool
+
+	// Fields is an array of extensible matches.
 	Fields []XM
 }
 
+// Type implements TableProp interface. It returns the type of the
+// table property.
 func (t *TablePropApplySetField) Type() TablePropType {
 	return tablePropType(t.Miss,
 		TablePropTypeApplySetField,
 		TablePropTypeApplySetFieldMiss)
 }
 
+// WriteTo implements io.WriterTo interface. It serializes the apply
+// set-field property into the wire format.
 func (t *TablePropApplySetField) WriteTo(w io.Writer) (int64, error) {
 	return writeTablePropXM(w, t, t.Fields)
 }
 
+// ReadFrom implements io.ReaderFrom interface. It deserializes the
+// apply set-field property from the wire format.
 func (t *TablePropApplySetField) ReadFrom(r io.Reader) (int64, error) {
 	header, n, err := readTablePropXM(r, &t.Fields)
 	t.Miss = header.Type == TablePropTypeApplySetFieldMiss
 	return n, err
 }
 
+// TablePropExperimenter defines the experimenter property of the
+// table.
 type TablePropExperimenter struct {
-	Miss         bool
+	// Miss is set to true when it is a property for table-miss.
+	Miss bool
+
+	// Experimenter identifier.
 	Experimenter uint32
-	ExpType      uint32
-	Data         []byte
+
+	// Experimenter defined.
+	ExpType uint32
+
+	// Experimenter data.
+	Data []byte
 }
 
+// Type implements TableProp interface. It returns the type of the
+// table property.
 func (t *TablePropExperimenter) Type() TablePropType {
 	return tablePropType(t.Miss,
 		TablePropTypeExperimenter,
 		TablePropTypeExperimenterMiss)
 }
 
+// WriteTo implements io.WriterTo interface. It serializes the
+// experimenter property into the wire format.
 func (t *TablePropExperimenter) WriteTo(w io.Writer) (int64, error) {
 	header := tableProp{t.Type(), uint16(tablePropLen + len(t.Data) + 8)}
 	padding := make([]byte, (header.Len+7)/8*8-header.Len)
@@ -515,6 +696,8 @@ func (t *TablePropExperimenter) WriteTo(w io.Writer) (int64, error) {
 		t.ExpType, t.Data, padding)
 }
 
+// ReadFrom implements io.ReaderFrom interface. It deserializes the
+// experimenter property from the wire format.
 func (t *TablePropExperimenter) ReadFrom(r io.Reader) (int64, error) {
 	var header tableProp
 
