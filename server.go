@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -93,6 +94,52 @@ func (r *response) Write(header *Header, w io.WriterTo) (err error) {
 	return r.conn.Flush()
 }
 
+// The reqwrap defines a placeholder for request and error returned
+// from Receive call.
+type reqwrap struct {
+	req *Request
+	err error
+}
+
+// The receiver defines a wrapper around connection used to create
+// a channel of Requests by continuously fetching data from connection.
+type receiver struct {
+	// Conn is a client connection.
+	Conn *conn
+
+	once sync.Once
+	ch   chan reqwrap
+}
+
+// The receive starts an infinite loop of reading the requests from
+// the client connection. When the receive call returns an error, a
+// submission channel closes and loop terminates.
+func (r *receiver) receive() {
+	for {
+		req, err := r.Conn.Receive()
+		r.ch <- reqwrap{req, err}
+
+		if err != nil {
+			close(r.ch)
+			return
+		}
+	}
+}
+
+// The starts initializes all required attributes of the instance and
+// spawns a new goroutine to receive requests from the channel.
+func (r *receiver) start() {
+	r.ch = make(chan reqwrap)
+	go r.receive()
+}
+
+// C returns a read-only channel of request plus error.
+func (r *receiver) C() <-chan reqwrap {
+	// Wait for a new request from the client.
+	r.once.Do(r.start)
+	return r.ch
+}
+
 // ListenAndServe listens on the given TCP address the handler. When
 // handler set to nil, the default handler will be used.
 //
@@ -102,7 +149,7 @@ func (r *response) Write(header *Header, w io.WriterTo) (err error) {
 //		rw.Write(&of.Header{Type: of.TypeEchoReply}, nil)
 //	})
 //
-//	ListenAndServe(":6633", nil)
+//	of.ListenAndServe(":6633", nil)
 //
 func ListenAndServe(addr string, handler Handler) error {
 	server := &Server{Addr: addr, Handler: handler}
@@ -123,7 +170,23 @@ type Server struct {
 	// Maximum duration before timing out the write of the response.
 	WriteTimeout time.Duration
 
+	// ConnState specifies an optional callback function that is called
+	// when a client connection changes state.
 	ConnState func(Conn, ConnState)
+
+	// MaxConns defines the maximum number of client connections server
+	// handles, the rest will be explicitly closed. Zero means no limit.
+	MaxConns int
+
+	// The conns store the count of the client connections. This value
+	// is incremented on each new connection and decremented on each
+	// closed connection.
+	conns int32
+
+	// The stop is a channel used to terminate the server in a hard
+	// way. It will be used only for testing purposes.
+	stop chan struct{}
+	once sync.Once
 }
 
 func (srv *Server) setState(conn Conn, state ConnState) {
@@ -155,59 +218,109 @@ func (srv *Server) Serve(l net.Listener) error {
 		handler = DefaultMux
 	}
 
+	// Initialize a channel used to terminate the main handling loop.
+	srv.once.Do(func() { srv.stop = make(chan struct{}) })
+
 	for {
-		rwc, err := l.Accept()
+		err := srv.accept(l, handler)
 		if err != nil {
 			return err
 		}
-
-		c := newConn(rwc)
-		c.ReadTimeout = srv.ReadTimeout
-		c.WriteTimeout = srv.WriteTimeout
-
-		srv.setState(c, StateNew)
-		go srv.serve(c, handler)
 	}
+}
+
+// The accept block until a new connection will be extracted from the
+// queue. It keeps track of count of incoming connections and closes all
+// that exceed the MaxConns threshold.
+func (srv *Server) accept(l net.Listener, h Handler) error {
+	rwc, err := l.Accept()
+	if err != nil {
+		return err
+	}
+
+	c := newConn(rwc)
+	c.ReadTimeout = srv.ReadTimeout
+	c.WriteTimeout = srv.WriteTimeout
+
+	srv.setState(c, StateNew)
+
+	// Terminate the
+	numConns := atomic.LoadInt32(&srv.conns)
+	if srv.MaxConns != 0 && numConns >= int32(srv.MaxConns) {
+		// Make the close a deferred call in case of overridden ConnState
+		// function produce a panic error (to prevent file descriptor leak).
+		defer c.Close()
+		srv.setState(c, StateClosed)
+		return nil
+	}
+
+	atomic.AddInt32(&srv.conns, 1)
+	go srv.serve(c, h)
+
+	return nil
 }
 
 func (srv *Server) serve(c *conn, h Handler) {
 	// Define a deferred call to close the connection.
 	defer c.Close()
+	rcvr := &receiver{Conn: c}
 
 	for {
-		// Wait for the new request from either the Switch or
-		// the Controller.
-		req, err := c.Receive()
-		if err != nil {
+		select {
+		// Receive new requests in the infinite loop and handle them
+		// sequentially. When error is returned from the receive loop, this
+		// routine will be stopped and the client connection closed.
+		case entry := <-rcvr.C():
+			if entry.err != nil {
+				atomic.AddInt32(&srv.conns, -1)
+				srv.setState(c, StateClosed)
+				return
+			}
+
+			srv.serveReq(c, entry.req, h)
+
+		// Stop channel used here only for testing purposes to terminate the
+		// infinite receive loop. As a result the all client connections will
+		// be closed, as well as receive routine.
+		case <-srv.stop:
 			return
 		}
-
-		state := StateActive
-		if req.Header.Type == TypeHello {
-			state = StateHelloReceived
-		}
-
-		srv.setState(c, state)
-		// Define a response version from the request version, so
-		// it will potentially reduce the amount of additional
-		// header configurations.
-		header := Header{
-			Version:     req.Header.Version,
-			Transaction: req.Header.Transaction,
-		}
-
-		// Construct a new response instance with some default
-		// attributes and execute respective handler for it.
-		resp := &response{conn: c, header: header}
-		h.Serve(resp, req)
-
-		// Write the buffer content to the connection, so the
-		// pending messages will written.
-		c.Flush()
-
-		// Update the state as the handler just processed the
-		// received request and now the server will wait for a
-		// new one.
-		srv.setState(c, StateIdle)
 	}
+}
+
+// The serveReq serves a single request from the given connection using
+// specified handler.
+func (srv *Server) serveReq(c *conn, req *Request, h Handler) {
+	state := StateActive
+	if req.Header.Type == TypeHello {
+		state = StateHelloReceived
+	}
+
+	srv.setState(c, state)
+	// Define a response version from the request version, so
+	// it will potentially reduce the amount of additional
+	// header configurations.
+	header := Header{
+		Version:     req.Header.Version,
+		Transaction: req.Header.Transaction,
+	}
+
+	// Construct a new response instance with some default
+	// attributes and execute respective handler for it.
+	resp := &response{conn: c, header: header}
+	h.Serve(resp, req)
+
+	// Write the buffer content to the connection, so the
+	// pending messages will be written to the wire.
+	c.Flush()
+
+	// Update the state as the handler just processed the
+	// received request and now the server will wait for a
+	// new one.
+	srv.setState(c, StateIdle)
+}
+
+// The close closes all running handlers of the client connections.
+func (srv *Server) close() {
+	close(srv.stop)
 }

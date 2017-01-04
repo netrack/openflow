@@ -2,8 +2,10 @@ package openflow
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"net"
+	"sync"
 	"testing"
 	"time"
 )
@@ -24,6 +26,8 @@ type dummyConn struct {
 
 	lAddr string
 	rAddr string
+
+	closed bool
 }
 
 func (c *dummyConn) Read(b []byte) (int, error) {
@@ -34,7 +38,9 @@ func (c *dummyConn) Write(b []byte) (int, error) {
 	return c.w.Write(b)
 }
 
+// Close implement net.Conn interface.
 func (c *dummyConn) Close() error {
+	c.closed = true
 	return nil
 }
 
@@ -58,24 +64,63 @@ func (c *dummyConn) SetWriteDeadline(_ time.Time) error {
 	return nil
 }
 
-type dummyListener struct {
-	conn net.Conn
+// Type dummyBlockConn defines the implementation of net.Conn interface
+// used for testing. The Read and Write methods blocks until the conn
+// is closed.
+type dummyBlockConn struct {
+	dummyConn
+
+	cancel chan struct{}
+	once   sync.Once
 }
 
-func (l *dummyListener) Accept() (c net.Conn, e error) {
-	c, l.conn = l.conn, nil
-	if c == nil {
-		e = io.EOF
+// init initializes the attributes of the blocking connection struct.
+func (c *dummyBlockConn) init() {
+	c.cancel = make(chan struct{})
+}
+
+// Read implements net.Conn interface. It blocks until connection will
+// be closed and returns an error then.
+func (c *dummyBlockConn) Read(b []byte) (int, error) {
+	c.once.Do(c.init)
+	_, _ = <-c.cancel
+	return 0, errors.New("conn: connection closed")
+}
+
+// Write implement net.Conn interface. It block until connection will
+// be closed and returns an error then.
+func (c *dummyBlockConn) Write(b []byte) (int, error) {
+	c.once.Do(c.init)
+	_, _ = <-c.cancel
+	return 0, errors.New("conn: connection closed")
+}
+
+// Close implements net.Conn interface. It releases the blocked Read
+// and Write methods by closing the internal channel.
+func (c *dummyBlockConn) Close() error {
+	c.once.Do(c.init)
+	close(c.cancel)
+	return c.dummyConn.Close()
+}
+
+// The dummyListerner defines the mock implementation of the
+// net.Listener. It sequentially returns a single connection from the
+// list of the connection.
+type dummyListener struct {
+	conns []net.Conn
+}
+
+func (l *dummyListener) Accept() (net.Conn, error) {
+	var conn net.Conn
+	if len(l.conns) == 0 {
+		return conn, io.EOF
 	}
 
-	return
+	conn, l.conns = l.conns[0], l.conns[1:]
+	return conn, nil
 }
 
 func (l *dummyListener) Close() error {
-	if l.conn != nil {
-		return l.conn.Close()
-	}
-
 	return nil
 }
 
@@ -93,7 +138,7 @@ func TestListener(t *testing.T) {
 	defer ofpLn.ln.Close()
 
 	dconn := &dummyConn{}
-	dln := &dummyListener{dconn}
+	dln := &dummyListener{[]net.Conn{dconn}}
 
 	ofpLn.ln = dln
 
@@ -132,7 +177,7 @@ func TestDial(t *testing.T) {
 	r.WriteTo(&serverConn.r)
 
 	// Perform the actual connection replacement.
-	ofpLn.ln = &dummyListener{serverConn}
+	ofpLn.ln = &dummyListener{[]net.Conn{serverConn}}
 
 	rwc, err := Dial("tcp6", serverAddr)
 	if err != nil {
