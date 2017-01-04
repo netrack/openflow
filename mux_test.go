@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net"
 	"sync"
 	"testing"
 )
@@ -57,11 +58,13 @@ func TestTypeMux(t *testing.T) {
 		t.Errorf("This handler should never be called")
 	})
 
-	reader := bytes.NewBuffer([]byte{4, 0, 0, 8, 0, 0, 0, 0})
+	reader := bytes.NewBuffer(newHeader(TypeHello))
 	conn := &dummyConn{r: *reader}
 
 	s := Server{Addr: "0.0.0.0:6633", Handler: mux}
-	err := s.Serve(&dummyListener{conn})
+	defer s.close()
+
+	err := s.Serve(&dummyListener{[]net.Conn{conn}})
 
 	// Serve function will treat the connection as a regular
 	// connection, thus will try to read the next message after
