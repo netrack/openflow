@@ -12,7 +12,7 @@ type ConnState int
 
 const (
 	StateNew ConnState = iota
-	StateHelloReceived
+	StateHandshake
 	StateActive
 	StateIdle
 	StateClosed

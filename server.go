@@ -293,7 +293,7 @@ func (srv *Server) serve(c *conn, h Handler) {
 func (srv *Server) serveReq(c *conn, req *Request, h Handler) {
 	state := StateActive
 	if req.Header.Type == TypeHello {
-		state = StateHelloReceived
+		state = StateHandshake
 	}
 
 	srv.setState(c, state)
