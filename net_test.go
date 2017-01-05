@@ -70,8 +70,13 @@ func (c *dummyConn) SetWriteDeadline(_ time.Time) error {
 type dummyBlockConn struct {
 	dummyConn
 
-	cancel chan struct{}
-	once   sync.Once
+	// Cancel is a channel used to simulate the blocking read and
+	// write operations from the connection. It will be closed on
+	// close of the client connection, thus release all blocked ops.
+	cancel     chan struct{}
+	cancelOnce sync.Once
+
+	once sync.Once
 }
 
 // init initializes the attributes of the blocking connection struct.
@@ -99,7 +104,9 @@ func (c *dummyBlockConn) Write(b []byte) (int, error) {
 // and Write methods by closing the internal channel.
 func (c *dummyBlockConn) Close() error {
 	c.once.Do(c.init)
-	close(c.cancel)
+
+	// Cancel the close channel only once to prevent panics.
+	c.cancelOnce.Do(func() { close(c.cancel) })
 	return c.dummyConn.Close()
 }
 

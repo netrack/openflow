@@ -66,4 +66,54 @@ func TestServeMaxConns(t *testing.T) {
 }
 
 func TestServerServe(t *testing.T) {
+	var req *Request
+	done := make(chan struct{})
+
+	h := func(rw ResponseWriter, r *Request) {
+		// Save the request for further analysis.
+		req = r
+		done <- struct{}{}
+	}
+
+	// Define a connection state transition callback to validate the
+	// transition of the client connections.
+	states := make(map[ConnState]int)
+	connState := func(c Conn, s ConnState) {
+		// Simply increase a counter of the connection states.
+		states[s]++
+	}
+
+	dconn := new(dummyConn)
+	dconn.r.Write(newHeader(TypeHello))
+
+	dln := &dummyListener{[]net.Conn{dconn}}
+
+	s := Server{Handler: HandlerFunc(h), ConnState: connState}
+	defer s.close()
+	s.Serve(dln)
+
+	// Wait for handler being called for the client connection.
+	<-done
+
+	if req.Conn().(*conn).rwc != dconn {
+		t.Fatalf("Wrong connection instance returned")
+	}
+
+	if req.ProtoMajor != 1 || req.ProtoMinor != 3 {
+		t.Fatalf("Wrong version of OpenFlow protocol: %d.%d",
+			req.ProtoMajor, req.ProtoMinor)
+	}
+
+	// Ensure the client connection transitioned all required states.
+	if states[StateNew] != 1 {
+		t.Errorf("Connection did not transition new state")
+	}
+
+	if states[StateHandshake] != 1 {
+		t.Errorf("Connection did not transition handshake state")
+	}
+
+	if states[StateClosed] != 1 {
+		t.Errorf("Connection did not transition closed state")
+	}
 }
