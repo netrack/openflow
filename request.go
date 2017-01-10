@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 	"net"
+	"sync"
 )
 
 var (
@@ -14,7 +15,52 @@ var (
 	ErrBodyTooLong    = errors.New("openflow: Request body is too long")
 )
 
+// headerlen defines a length of the OpenFlow header.
 const headerlen = 8
+
+// copyReader is a wrapper of io.WriterTo interface to implement
+// io.Reader interface.
+type copyReader struct {
+	// Embedded instance of the io.WriterTo interface in order to
+	// use this implementation while serializing the Request.
+	io.WriterTo
+
+	rbuf bytes.Buffer
+	rerr error
+
+	// once used to dump the content of WriterTo into the buffer.
+	once sync.Once
+}
+
+// init writes the WriterTo content into the internal buffer. This
+// data will be used in the Read method.
+//
+// It persists an error of the WriteTo call. So it will be returned
+// on each attempt to read the data.
+func (r *copyReader) init() {
+	_, r.rerr = r.WriteTo(&r.rbuf)
+}
+
+// WriteTo implements io.WriterTo interface. It makes it possible
+// to call WriterTo methods, even when underlying instance is set
+// to nil.
+func (r *copyReader) WriteTo(w io.Writer) (int64, error) {
+	if r.WriterTo == nil {
+		return 0, nil
+	}
+
+	return r.WriterTo.WriteTo(w)
+}
+
+// Read implements io.Reader interface.
+func (r *copyReader) Read(b []byte) (int, error) {
+	if r.rerr != nil {
+		return 0, r.rerr
+	}
+
+	r.once.Do(r.init)
+	return r.rbuf.Read(b)
+}
 
 // A Request represents an OpenFlow request received by the server
 // or to be sent by a client.
@@ -53,7 +99,7 @@ type Request struct {
 // body.
 func NewRequest(t Type, body io.WriterTo) *Request {
 	req := &Request{
-		Body:       newReader(body),
+		Body:       &copyReader{WriterTo: body},
 		Proto:      "OFP/1.3",
 		ProtoMajor: 1, ProtoMinor: 3,
 	}

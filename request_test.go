@@ -5,6 +5,32 @@ import (
 	"testing"
 )
 
+func TestCopyReaderWriteTo(t *testing.T) {
+	var buf bytes.Buffer
+	rd := copyReader{WriterTo: nil}
+
+	// Ensure the nil writer is acceptable.
+	n, err := rd.WriteTo(&buf)
+	if n != 0 || err != nil {
+		t.Errorf("Expected successful write to buffer: %s", err)
+	}
+}
+
+func TestCopyReaderRead(t *testing.T) {
+	// Put some data into the writer and ensure all bits
+	// have been returned during the Read call.
+	bits := []byte{1, 2, 3, 4}
+	buf := bytes.NewBuffer(bits)
+	rd := copyReader{WriterTo: buf}
+
+	p := make([]byte, len(bits))
+	nn, err := rd.Read(p)
+
+	if nn != len(bits) || err != nil {
+		t.Errorf("Expected successful read from reader: %s", err)
+	}
+}
+
 func TestReadRequest(t *testing.T) {
 	var req Request
 	var buf bytes.Buffer
