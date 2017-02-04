@@ -66,6 +66,9 @@ func NewServeMux() *ServeMux {
 	return &ServeMux{handlers: make(map[Matcher]*muxEntry)}
 }
 
+// DefaultHandler is the Handler used for Requests that don't have a Matcher.
+var DefaultHandler = DiscardHandler
+
 // handle appends to the list of registered handlers a new one. If the
 // matcher or handler of the entry is not defined, a panic function will
 // be called.
@@ -127,10 +130,9 @@ func (mux *ServeMux) Handler(r *Request) Handler {
 
 	mux.mu.RUnlock()
 
-	// When there are no matching entries in the list, we will
-	// simply drop the incoming message.
+	// Use the DefaultHandler when there are no matching entries in the list.
 	if !matched {
-		return DiscardHandler
+		return DefaultHandler
 	}
 
 	// If the retrieved entry is not disposable one, we will
