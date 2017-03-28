@@ -15,6 +15,11 @@ const maxTableNameLen = 32
 // Table defines a switch table number.
 type Table uint8
 
+// String returns a string representation of the table.
+func (t Table) String() string {
+	return fmt.Sprintf("Table(%d)", t)
+}
+
 const (
 	// TableMax defines the last usable table number.
 	TableMax Table = 0xfe
@@ -281,6 +286,26 @@ type tableProp struct {
 	Len  uint16
 }
 
+func yieldTableProp(r io.Reader, miss *bool) (
+	*tableProp, io.Reader, int64, error) {
+
+	header := new(tableProp)
+	n, err := encoding.ReadFrom(r, header)
+	if err != nil {
+		return nil, nil, n, err
+	}
+
+	// Set the type of the table property (if it
+	// is a miss property or not).
+	if miss != nil {
+		*miss = (header.Type & 1) == 1
+	}
+
+	limrdlen := int64(header.Len - tablePropLen)
+	limrd := io.LimitReader(r, limrdlen)
+	return header, limrd, n, nil
+}
+
 // tablePropLen defines the length of the table feature property
 // header, it includes only the type and length of the message.
 const tablePropLen = 4
@@ -297,67 +322,77 @@ func tablePropType(miss bool, rt, mt TablePropType) TablePropType {
 }
 
 func writeTablePropXM(w io.Writer, tp TableProp, xms []XM) (int64, error) {
-	var buf bytes.Buffer
-	_, err := encoding.WriteSliceTo(&buf, xms)
+	headerlen := tablePropLen + xmlen*len(xms)
+	header := tableProp{tp.Type(), uint16(headerlen)}
+
+	n, err := encoding.WriteTo(w, header)
 	if err != nil {
-		return 0, err
+		return n, err
 	}
 
-	header := tableProp{tp.Type(), uint16(tablePropLen + buf.Len())}
-	return encoding.WriteTo(w, header, buf.Bytes())
+	nn, err := encoding.WriteSliceTo(w, xms)
+	if n += nn; err != nil {
+		return n + nn, err
+	}
+
+	nn, err = encoding.WriteTo(w, makePad(headerlen))
+	return n + nn, err
 }
 
-func readTablePropXM(r io.Reader, xms *[]XM) (tableProp, int64, error) {
-	var header tableProp
-	*xms = nil
-
-	n, err := encoding.ReadFrom(r, &header)
+func readTablePropXM(r io.Reader, xms *[]XM, miss *bool) (int64, error) {
+	header, limrd, n, err := yieldTableProp(r, miss)
 	if err != nil {
-		return header, n, err
+		return n, err
 	}
 
-	limrd := io.LimitReader(r, int64(header.Len-tablePropLen))
+	*xms = (*xms)[:0]
 	nn, err := readAllXM(limrd, xms)
+	if n += nn; err != nil {
+		return n + nn, err
+	}
 
-	return header, n + nn, err
+	nn, err = encoding.ReadFrom(r, makePad(int(header.Len)))
+	return n + nn, err
 }
 
-func writeTablePropActions(w io.Writer, tp TableProp, a Actions) (int64, error) {
-	// Write the list of actions into the temporary buffer
-	// to be able calculates the total message length.
-	buf, err := a.bytes()
-	if err != nil {
-		return 0, err
+func writeTablePropActions(w io.Writer, p TableProp, a []ActionType) (int64, error) {
+	nacs := len(a)
+
+	proplen := tablePropLen + int(actionHeaderLen)*nacs
+	header := tableProp{p.Type(), uint16(proplen)}
+
+	acs := make([]action, nacs)
+	for ii, actionType := range a {
+		acs[ii] = action{actionType, actionHeaderLen}
 	}
 
-	header := tableProp{tp.Type(), uint16(tablePropLen + len(buf))}
-	padding := make([]byte, (header.Len+7)/8*8-header.Len)
-
-	return encoding.WriteTo(w, header, buf, padding)
+	return encoding.WriteTo(w, header, acs, makePad(proplen))
 }
 
-func readTablePropActions(r io.Reader, a *Actions) (tableProp, int64, error) {
-	var header tableProp
-
-	n, err := encoding.ReadFrom(r, &header)
+// readTablePropActions reads the list of actions from the given reader
+// and appends them into the specified list of action types. The list will
+// be truncated first.
+func readTablePropActions(r io.Reader, a *[]ActionType, m *bool) (int64, error) {
+	header, limrd, n, err := yieldTableProp(r, m)
 	if err != nil {
-		return header, n, err
+		return n, err
 	}
 
-	limrd := io.LimitReader(r, int64(header.Len-tablePropLen))
-	*a = nil
+	// Truncate any data specified within a list of action types,
+	// in this way, list will always contain only decoded messages.
+	*a = (*a)[:0]
+	amaker := encoding.ReaderMakerOf(action{})
 
-	nn, err := a.ReadFrom(limrd)
-	n += nn
+	// Read a list of action headers and aggregate the types.
+	join := func(r io.ReaderFrom) { *a = append(*a, r.(*action).Type) }
+	nn, err := encoding.ReadFunc(limrd, amaker, join)
 
-	if err != nil {
-		return header, n, err
+	if n += nn; err != nil {
+		return n, err
 	}
 
-	padding := make([]byte, (header.Len+7)/8*8-header.Len)
-	nn, err = encoding.ReadFrom(r, padding)
-
-	return header, n + nn, err
+	nn, err = encoding.ReadFrom(r, makePad(int(header.Len)))
+	return n + nn, err
 }
 
 // TablePropInstructions defines the instructions property of the table.
@@ -367,7 +402,13 @@ type TablePropInstructions struct {
 
 	// Instructions specifies a list of instructions supported by the
 	// table.
-	Instructions Instructions
+	Instructions []InstructionType
+}
+
+// String returns a string representation of instructions table property.
+func (t *TablePropInstructions) String() string {
+	const text = "TablePropInstructions{Miss: %v, Instructions: %v}"
+	return fmt.Sprintf(text, t.Miss, t.Instructions)
 }
 
 // Type implements TableProp interface. It returns the type of the
@@ -381,49 +422,50 @@ func (t *TablePropInstructions) Type() TablePropType {
 // WriteTo implements io.WriterTo interface. It serializes the table
 // instruction property into the wire format.
 func (t *TablePropInstructions) WriteTo(w io.Writer) (int64, error) {
-	var buf bytes.Buffer
+	nit := len(t.Instructions)
+	proplen := tablePropLen + int(instructionHeaderLen)*nit
+	header := tableProp{t.Type(), uint16(proplen)}
 
-	// Write the list of instructions into the temporary buffer
-	// so we could provide the total message length in the header.
-	_, err := t.Instructions.WriteTo(&buf)
-	if err != nil {
-		return 0, err
+	its := make([]instruction, nit)
+	for ii, it := range t.Instructions {
+		its[ii] = instruction{it, instructionHeaderLen}
 	}
 
-	header := tableProp{t.Type(), uint16(tablePropLen + buf.Len())}
-	padding := make([]byte, (header.Len+7)/8*8-header.Len)
+	nn, err := encoding.WriteTo(w, header, its)
+	if err != nil {
+		return nn, err
+	}
 
-	return encoding.WriteTo(w, header, buf.Bytes(), padding)
+	n, err := encoding.WriteTo(w, makePad(int(header.Len)))
+	return n + nn, err
 }
 
 // ReadFrom implements io.ReaderFrom interface. It serializes the table
 // instruction property from the wire format.
 func (t *TablePropInstructions) ReadFrom(r io.Reader) (int64, error) {
-	var header tableProp
-	n, err := encoding.ReadFrom(r, &header)
+	header, limrd, n, err := yieldTableProp(r, &t.Miss)
 	if err != nil {
 		return n, err
 	}
 
-	t.Instructions = nil
-	limrd := io.LimitReader(r, int64(header.Len-tablePropLen))
-	nn, err := t.Instructions.ReadFrom(limrd)
-	n += nn
+	// Truncate the list of instructions, but leave the underlying
+	// allocated memory, thereby decoded instructions will be saved
+	// without memory allocation overhead.
+	t.Instructions = t.Instructions[:0]
 
-	if err != nil {
+	maker := encoding.ReaderMakerOf(instruction{})
+	join := func(r io.ReaderFrom) {
+		t.Instructions = append(
+			t.Instructions, r.(*instruction).Type)
+	}
+
+	// Read slice of instructions and append them to the slice.
+	nn, err := encoding.ReadFunc(limrd, maker, join)
+	if n += nn; err != nil {
 		return n, err
 	}
 
-	// If the deserialized property describes miss flow-entry
-	// we will assign the respective flag in the structure.
-	t.Miss = header.Type == TablePropTypeInstructionsMiss
-	if err != nil {
-		return n, err
-	}
-
-	padding := make([]byte, (header.Len+7)/8*8-header.Len)
-	nn, err = encoding.ReadFrom(r, padding)
-
+	nn, err = encoding.ReadFrom(r, makePad(int(header.Len)))
 	return n + nn, err
 }
 
@@ -437,6 +479,12 @@ type TablePropNextTables struct {
 	NextTables []Table
 }
 
+// String returns a string representation of next tables table property.
+func (t *TablePropNextTables) String() string {
+	const text = "TablePropNextTables{Miss: %v, NextTables: %v}"
+	return fmt.Sprintf(text, t.Miss, t.NextTables)
+}
+
 // Type implements TableProp interface. It returns the type of the
 // table property.
 func (t *TablePropNextTables) Type() TablePropType {
@@ -448,37 +496,23 @@ func (t *TablePropNextTables) Type() TablePropType {
 // WriteTo implements io.WriterTo interface. It serializes the next
 // tables property into the wire format.
 func (t *TablePropNextTables) WriteTo(w io.Writer) (int64, error) {
-	var buf bytes.Buffer
+	headerlen := tablePropLen + len(t.NextTables)
+	header := tableProp{t.Type(), uint16(headerlen)}
 
-	// Write the list of table identifier to the temporary buffer
-	// to calculate the total length of the message.
-	_, err := encoding.WriteTo(&buf, t.NextTables)
-	if err != nil {
-		return 0, err
-	}
-
-	header := tableProp{t.Type(), uint16(tablePropLen + buf.Len())}
-	padding := make([]byte, (header.Len+7)/8*8-header.Len)
-
-	return encoding.WriteTo(w, header, buf.Bytes(), padding)
+	padding := makePad(headerlen)
+	return encoding.WriteTo(w, header, t.NextTables, padding)
 }
 
 // ReadFrom implements io.ReaderFrom interface. It deserializes the
 // next tables property from the wire format.
 func (t *TablePropNextTables) ReadFrom(r io.Reader) (int64, error) {
-	var header tableProp
-
-	// Read the header, so we could create the list of the
-	// table identifiers of the required size.
-	n, err := encoding.ReadFrom(r, &header)
-	t.Miss = header.Type == TablePropTypeNextTablesMiss
-
+	header, _, n, err := yieldTableProp(r, &t.Miss)
 	if err != nil {
-		return 0, err
+		return n, err
 	}
 
-	padding := make([]byte, (header.Len+7)/8*8-header.Len)
 	t.NextTables = make([]Table, header.Len-tablePropLen)
+	padding := makePad(int(header.Len))
 
 	nn, err := encoding.ReadFrom(r, &t.NextTables, padding)
 	return n + nn, err
@@ -491,7 +525,13 @@ type TablePropWriteActions struct {
 	Miss bool
 
 	// Actions is a list of actions for the feature.
-	Actions Actions
+	Actions []ActionType
+}
+
+// String returns a string representation of write actions table property.
+func (t *TablePropWriteActions) String() string {
+	const text = "TablePropWriteActions{Miss: %v, Actions: [%v]}"
+	return fmt.Sprintf(text, t.Miss, t.Actions)
 }
 
 // Type implements TableProp interface. It returns the type of the
@@ -511,9 +551,7 @@ func (t *TablePropWriteActions) WriteTo(w io.Writer) (int64, error) {
 // ReadFrom implements io.ReaderFrom interface. It deserializes the
 // write actions property from the wire format.
 func (t *TablePropWriteActions) ReadFrom(r io.Reader) (int64, error) {
-	header, n, err := readTablePropActions(r, &t.Actions)
-	t.Miss = header.Type == TablePropTypeWriteActionsMiss
-	return n, err
+	return readTablePropActions(r, &t.Actions, &t.Miss)
 }
 
 // TablePropApplyActions defines the apply actions property of the
@@ -523,7 +561,13 @@ type TablePropApplyActions struct {
 	Miss bool
 
 	// Actions is a list of actions for the feature.
-	Actions Actions
+	Actions []ActionType
+}
+
+// String returns a string representation of apply actions table property.
+func (t *TablePropApplyActions) String() string {
+	const text = "TablePropApplyActions{Miss: %v, Actions: [%v]}"
+	return fmt.Sprintf(text, t.Miss, t.Actions)
 }
 
 // Type implements TableProp interface. It returns the type of the
@@ -543,9 +587,7 @@ func (t *TablePropApplyActions) WriteTo(w io.Writer) (int64, error) {
 // ReadFrom implements io.ReaderFrom interface. It deserializes the
 // apply actions property from the wire format.
 func (t *TablePropApplyActions) ReadFrom(r io.Reader) (int64, error) {
-	header, n, err := readTablePropActions(r, &t.Actions)
-	t.Miss = header.Type == TablePropTypeApplyActionsMiss
-	return n, err
+	return readTablePropActions(r, &t.Actions, &t.Miss)
 }
 
 // TablePropMatch  defines the match property of the table.
@@ -569,8 +611,7 @@ func (t *TablePropMatch) WriteTo(w io.Writer) (int64, error) {
 // ReadFrom implements io.ReaderFrom interface. It deserializes the
 // match property from the wire format.
 func (t *TablePropMatch) ReadFrom(r io.Reader) (int64, error) {
-	_, n, err := readTablePropXM(r, &t.Fields)
-	return n, err
+	return readTablePropXM(r, &t.Fields, nil)
 }
 
 // TablePropWildcards defines the wildcard property of the table.
@@ -594,8 +635,7 @@ func (t *TablePropWildcards) WriteTo(w io.Writer) (int64, error) {
 // ReadFrom implements io.ReaderFrom interface. It deserializes the
 // wildcard property from the wire format.
 func (t *TablePropWildcards) ReadFrom(r io.Reader) (int64, error) {
-	_, n, err := readTablePropXM(r, &t.Fields)
-	return n, err
+	return readTablePropXM(r, &t.Fields, nil)
 }
 
 // TablePropWriteSetField defines the write set-field property of the
@@ -625,9 +665,7 @@ func (t *TablePropWriteSetField) WriteTo(w io.Writer) (int64, error) {
 // ReadFrom implements io.ReadFrom interface. It deserializes the write
 // set-field from the wire format.
 func (t *TablePropWriteSetField) ReadFrom(r io.Reader) (int64, error) {
-	header, n, err := readTablePropXM(r, &t.Fields)
-	t.Miss = header.Type == TablePropTypeWriteSetFieldMiss
-	return n, err
+	return readTablePropXM(r, &t.Fields, &t.Miss)
 }
 
 // TablePropApplySetField defines the apply set-field property of the
@@ -638,6 +676,12 @@ type TablePropApplySetField struct {
 
 	// Fields is an array of extensible matches.
 	Fields []XM
+}
+
+// String returns a string representation of apply set field table property.
+func (t *TablePropApplySetField) String() string {
+	const text = "TablePropApplySetField{Miss: %v, Fields: %v}"
+	return fmt.Sprintf(text, t.Miss, t.Fields)
 }
 
 // Type implements TableProp interface. It returns the type of the
@@ -657,9 +701,7 @@ func (t *TablePropApplySetField) WriteTo(w io.Writer) (int64, error) {
 // ReadFrom implements io.ReaderFrom interface. It deserializes the
 // apply set-field property from the wire format.
 func (t *TablePropApplySetField) ReadFrom(r io.Reader) (int64, error) {
-	header, n, err := readTablePropXM(r, &t.Fields)
-	t.Miss = header.Type == TablePropTypeApplySetFieldMiss
-	return n, err
+	return readTablePropXM(r, &t.Fields, &t.Miss)
 }
 
 // TablePropExperimenter defines the experimenter property of the
@@ -690,7 +732,7 @@ func (t *TablePropExperimenter) Type() TablePropType {
 // experimenter property into the wire format.
 func (t *TablePropExperimenter) WriteTo(w io.Writer) (int64, error) {
 	header := tableProp{t.Type(), uint16(tablePropLen + len(t.Data) + 8)}
-	padding := make([]byte, (header.Len+7)/8*8-header.Len)
+	padding := makePad(int(header.Len))
 
 	return encoding.WriteTo(w, header, t.Experimenter,
 		t.ExpType, t.Data, padding)

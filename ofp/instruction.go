@@ -39,6 +39,26 @@ const (
 // InstructionType represents a type of the flow modification instruction.
 type InstructionType uint16
 
+// String returns a string representation of instruction type.
+func (it InstructionType) String() string {
+	text, ok := instrctionText[it]
+	if !ok {
+		return fmt.Sprintf("Instruction(%d)", it)
+	}
+
+	return text
+}
+
+var instrctionText = map[InstructionType]string{
+	InstructionTypeGotoTable:     "InstructionGotoTable",
+	InstructionTypeWriteMetadata: "InstructionWriteMetadata",
+	InstructionTypeWriteActions:  "InstructionWriteActions",
+	InstructionTypeApplyActions:  "InstructionApplyActions",
+	InstructionTypeClearActions:  "InstructionClearActions",
+	InstructionTypeMeter:         "InstructionMeter",
+	InstructionTypeExperimenter:  "InstructionExperimenter",
+}
+
 var instructionMap = map[InstructionType]encoding.ReaderMaker{
 	InstructionTypeGotoTable:     encoding.ReaderMakerOf(InstructionGotoTable{}),
 	InstructionTypeWriteMetadata: encoding.ReaderMakerOf(InstructionWriteMetadata{}),
@@ -61,7 +81,17 @@ type instruction struct {
 	Len uint16
 }
 
-const instructionLen uint16 = 8
+func (i *instruction) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &i.Type, &i.Len)
+}
+
+const (
+	// instructionLen is a minimum length of the instruction.
+	instructionLen uint16 = 8
+
+	// instructionHeaderLen is a length of the instruction header.
+	instructionHeaderLen uint16 = 4
+)
 
 // Instruction is an interface representing an OpenFlow action.
 type Instruction interface {

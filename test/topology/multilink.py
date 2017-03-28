@@ -5,6 +5,7 @@ import mininet.net
 import mininet.topo
 import mininet.node
 import mininet.log
+import mininet.cli
 
 
 class Topo(mininet.topo.Topo):
@@ -27,12 +28,18 @@ class Topo(mininet.topo.Topo):
 def main():
     mininet.log.setLogLevel("info")
 
-    net = mininet.net.Mininet(topo=Topo())
-    net.addController(ip="127.0.0.1",
+    net = mininet.net.Mininet(
+        topo=Topo(),
+        switch=mininet.node.UserSwitch,
+        controller=None)
+
+    net.addController(
+        ip="127.0.0.1",
         controller=mininet.node.RemoteController)
 
-    set_default_route(net)
     net.start()
+    mininet.cli.CLI(net)
+    net.stop()
 
 
 if __name__ == "__main__":

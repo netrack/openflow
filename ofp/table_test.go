@@ -42,30 +42,22 @@ func TestTableStats(t *testing.T) {
 }
 
 func TestTablePropInstructions(t *testing.T) {
-	instr := Instructions{
-		&InstructionMeter{Meter: Meter(4)},
-		&InstructionGotoTable{Table: Table(15)},
-	}
-
 	tests := []encodingtest.MU{
-		{&TablePropInstructions{
-			Instructions: instr,
-		}, []byte{
+		{&TablePropInstructions{Instructions: []InstructionType{
+			InstructionTypeMeter,
+			InstructionTypeGotoTable,
+		}}, []byte{
 			0x00, 0x00, // Property type.
-			0x00, 0x14, // Property length.
+			0x00, 0x0c, // Property length.
 
 			// Instructions.
 			0x00, 0x06, // Instruction type.
-			0x00, 0x08, // Instruction length.
-			0x00, 0x00, 0x00, 0x04, // Meter identifier.
+			0x00, 0x04, // Instruction length.
 
 			0x00, 0x01, // Instruction type.
-			0x00, 0x08, // Instruction length.
-			0x0f,             // Table identifier.
-			0x00, 0x00, 0x00, // 3-byte padding.
+			0x00, 0x04, // Instruction length.
 
-			// Alignment.
-			0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
 		}},
 	}
 
@@ -95,29 +87,22 @@ func TestTablePropNextTables(t *testing.T) {
 }
 
 func TestTablePropWriteActions(t *testing.T) {
-	actions := Actions{
-		&ActionCopyTTLOut{},
-		&ActionCopyTTLIn{},
-	}
-
 	tests := []encodingtest.MU{
-		{&TablePropWriteActions{
-			Actions: actions,
-		}, []byte{
+		{&TablePropWriteActions{Actions: []ActionType{
+			ActionTypeCopyTTLOut,
+			ActionTypeCopyTTLIn,
+		}}, []byte{
 			0x00, 0x04, // Property type.
-			0x00, 0x14, // Property length.
+			0x00, 0x0c, // Property length.
 
 			// Actions.
 			0x00, 0xb, // Action type.
-			0x00, 0x08, // Action lenght.
-			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
+			0x00, 0x04, // Action lenght.
 
 			0x00, 0xc, // Action type.
-			0x00, 0x08, // Action length.
-			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
+			0x00, 0x04, // Action length.
 
-			// Alignment.
-			0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
 		}},
 	}
 
@@ -127,21 +112,14 @@ func TestTablePropWriteActions(t *testing.T) {
 func TestTablePropApplyActions(t *testing.T) {
 	tests := []encodingtest.MU{
 		{&TablePropApplyActions{
-			Miss: true,
-			Actions: Actions{
-				&ActionGroup{Group: GroupAll},
-			},
+			Miss: true, Actions: []ActionType{ActionTypeGroup},
 		}, []byte{
 			0x00, 0x07, // Property type.
-			0x00, 0x0c, // Property length.
+			0x00, 0x08, // Property length.
 
 			// Actions.
 			0x00, 0x16, // Action type.
-			0x00, 0x08, // Action length.
-			0xff, 0xff, 0xff, 0xfc, // Group identifier.
-
-			// Alignment.
-			0x00, 0x00, 0x00, 0x00,
+			0x00, 0x04, // Action length.
 		}},
 	}
 
@@ -152,33 +130,30 @@ var fields = []XM{
 	{
 		Class: XMClassOpenflowBasic,
 		Type:  XMTypeUDPSrc,
-		Value: XMValue{0x00, 0x35},
-		Mask:  XMValue{0xff, 0xff},
 	},
 	{
 		Class: XMClassOpenflowBasic,
 		Type:  XMTypeInPort,
-		Value: XMValue{0x00, 0x00, 0x00, 0x03},
 	},
 }
 
 var fieldsBytes = []byte{
 	0x80, 0x00, // OpenFlow basic.
-	0x1f,                   // Match field + Mask flag.
-	0x04,                   // Payload length.
-	0x00, 0x35, 0xff, 0xff, // Payload.
+	0x1e, // Match field + Mask flag.
+	0x00, // Match length.
 
 	0x80, 0x00, // OpenFlow basic.
-	0x00,                   // Match field + Mask flag.
-	0x04,                   // Payload length.
-	0x00, 0x00, 0x00, 0x03, // Payload.
+	0x00, // Match field + Mask flag.
+	0x00, // Match length.
+
+	0x00, 0x00, 0x00, 0x00, // 4-byte padding.
 }
 
 func TestTablePropMatch(t *testing.T) {
 	tests := []encodingtest.MU{
 		{&TablePropMatch{Fields: fields}, append([]byte{
 			0x00, 0x08, // Property type.
-			0x00, 0x14, // Property length.
+			0x00, 0x0c, // Property length.
 		}, fieldsBytes...)},
 	}
 
@@ -189,7 +164,7 @@ func TestTablePropWildcards(t *testing.T) {
 	tests := []encodingtest.MU{
 		{&TablePropWildcards{Fields: fields}, append([]byte{
 			0x00, 0x09, // Property type.
-			0x00, 0x14, // Property length.
+			0x00, 0x0c, // Property length.
 		}, fieldsBytes...)},
 	}
 
@@ -200,7 +175,7 @@ func TestTablePropWriteSetField(t *testing.T) {
 	tests := []encodingtest.MU{
 		{&TablePropWriteSetField{Fields: fields}, append([]byte{
 			0x00, 0x0a, // Property type.
-			0x00, 0x14, // Property length.
+			0x00, 0x0c, // Property length.
 		}, fieldsBytes...)},
 	}
 
@@ -214,7 +189,7 @@ func TestTablePropApplySetField(t *testing.T) {
 			Fields: fields,
 		}, append([]byte{
 			0x00, 0x0d, // Property type.
-			0x00, 0x14, // Property length.
+			0x00, 0x0c, // Property length.
 		}, fieldsBytes...)},
 	}
 
@@ -247,16 +222,16 @@ func TestTableFeatures(t *testing.T) {
 	copy(name, []byte("table-1"))
 
 	properties := []TableProp{
-		&TablePropApplyActions{Actions: Actions{
-			&ActionGroup{Group: Group(3)},
+		&TablePropApplyActions{Actions: []ActionType{
+			ActionTypeGroup,
 		}},
-		&TablePropInstructions{Instructions: Instructions{
-			&InstructionMeter{Meter: Meter(4)},
+		&TablePropInstructions{Instructions: []InstructionType{
+			InstructionTypeMeter,
 		}},
 	}
 
 	bytes := []byte{
-		0x00, 0x60, // Length.
+		0x00, 0x50, // Length.
 		0x03,                         // Table identifier.
 		0x00, 0x00, 0x00, 0x00, 0x00, // 5-byte padding.
 	}
@@ -270,22 +245,16 @@ func TestTableFeatures(t *testing.T) {
 
 		// Properties.
 		0x00, 0x06, // Property type.
-		0x00, 0x0c, // Property length.
+		0x00, 0x08, // Property length.
 		// Actions.
 		0x00, 0x16, // Action type.
-		0x00, 0x08, // Action length.
-		0x00, 0x00, 0x00, 0x03, // Group identi0ier.
-		// Alignment.
-		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x04, // Action length.
 
 		0x00, 0x00, // Property type.
-		0x00, 0x0c, // Property length.
+		0x00, 0x08, // Property length.
 		// Instructions.
 		0x00, 0x06, // Instruction type.
-		0x00, 0x08, // Instruction length.
-		0x00, 0x00, 0x00, 0x04, // Meter identifier.
-		// Alignment.
-		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x04, // Instruction length.
 	)
 
 	tests := []encodingtest.MU{

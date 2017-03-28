@@ -23,3 +23,14 @@ var (
 	defaultPad7 pad7
 	defaultPad8 pad8
 )
+
+// padLen returns a size of the padding for the given length.
+func padLen(length int) int {
+	return (length+7)/8*8 - length
+}
+
+// makePad creates a new padding based on the given length according
+// to the formula: (length + 7) / 8 * 8 - length
+func makePad(length int) []byte {
+	return make([]byte, padLen(length))
+}

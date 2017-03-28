@@ -17,7 +17,7 @@ func (a ActionType) String() string {
 	text, ok := actionText[a]
 	// If action is now known just say it.
 	if !ok {
-		return "ActionUnknown"
+		return fmt.Sprintf("Action(%d)", a)
 	}
 
 	return text
@@ -88,23 +88,23 @@ const (
 )
 
 var actionText = map[ActionType]string{
-	ActionTypeOutput:       "ActionTypeOutput",
-	ActionTypeCopyTTLOut:   "ActionTypeCopyTTLOut",
-	ActionTypeCopyTTLIn:    "ActionTypeCopyTTLIn",
-	ActionTypeSetMPLSTTL:   "ActionTypeSetMPLSTTL",
-	ActionTypeDecMPLSTTL:   "ActionTypeDecMPLSTTL",
-	ActionTypePushVLAN:     "ActionTypePushVLAN",
-	ActionTypePopVLAN:      "ActionTypePopVLAN",
-	ActionTypePushMPLS:     "ActionTypePushMPLS",
-	ActionTypePopMPLS:      "ActionTypePopMPLS",
-	ActionTypeSetQueue:     "ActionTypeSetQueue",
-	ActionTypeGroup:        "ActionTypeGroup",
-	ActionTypeSetNwTTL:     "ActionTypeSetNwTTL",
-	ActionTypeDecNwTTL:     "ActionTypeDecNwTTL",
-	ActionTypeSetField:     "ActionTypeSetField",
-	ActionTypePushPBB:      "ActionTypePushPBB",
-	ActionTypePopPBB:       "ActionTypePopPBB",
-	ActionTypeExperimenter: "ActionTypeExperimenter",
+	ActionTypeOutput:       "ActionOutput",
+	ActionTypeCopyTTLOut:   "ActionCopyTTLOut",
+	ActionTypeCopyTTLIn:    "ActionCopyTTLIn",
+	ActionTypeSetMPLSTTL:   "ActionSetMPLSTTL",
+	ActionTypeDecMPLSTTL:   "ActionDecMPLSTTL",
+	ActionTypePushVLAN:     "ActionPushVLAN",
+	ActionTypePopVLAN:      "ActionPopVLAN",
+	ActionTypePushMPLS:     "ActionPushMPLS",
+	ActionTypePopMPLS:      "ActionPopMPLS",
+	ActionTypeSetQueue:     "ActionSetQueue",
+	ActionTypeGroup:        "ActionGroup",
+	ActionTypeSetNwTTL:     "ActionSetNwTTL",
+	ActionTypeDecNwTTL:     "ActionDecNwTTL",
+	ActionTypeSetField:     "ActionSetField",
+	ActionTypePushPBB:      "ActionPushPBB",
+	ActionTypePopPBB:       "ActionPopPBB",
+	ActionTypeExperimenter: "ActionExperimenter",
 }
 
 var actionMap = map[ActionType]encoding.ReaderMaker{
@@ -146,8 +146,17 @@ type action struct {
 	Len uint16
 }
 
-// actionLen is a minimum length of the action.
-const actionLen uint16 = 8
+func (a *action) ReadFrom(r io.Reader) (int64, error) {
+	return encoding.ReadFrom(r, &a.Type, &a.Len)
+}
+
+const (
+	// actionLen is a minimum length of the action.
+	actionLen uint16 = 8
+
+	// actionHeaderLen is a length of the action header.
+	actionHeaderLen uint16 = 4
+)
 
 // Action is an interface representing an OpenFlow action.
 type Action interface {
