@@ -184,7 +184,7 @@ func NewFlowMod(c FlowModCommand, p *PacketIn) *FlowMod {
 	default:
 		// Use the overlap checking and flow removed notification
 		// flags by default for generated message.
-		flags = FlowFlagSendFlowRem | FlowFlagCheckOverlap
+		flags = FlowFlagSendFlowRem
 	}
 
 	// When the packet-in message was not provided into
