@@ -4,6 +4,7 @@ package openflow_test
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"testing"
 	"time"
@@ -41,6 +42,17 @@ func TestResponseWrite(t *testing.T) {
 		ch <- struct{}{}
 	}
 
+	featuresHandler := func(rw of.ResponseWriter, r *of.Request) {
+		var resp ofp.MultipartReply
+		var features ofp.TableFeatures
+
+		resp.ReadFrom(r.Body)
+		features.ReadFrom(r.Body)
+
+		// Read only the first table feture.
+		log.Println(features)
+	}
+
 	helloHandler := func(rw of.ResponseWriter, r *of.Request) {
 		rw.Write(r.Header.Copy(), nil)
 
@@ -64,6 +76,15 @@ func TestResponseWrite(t *testing.T) {
 		// will be used to handle the multipart response.
 		mux.HandleOnce(pattern, of.HandlerFunc(statsHandler))
 		rw.Write(header, req)
+
+		req = ofp.NewMultipartRequest(
+			ofp.MultipartTypeTableFeatures, nil)
+
+		header = &of.Header{Type: of.TypeMultipartRequest}
+		pattern = of.TransactionMatcher(header)
+
+		mux.Handle(pattern, of.HandlerFunc(featuresHandler))
+		rw.Write(header, req)
 	}
 
 	echoHandler := func(rw of.ResponseWriter, r *of.Request) {
@@ -80,7 +101,7 @@ func TestResponseWrite(t *testing.T) {
 	mux.HandleFunc(of.TypeMatcher(of.TypeHello), helloHandler)
 	mux.HandleFunc(of.TypeMatcher(of.TypeEchoRequest), echoHandler)
 
-	ln, _ := net.Listen("tcp", ":6633")
+	ln, _ := net.Listen("tcp", "127.0.0.1:6633")
 	s := ofptest.NewUnstartedServer(mux, ln)
 
 	s.Start()

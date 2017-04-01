@@ -142,9 +142,23 @@ func WriteSliceTo(w io.Writer, slice interface{}) (int64, error) {
 	return n, nil
 }
 
+// ReadSliceFrom appends elements decoded using reader from reader maker
+// into slice of arbitrary type. Elements of the slice should be the
+// same type as produced by reader maker.
 func ReadSliceFrom(r io.Reader, rm ReaderMaker, slice interface{}) (int64, error) {
-	var n int64
 	sliceValue := reflect.ValueOf(slice)
+	return ReadFunc(r, rm, func(reader io.ReaderFrom) {
+		elem := reflect.ValueOf(reader).Elem()
+		reflect.Append(sliceValue, elem)
+	})
+}
+
+// ReadFunc decodes elements using reader created by reader maker and
+// calls a callback function for each of them.
+//
+// Returns a number of extracted bytes and error instance.
+func ReadFunc(r io.Reader, rm ReaderMaker, fn func(r io.ReaderFrom)) (int64, error) {
+	var n int64
 
 	for {
 		reader, err := rm.MakeReader()
@@ -159,8 +173,7 @@ func ReadSliceFrom(r io.Reader, rm ReaderMaker, slice interface{}) (int64, error
 			return n, SkipEOF(err)
 		}
 
-		elem := reflect.ValueOf(reader).Elem()
-		reflect.Append(sliceValue, elem)
+		fn(reader)
 	}
 
 	return n, nil

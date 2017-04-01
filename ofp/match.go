@@ -2,6 +2,7 @@ package ofp
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -142,6 +143,15 @@ const (
 // standardisation.
 type XMClass uint16
 
+func (c XMClass) String() string {
+	text, ok := classText[c]
+	if !ok {
+		return fmt.Sprintf("XMClass(%d)", c)
+	}
+
+	return text
+}
+
 const (
 	// XMClassNicira0 defines a backward compatibility class with NXM.
 	XMClassNicira0 XMClass = iota
@@ -156,6 +166,13 @@ const (
 	// XMClassExperimenter defines a class of experimenter matches.
 	XMClassExperimenter XMClass = 0xffff
 )
+
+var classText = map[XMClass]string{
+	XMClassNicira0:       "XMClassNicira0",
+	XMClassNicira1:       "XMClassNicira1",
+	XMClassOpenflowBasic: "XMClassOpenflowBasic",
+	XMClassExperimenter:  "XMClassExperimeter",
+}
 
 // VlanID represents bit definitions for VLAN ID values. It allows matching
 // of packets with any tag, independent of the tag's value, and to supports
@@ -214,6 +231,12 @@ const (
 	IPv6ExtensionHeaderUnseq
 )
 
+const (
+	// xmlen defines the length of the extention match header, it does
+	// not include the value and mask.
+	xmlen = 4
+)
+
 // The XM defines the flow match fields are described using the OpenFlow
 // Extensible Match (OXM) format, which is a compact type-length-value
 // (TLV) format.
@@ -255,7 +278,7 @@ func readAllXM(r io.Reader, xms *[]XM) (int64, error) {
 
 	rbuf := bytes.NewBuffer(buf)
 
-	for rbuf.Len() > 7 {
+	for rbuf.Len() >= xmlen {
 		var xm XM
 
 		_, err = xm.ReadFrom(rbuf)
@@ -395,9 +418,21 @@ func (m *Match) ReadFrom(r io.Reader) (n int64, err error) {
 		return
 	}
 
-	limrd := io.LimitReader(r, int64(length))
-	nn, err = readAllXM(limrd, &m.Fields)
+	// Calculated the length of the padding and remove it from the
+	// length of the list of extensible matches, otherwise, it possible
+	// to incorrectly treat the padding as match entry.
+	matchlen := int(length)
+	rdlen := matchlen - padLen(matchlen)
 
+	// Limit the reader to the length of the extensible matches.
+	limrd := io.LimitReader(r, int64(rdlen))
+	nn, err = readAllXM(limrd, &m.Fields)
+	if n += nn; err != nil {
+		return
+	}
+
+	// Read the padding after the list of extensible matches.
+	nn, err = encoding.ReadFrom(r, makePad(padLen(matchlen)))
 	return n + nn, err
 }
 
@@ -415,14 +450,8 @@ func (m *Match) WriteTo(w io.Writer) (n int64, err error) {
 
 	// Length of Match (excluding padding)
 	length := buf.Len() + 4
-
-	if length%8 != 0 {
-		_, err = buf.Write(make(pad, 8-length%8))
-		if err != nil {
-			return
-		}
-	}
+	padding := makePad(length)
 
 	return encoding.WriteTo(
-		w, m.Type, uint16(length), buf.Bytes())
+		w, m.Type, uint16(length), buf.Bytes(), padding)
 }

@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	ErrUnknownVersion = errors.New("openflow: Unknown version passed")
-	ErrBodyTooLong    = errors.New("openflow: Request body is too long")
+	ErrUnknownVersion  = errors.New("openflow: Unknown version passed")
+	ErrBodyTooLong     = errors.New("openflow: Request body is too long")
+	ErrCorruptedHeader = errors.New("openflow: Corrupted header")
 )
 
 // headerlen defines a length of the OpenFlow header.
@@ -186,19 +187,26 @@ func (r *Request) ReadFrom(rd io.Reader) (n int64, err error) {
 	// FIXME: wrong for version 2
 	r.Proto = fmt.Sprintf("OFP/1.%d", r.ProtoMinor)
 
-	var nn int
-	contentlen := r.Header.Len() - headerlen
+	contentlen := int64(r.Header.Len() - headerlen)
+	if contentlen < 0 {
+		return n, ErrCorruptedHeader
+	}
 
 	// Define a buffer to fit the content of the OpenFlow package.
-	buf := make([]byte, contentlen)
-	nn, err = rd.Read(buf)
-	n += int64(nn)
+	n, buf := 0, make([]byte, int(contentlen))
 
-	if err != nil {
-		return
+	// Read all data the from the stream into the allocated buffer.
+	//
+	// Due to bufferized nature of the reader, it can take multiple
+	// reads from the reader to retrieve the body completely.
+	for n < contentlen {
+		nn, err := rd.Read(buf[n:])
+		if n += int64(nn); err != nil {
+			return n + headerlen, err
+		}
 	}
 
 	r.Body = bytes.NewBuffer(buf)
-	r.ContentLength = int64(nn)
-	return
+	r.ContentLength = contentlen
+	return n + headerlen, nil
 }
