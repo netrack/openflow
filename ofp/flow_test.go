@@ -224,7 +224,7 @@ func TestNewFlowMod(t *testing.T) {
 
 	// Ensure that all default parameters of the created
 	// flow modification message have been defined.
-	if fmod.Flags^(FlowFlagSendFlowRem|FlowFlagCheckOverlap) != 0 {
+	if fmod.Flags^(FlowFlagSendFlowRem) != 0 {
 		t.Errorf("Default flags are not set: %b", fmod.Flags)
 	}
 
