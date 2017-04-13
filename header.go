@@ -38,6 +38,10 @@ const (
 	TypeMultipartRequest
 	TypeMultipartReply
 
+    // Barrier messages
+    TypeBarrierRequest
+    TypeBarrierReply
+
 	// Queue configuration messages.
 	TypeQueueGetConfigRequest
 	TypeQueueGetConfigReply
