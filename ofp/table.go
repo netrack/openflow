@@ -229,10 +229,10 @@ const (
 	TablePropTypeMatch
 
 	// TablePropTypeWildcards indicates wildcards property.
-	TablePropTypeWildcards
+	TablePropTypeWildcards = 1 + iota
 
 	// TablePropTypeWriteSetField indicates write set-field property.
-	TablePropTypeWriteSetField
+	TablePropTypeWriteSetField = 2 + iota
 
 	// TablePropTypeWriteSetFieldMiss indicates write set-field property
 	// for table-miss.
