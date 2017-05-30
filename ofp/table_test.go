@@ -163,7 +163,7 @@ func TestTablePropMatch(t *testing.T) {
 func TestTablePropWildcards(t *testing.T) {
 	tests := []encodingtest.MU{
 		{&TablePropWildcards{Fields: fields}, append([]byte{
-			0x00, 0x09, // Property type.
+			0x00, 0x0a, // Property type.
 			0x00, 0x0c, // Property length.
 		}, fieldsBytes...)},
 	}
@@ -174,7 +174,7 @@ func TestTablePropWildcards(t *testing.T) {
 func TestTablePropWriteSetField(t *testing.T) {
 	tests := []encodingtest.MU{
 		{&TablePropWriteSetField{Fields: fields}, append([]byte{
-			0x00, 0x0a, // Property type.
+			0x00, 0x0c, // Property type.
 			0x00, 0x0c, // Property length.
 		}, fieldsBytes...)},
 	}
@@ -188,7 +188,7 @@ func TestTablePropApplySetField(t *testing.T) {
 			Miss:   true,
 			Fields: fields,
 		}, append([]byte{
-			0x00, 0x0d, // Property type.
+			0x00, 0x0e, // Property type.
 			0x00, 0x0c, // Property length.
 		}, fieldsBytes...)},
 	}
