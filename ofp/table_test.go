@@ -188,7 +188,7 @@ func TestTablePropApplySetField(t *testing.T) {
 			Miss:   true,
 			Fields: fields,
 		}, append([]byte{
-			0x00, 0x0e, // Property type.
+			0x00, 0x0f, // Property type.
 			0x00, 0x0c, // Property length.
 		}, fieldsBytes...)},
 	}
