@@ -332,7 +332,7 @@ func writeTablePropXM(w io.Writer, tp TableProp, xms []XM) (int64, error) {
 
 	nn, err := encoding.WriteSliceTo(w, xms)
 	if n += nn; err != nil {
-		return n + nn, err
+		return n, err
 	}
 
 	nn, err = encoding.WriteTo(w, makePad(headerlen))
@@ -348,7 +348,7 @@ func readTablePropXM(r io.Reader, xms *[]XM, miss *bool) (int64, error) {
 	*xms = (*xms)[:0]
 	nn, err := readAllXM(limrd, xms)
 	if n += nn; err != nil {
-		return n + nn, err
+		return n, err
 	}
 
 	nn, err = encoding.ReadFrom(r, makePad(int(header.Len)))
