@@ -108,11 +108,15 @@ func (c *conn) Receive() (*Request, error) {
 
 // Write writes data to the connection. Write can be made to time out.
 func (c *conn) Write(b []byte) (int, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.buf.Write(b)
 }
 
 // Flush writes any buffered data to the connection.
 func (c *conn) Flush() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.buf.Flush()
 }
 
