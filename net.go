@@ -120,6 +120,19 @@ func (c *conn) Flush() error {
 	return c.buf.Flush()
 }
 
+// forceWrite writes given data and any buffered data to the connection.
+func (c *conn) forceWrite(b []byte) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	_, err := c.buf.Write(b)
+	if err != nil {
+		return err
+	}
+
+	return c.buf.Flush()
+}
+
 // Send writes OpenFlow data to the connection.
 func (c *conn) Send(r *Request) error {
 	if d := c.WriteTimeout; d != 0 {
