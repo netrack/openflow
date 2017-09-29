@@ -86,12 +86,7 @@ func (r *response) Write(header *Header, w io.WriterTo) (err error) {
 		return
 	}
 
-	_, err = r.conn.Write(r.buf.Bytes())
-	if err != nil {
-		return
-	}
-
-	return r.conn.Flush()
+	return r.conn.forceWrite(r.buf.Bytes())
 }
 
 // The reqwrap defines a placeholder for request and error returned
