@@ -136,7 +136,7 @@ func (l *dummyListener) Addr() net.Addr {
 }
 
 func TestListener(t *testing.T) {
-	ln, err := Listen("tcp6", "[::1]:0")
+	ln, err := Listen("tcp4", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal("Failed to create listener:", err)
 	}
@@ -162,7 +162,7 @@ func TestListener(t *testing.T) {
 }
 
 func TestDial(t *testing.T) {
-	ln, err := Listen("tcp6", "[::1]:0")
+	ln, err := Listen("tcp4", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal("Failed to create listener:", err)
 	}
@@ -186,7 +186,7 @@ func TestDial(t *testing.T) {
 	// Perform the actual connection replacement.
 	ofpLn.ln = &dummyListener{[]net.Conn{serverConn}}
 
-	rwc, err := Dial("tcp6", serverAddr)
+	rwc, err := Dial("tcp4", serverAddr)
 	if err != nil {
 		t.Fatal("Failed to dial listener:", err)
 	}
