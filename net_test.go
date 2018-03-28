@@ -134,7 +134,7 @@ func TestDial(t *testing.T) {
 	// Perform the actual connection replacement.
 	ofpLn.ln = &dummyListener{serverConn}
 
-	rwc, err := Dial("tcp6", serverAddr)
+	rwc, err := Dial("tcp4", serverAddr)
 	if err != nil {
 		t.Fatal("Failed to dial listener:", err)
 	}
