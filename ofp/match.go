@@ -418,11 +418,10 @@ func (m *Match) ReadFrom(r io.Reader) (n int64, err error) {
 		return
 	}
 
-	// Calculated the length of the padding and remove it from the
-	// length of the list of extensible matches, otherwise, it possible
-	// to incorrectly treat the padding as match entry.
 	matchlen := int(length)
-	rdlen := matchlen - padLen(matchlen)
+
+	// subtract the length of the already-read Type & Length fields
+	rdlen := matchlen - 4
 
 	// Limit the reader to the length of the extensible matches.
 	limrd := io.LimitReader(r, int64(rdlen))
