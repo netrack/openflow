@@ -420,7 +420,7 @@ func (m *Match) ReadFrom(r io.Reader) (n int64, err error) {
 
 	matchlen := int(length)
 
-	// Subtract the length of the alread-read Type & Length fields
+	// subtract the length of the already-read Type & Length fields
 	rdlen := matchlen - 4
 
 	// Limit the reader to the length of the extensible matches.
