@@ -346,7 +346,7 @@ func readTablePropXM(r io.Reader, xms *[]XM, miss *bool) (int64, error) {
 	}
 
 	*xms = (*xms)[:0]
-	nn, err := readAllXM(limrd, xms)
+	nn, err := readAllXM(limrd, xms, false)
 	if n += nn; err != nil {
 		return n, err
 	}
