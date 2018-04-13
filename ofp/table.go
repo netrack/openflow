@@ -184,7 +184,8 @@ func (t *TableFeatures) ReadFrom(r io.Reader) (int64, error) {
 		return nil, fmt.Errorf(format, tablePropType)
 	}
 
-	nn, err := encoding.ScanFrom(r, &tablePropType,
+	limrd := io.LimitReader(r, int64(length)-n)
+	nn, err := encoding.ScanFrom(limrd, &tablePropType,
 		encoding.ReaderMakerFunc(rm))
 
 	return n + nn, err
