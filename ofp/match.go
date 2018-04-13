@@ -12,6 +12,14 @@ import (
 // XMType defines the flow match field types for OpenFlow basic class.
 type XMType uint8
 
+func (t XMType) String() string {
+	text, ok := xmTypeText[t]
+	if !ok {
+		return fmt.Sprintf("XMType(%d)", t)
+	}
+	return text
+}
+
 const (
 	// XMTypeInPort matches switch input port.
 	XMTypeInPort XMType = iota
@@ -134,6 +142,49 @@ const (
 	XMTypeIPv6ExtHeader
 )
 
+var xmTypeText = map[XMType]string{
+	XMTypeInPort:        "XMTypeInPort",
+	XMTypeInPhyPort:     "XMTypeInPhyPort",
+	XMTypeMetadata:      "XMTypeMetadata",
+	XMTypeEthDst:        "XMTypeEthDst",
+	XMTypeEthSrc:        "XMTypeEthSrc",
+	XMTypeEthType:       "XMTypeEthType",
+	XMTypeVlanID:        "XMTypeVlanID",
+	XMTypeVlanPCP:       "XMTypeVlanPCP",
+	XMTypeIPDSCP:        "XMTypeIPDSCP",
+	XMTypeIPECN:         "XMTypeIPECN",
+	XMTypeIPProto:       "XMTypeIPProto",
+	XMTypeIPv4Src:       "XMTypeIPv4Src",
+	XMTypeIPv4Dst:       "XMTypeIPv4Dst",
+	XMTypeTCPSrc:        "XMTypeTCPSrc",
+	XMTypeTCPDst:        "XMTypeTCPDst",
+	XMTypeUDPSrc:        "XMTypeUDPSrc",
+	XMTypeUDPDst:        "XMTypeUDPDst",
+	XMTypeSCTPSrc:       "XMTypeSCTPSrc",
+	XMTypeSCTPDst:       "XMTypeSCTPDst",
+	XMTypeICMPv4Type:    "XMTypeICMPv4Type",
+	XMTypeICMPv4Code:    "XMTypeICMPv4Code",
+	XMTypeARPOpcode:     "XMTypeARPOpcode",
+	XMTypeARPSPA:        "XMTypeARPSPA",
+	XMTypeARPTPA:        "XMTypeARPTPA",
+	XMTypeARPSHA:        "XMTypeARPSHA",
+	XMTypeARPTHA:        "XMTypeARPTHA",
+	XMTypeIPv6Src:       "XMTypeIPv6Src",
+	XMTypeIPv6Dst:       "XMTypeIPv6Dst",
+	XMTypeIPv6FLabel:    "XMTypeIPv6FLabel",
+	XMTypeICMPv6Type:    "XMTypeICMPv6Type",
+	XMTypeICMPv6Code:    "XMTypeICMPv6Code",
+	XMTypeIPv6NDTarget:  "XMTypeIPv6NDTarget",
+	XMTypeIPv6NDSLL:     "XMTypeIPv6NDSLL",
+	XMTypeIPv6NDTLL:     "XMTypeIPv6NDTLL",
+	XMTypeMPLSLabel:     "XMTypeMPLSLabel",
+	XMTypeMPLSTC:        "XMTypeMPLSTC",
+	XMTypeMPLSBOS:       "XMTypeMPLSBOS",
+	XMTypePBBISID:       "XMTypePBBISID",
+	XMTypeTunnelID:      "XMTypeTunnelID",
+	XMTypeIPv6ExtHeader: "XMTypeIPv6ExtHeader",
+}
+
 // XMClass represents an OXM Class ID. The high order bit differentiate
 // reserved classes from member classes.
 //
@@ -148,7 +199,6 @@ func (c XMClass) String() string {
 	if !ok {
 		return fmt.Sprintf("XMClass(%d)", c)
 	}
-
 	return text
 }
 

@@ -3,6 +3,7 @@ package openflow
 import (
 	"bufio"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -17,6 +18,22 @@ const (
 	StateIdle
 	StateClosed
 )
+
+func (c ConnState) String() string {
+	text, ok := connStateText[c]
+	if !ok {
+		return fmt.Sprintf("ConnState(%d)", c)
+	}
+	return text
+}
+
+var connStateText = map[ConnState]string{
+	StateNew:       "StateNew",
+	StateHandshake: "StateHandshake",
+	StateActive:    "StateActive",
+	StateIdle:      "StateIdle",
+	StateClosed:    "StateClosed",
+}
 
 // Conn is an generic OpenFlow connection.
 //

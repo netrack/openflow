@@ -2,10 +2,10 @@ package ofp
 
 import (
 	"bytes"
+	"fmt"
+	"github.com/netrack/openflow/internal/encoding"
 	"io"
 	"sync"
-
-	"github.com/netrack/openflow/internal/encoding"
 )
 
 // MultipartType defines the type of multipart request. It specifies the
@@ -106,6 +106,32 @@ const (
 	// otherwise experimenter-defined.
 	MultipartTypeExperimenter MultipartType = 0xffff
 )
+
+func (t MultipartType) String() string {
+	text, ok := multipartTypeText[t]
+	if !ok {
+		return fmt.Sprintf("MultipartType(%d)", t)
+	}
+	return text
+}
+
+var multipartTypeText = map[MultipartType]string{
+	MultipartTypeDescription:      "MultipartTypeDescription",
+	MultipartTypeFlow:             "MultipartTypeFlow",
+	MultipartTypeAggregate:        "MultipartTypeAggregate",
+	MultipartTypeTable:            "MultipartTypeTable",
+	MultipartTypePortStats:        "MultipartTypePortStats",
+	MultipartTypeQueue:            "MultipartTypeQueue",
+	MultipartTypeGroup:            "MultipartTypeGroup",
+	MultipartTypeGroupDescription: "MultipartTypeGroupDescription",
+	MultipartTypeGroupFeatures:    "MultipartTypeGroupFeatures",
+	MultipartTypeMeter:            "MultipartTypeMeter",
+	MultipartTypeMeterConfig:      "MultipartTypeMeterConfig",
+	MultipartTypeMeterFeatures:    "MultipartTypeMeterFeatures",
+	MultipartTypeTableFeatures:    "MultipartTypeTableFeatures",
+	MultipartTypePortDescription:  "MultipartTypePortDescription",
+	MultipartTypeExperimenter:     "MultipartTypeExperimenter",
+}
 
 // MultipartRequestFlag defines the multipart request flags.
 type MultipartRequestFlag uint16

@@ -1,10 +1,10 @@
 package ofp
 
 import (
+	"fmt"
+	"github.com/netrack/openflow/internal/encoding"
 	"io"
 	"io/ioutil"
-
-	"github.com/netrack/openflow/internal/encoding"
 )
 
 // ErrType indicates high-level type of error.
@@ -69,6 +69,32 @@ const (
 	// ErrTypeExperimenter is an experimenter error type.
 	ErrTypeExperimenter ErrType = 0xffff
 )
+
+func (t ErrType) String() string {
+	text, ok := errTypeText[t]
+	if !ok {
+		return fmt.Sprintf("ErrType(%d)", t)
+	}
+	return text
+}
+
+var errTypeText = map[ErrType]string{
+	ErrTypeHelloFailed:         "ErrTypeHelloFailed",
+	ErrTypeBadRequest:          "ErrTypeBadRequest",
+	ErrTypeBadAction:           "ErrTypeBadAction",
+	ErrTypeBadInstruction:      "ErrTypeBadInstruction",
+	ErrTypeBadMatch:            "ErrTypeBadMatch",
+	ErrTypeFlowModFailed:       "ErrTypeFlowModFailed",
+	ErrTypeGroupModFailed:      "ErrTypeGroupModFailed",
+	ErrTypePortModFailed:       "ErrTypePortModFailed",
+	ErrTypeTableModFailed:      "ErrTypeTableModFailed",
+	ErrTypeQueueOpFailed:       "ErrTypeQueueOpFailed",
+	ErrTypeSwitchConfigFailed:  "ErrTypeSwitchConfigFailed",
+	ErrTypeRoleRequestFailed:   "ErrTypeRoleRequestFailed",
+	ErrTypeMeterModFailed:      "ErrTypeMeterModFailed",
+	ErrTypeTableFeaturesFailed: "ErrTypeTableFeaturesFailed",
+	ErrTypeExperimenter:        "ErrTypeExperimenter",
+}
 
 const (
 	// ErrCodeHelloFailedIncompatible is returned when there is no
@@ -550,6 +576,165 @@ type Error struct {
 	// generated, if the failed request is shorter than 64 bytes it should
 	// be the full request without any padding.
 	Data []byte
+}
+
+func (e Error) Error() string {
+	return e.String()
+}
+
+func (t Error) String() string {
+	errCodeText, ok := errTypeCodeText[t.Type]
+	if !ok {
+		return fmt.Sprintf("ErrType(%d)Code(%d)", t.Type, t.Code)
+	}
+	text, ok := errCodeText[t.Code]
+	if !ok {
+		return fmt.Sprintf("%sCode(%d)", t.Type, t.Code)
+	}
+	return text
+}
+
+var errTypeCodeText = map[ErrType]map[ErrCode]string{
+	ErrTypeHelloFailed: {
+		ErrCodeHelloFailedIncompatible: "ErrCodeHelloFailedIncompatible",
+		ErrCodeHelloFailedPerm:         "ErrCodeHelloFailedPerm",
+	},
+	ErrTypeBadRequest: {
+		ErrCodeBadRequestBadVersion:              "ErrCodeBadRequestBadVersion",
+		ErrCodeBadRequestBadType:                 "ErrCodeBadRequestBadType",
+		ErrCodeBadRequestBadMultipart:            "ErrCodeBadRequestBadMultipart",
+		ErrCodeBadRequestBadExperimenter:         "ErrCodeBadRequestBadExperimenter",
+		ErrCodeBadRequestBadExpType:              "ErrCodeBadRequestBadExpType",
+		ErrCodeBadRequestPerm:                    "ErrCodeBadRequestPerm",
+		ErrCodeBadRequestLen:                     "ErrCodeBadRequestLen",
+		ErrCodeBadRequestBufferEmpty:             "ErrCodeBadRequestBufferEmpty",
+		ErrCodeBadRequestBufferUnknown:           "ErrCodeBadRequestBufferUnknown",
+		ErrCodeBadRequestBadTableID:              "ErrCodeBadRequestBadTableID",
+		ErrCodeBadRequestIsSlave:                 "ErrCodeBadRequestIsSlave",
+		ErrCodeBadRequestBadPort:                 "ErrCodeBadRequestBadPort",
+		ErrCodeBadRequestBadPacket:               "ErrCodeBadRequestBadPacket",
+		ErrCodeBadRequestMultipartBufferOverflow: "ErrCodeBadRequestMultipartBufferOverflow",
+	},
+	ErrTypeBadAction: {
+		ErrCodeBadActionType:              "ErrCodeBadActionType",
+		ErrCodeBadActionLen:               "ErrCodeBadActionLen",
+		ErrCodeBadActionExperimenter:      "ErrCodeBadActionExperimenter",
+		ErrCodeBadActionExpType:           "ErrCodeBadActionExpType",
+		ErrCodeBadActionOutPort:           "ErrCodeBadActionOutPort",
+		ErrCodeBadActionArgument:          "ErrCodeBadActionArgument",
+		ErrCodeBadActionPerm:              "ErrCodeBadActionPerm",
+		ErrCodeBadActionTooMany:           "ErrCodeBadActionTooMany",
+		ErrCodeBadActionQueue:             "ErrCodeBadActionQueue",
+		ErrCodeBadActionOutGroup:          "ErrCodeBadActionOutGroup",
+		ErrCodeBadActionMatchInconsistent: "ErrCodeBadActionMatchInconsistent",
+		ErrCodeBadActionUnsupportedOrder:  "ErrCodeBadActionUnsupportedOrder",
+		ErrCodeBadActionTag:               "ErrCodeBadActionTag",
+		ErrCodeBadActionSetType:           "ErrCodeBadActionSetType",
+		ErrCodeBadActionSetLen:            "ErrCodeBadActionSetLen",
+		ErrCodeBadActionSetArgument:       "ErrCodeBadActionSetArgument",
+	},
+	ErrTypeBadInstruction: {
+		ErrCodeBadInstructionUnknown:                 "ErrCodeBadInstructionUnknown",
+		ErrCodeBadInstructionUnsupported:             "ErrCodeBadInstructionUnsupported",
+		ErrCodeBadInstructionTableID:                 "ErrCodeBadInstructionTableID",
+		ErrCodeBadInstructionUnsupportedMetadata:     "ErrCodeBadInstructionUnsupportedMetadata",
+		ErrCodeBadInstructionUnsupportedMetadataMask: "ErrCodeBadInstructionUnsupportedMetadataMask",
+		ErrCodeBadInstructionExperimenter:            "ErrCodeBadInstructionExperimenter",
+		ErrCodeBadInstructionExpType:                 "ErrCodeBadInstructionExpType",
+		ErrCodeBadInstructionLen:                     "ErrCodeBadInstructionLen",
+		ErrCodeBadInstructionPerm:                    "ErrCodeBadInstructionPerm",
+	},
+	ErrTypeBadMatch: {
+		ErrCodeBadMatchBadType:      "ErrCodeBadMatchBadType",
+		ErrCodeBadMatchBadLen:       "ErrCodeBadMatchBadLen",
+		ErrCodeBadMatchBadTag:       "ErrCodeBadMatchBadTag",
+		ErrCodeBadMatchBadLinkMask:  "ErrCodeBadMatchBadLinkMask",
+		ErrCodeBadMatchBadNetMask:   "ErrCodeBadMatchBadNetMask",
+		ErrCodeBadMatchBadWildcards: "ErrCodeBadMatchBadWildcards",
+		ErrCodeBadMatchBadField:     "ErrCodeBadMatchBadField",
+		ErrCodeBadMatchBadValue:     "ErrCodeBadMatchBadValue",
+		ErrCodeBadMatchBadMask:      "ErrCodeBadMatchBadMask",
+		ErrCodeBadMatchBadPrereq:    "ErrCodeBadMatchBadPrereq",
+		ErrCodeBadMatchDupField:     "ErrCodeBadMatchDupField",
+		ErrCodeBadMatchPerm:         "ErrCodeBadMatchPerm",
+	},
+	ErrTypeFlowModFailed: {
+		ErrCodeFlowModFailedUnknown:    "ErrCodeFlowModFailedUnknown",
+		ErrCodeFlowModFailedTableFull:  "ErrCodeFlowModFailedTableFull",
+		ErrCodeFlowModFailedBadTableID: "ErrCodeFlowModFailedBadTableID",
+		ErrCodeFlowModFailedOverlap:    "ErrCodeFlowModFailedOverlap",
+		ErrCodeFlowModFailedPerm:       "ErrCodeFlowModFailedPerm",
+		ErrCodeFlowModFailedBadTimeout: "ErrCodeFlowModFailedBadTimeout",
+		ErrCodeFlowModFailedBadCommand: "ErrCodeFlowModFailedBadCommand",
+		ErrCodeFlowModFailedBadFlags:   "ErrCodeFlowModFailedBadFlags",
+	},
+	ErrTypeGroupModFailed: {
+		ErrCodeGroupModFailedGroupExists:         "ErrCodeGroupModFailedGroupExists",
+		ErrCodeGroupModFailedInvalidGroup:        "ErrCodeGroupModFailedInvalidGroup",
+		ErrCodeGroupModFailedWeightUnsupported:   "ErrCodeGroupModFailedWeightUnsupported",
+		ErrCodeGroupModFailedOutOfGroups:         "ErrCodeGroupModFailedOutOfGroups",
+		ErrCodeGroupModFailedOutOfBuckets:        "ErrCodeGroupModFailedOutOfBuckets",
+		ErrCodeGroupModFailedChainingUnsupported: "ErrCodeGroupModFailedChainingUnsupported",
+		ErrCodeGroupModFailedWatchUnsupported:    "ErrCodeGroupModFailedWatchUnsupported",
+		ErrCodeGroupModFailedLoop:                "ErrCodeGroupModFailedLoop",
+		ErrCodeGroupModFailedUnknownGroup:        "ErrCodeGroupModFailedUnknownGroup",
+		ErrCodeGroupModFailedChainedGroup:        "ErrCodeGroupModFailedChainedGroup",
+		ErrCodeGroupModBadType:                   "ErrCodeGroupModBadType",
+		ErrCodeGroupModBadCommand:                "ErrCodeGroupModBadCommand",
+		ErrCodeGroupModBadBucket:                 "ErrCodeGroupModBadBucket",
+		ErrCodeGroupModBadWatch:                  "ErrCodeGroupModBadWatch",
+		ErrCodeGroupModPerm:                      "ErrCodeGroupModPerm",
+	},
+	ErrTypePortModFailed: {
+		ErrCodePortModFailedBadPort:      "ErrCodePortModFailedBadPort",
+		ErrCodePortModFailedBadHwAddr:    "ErrCodePortModFailedBadHwAddr",
+		ErrCodePortModFailedBadConfig:    "ErrCodePortModFailedBadConfig",
+		ErrCodePortModFailedBadAdvertise: "ErrCodePortModFailedBadAdvertise",
+		ErrCodePortModFailedPerm:         "ErrCodePortModFailedPerm",
+	},
+	ErrTypeTableModFailed: {
+		ErrCodeTableModFailedBadTable:  "ErrCodeTableModFailedBadTable",
+		ErrCodeTableModFailedBadConfig: "ErrCodeTableModFailedBadConfig",
+		ErrCodeTableModFailedPerm:      "ErrCodeTableModFailedPerm",
+	},
+	ErrTypeQueueOpFailed: {
+		ErrCodeQueueOpFailedBadPort:  "ErrCodeQueueOpFailedBadPort",
+		ErrCodeQueueOpFailedBadQueue: "ErrCodeQueueOpFailedBadQueue",
+		ErrCodeQueueOpFailedPerm:     "ErrCodeQueueOpFailedPerm",
+	},
+	ErrTypeSwitchConfigFailed: {
+		ErrCodeSwitchConfigFailedBadFlags: "ErrCodeSwitchConfigFailedBadFlags",
+		ErrCodeSwitchConfigFailedBadLen:   "ErrCodeSwitchConfigFailedBadLen",
+		ErrCodeSwitchConfigFailedPerm:     "ErrCodeSwitchConfigFailedPerm",
+	},
+	ErrTypeRoleRequestFailed: {
+		ErrCodeRoleRequestFailedStale:   "ErrCodeRoleRequestFailedStale",
+		ErrCodeRoleRequestFailedUnsup:   "ErrCodeRoleRequestFailedUnsup",
+		ErrCodeRoleRequestFailedBadRole: "ErrCodeRoleRequestFailedBadRole",
+	},
+	ErrTypeMeterModFailed: {
+		ErrCodeMeterModFailedUnknown:      "ErrCodeMeterModFailedUnknown",
+		ErrCodeMeterModFailedMeterExists:  "ErrCodeMeterModFailedMeterExists",
+		ErrCodeMeterModFailedInvalidMeter: "ErrCodeMeterModFailedInvalidMeter",
+		ErrCodeMeterModFailedUnknownMeter: "ErrCodeMeterModFailedUnknownMeter",
+		ErrCodeMeterModFailedBadCommand:   "ErrCodeMeterModFailedBadCommand",
+		ErrCodeMeterModFailedBadFlags:     "ErrCodeMeterModFailedBadFlags",
+		ErrCodeMeterModFailedBadRate:      "ErrCodeMeterModFailedBadRate",
+		ErrCodeMeterModFailedBadBurst:     "ErrCodeMeterModFailedBadBurst",
+		ErrCodeMeterModFailedBadBand:      "ErrCodeMeterModFailedBadBand",
+		ErrCodeMeterModFailedBadBandValue: "ErrCodeMeterModFailedBadBandValue",
+		ErrCodeMeterModFailedOutOfMeters:  "ErrCodeMeterModFailedOutOfMeters",
+		ErrCodeMeterModFailedOutOfBands:   "ErrCodeMeterModFailedOutOfBands",
+	},
+	ErrTypeTableFeaturesFailed: {
+		ErrCodeTableFeaturesFailedBadTable:    "ErrCodeTableFeaturesFailedBadTable",
+		ErrCodeTableFeaturesFailedBadMetadata: "ErrCodeTableFeaturesFailedBadMetadata",
+		ErrCodeTableFeaturesFailedBadType:     "ErrCodeTableFeaturesFailedBadType",
+		ErrCodeTableFeaturesFailedBadLen:      "ErrCodeTableFeaturesFailedBadLen",
+		ErrCodeTableFeaturesFailedBadArgument: "ErrCodeTableFeaturesFailedBadArgument",
+		ErrCodeTableFeaturesFailedPerm:        "ErrCodeTableFeaturesFailedPerm",
+	},
+	ErrTypeExperimenter: {},
 }
 
 // WriteTo implements io.WriterTo interface. It serializes the error

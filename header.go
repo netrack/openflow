@@ -3,7 +3,7 @@ package openflow
 import (
 	"io"
 	"math/rand"
-
+	"fmt"
 	"github.com/netrack/openflow/internal/encoding"
 )
 
@@ -60,6 +60,48 @@ const (
 )
 
 type Type uint8
+
+func (t Type) String() string {
+	text, ok := typeText[t]
+	if !ok {
+		return fmt.Sprintf("Type(%d)", t)
+	}
+
+	return text
+}
+
+var typeText = map[Type]string{
+	TypeHello:                 "TypeHello",
+	TypeError:                 "TypeError",
+	TypeEchoRequest:           "TypeEchoRequest",
+	TypeEchoReply:             "TypeEchoReply",
+	TypeExperiment:            "TypeExperiment",
+	TypeFeaturesRequest:       "TypeFeaturesRequest",
+	TypeFeaturesReply:         "TypeFeaturesReply",
+	TypeGetConfigRequest:      "TypeGetConfigRequest",
+	TypeGetConfigReply:        "TypeGetConfigReply",
+	TypeSetConfig:             "TypeSetConfig",
+	TypePacketIn:              "TypePacketIn",
+	TypeFlowRemoved:           "TypeFlowRemoved",
+	TypePortStatus:            "TypePortStatus",
+	TypePacketOut:             "TypePacketOut",
+	TypeFlowMod:               "TypeFlowMod",
+	TypeGroupMod:              "TypeGroupMod",
+	TypePortMod:               "TypePortMod",
+	TypeTableMod:              "TypeTableMod",
+	TypeMultipartRequest:      "TypeMultipartRequest",
+	TypeMultipartReply:        "TypeMultipartReply",
+	TypeBarrierRequest:        "TypeBarrierRequest",
+	TypeBarrierReply:          "TypeBarrierReply",
+	TypeQueueGetConfigRequest: "TypeQueueGetConfigRequest",
+	TypeQueueGetConfigReply:   "TypeQueueGetConfigReply",
+	TypeRoleRequest:           "TypeRoleRequest",
+	TypeRoleReply:             "TypeRoleReply",
+	TypeAsynchRequest:         "TypeAsynchRequest",
+	TypeAsyncReply:            "TypeAsyncReply",
+	TypeSetAsync:              "TypeSetAsync",
+	TypeMeterMod:              "TypeMeterMod",
+}
 
 // The Header is a response header. It contains the negotiated
 // version of the OpenFlow, a type and length of the message.

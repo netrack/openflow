@@ -3,9 +3,8 @@ package ofp
 import (
 	"bytes"
 	"fmt"
-	"io"
-
 	"github.com/netrack/openflow/internal/encoding"
+	"io"
 )
 
 const (
@@ -41,15 +40,14 @@ type InstructionType uint16
 
 // String returns a string representation of instruction type.
 func (it InstructionType) String() string {
-	text, ok := instrctionText[it]
+	text, ok := instructionTypeText[it]
 	if !ok {
-		return fmt.Sprintf("Instruction(%d)", it)
+		return fmt.Sprintf("InstructionType(%d)", it)
 	}
-
 	return text
 }
 
-var instrctionText = map[InstructionType]string{
+var instructionTypeText = map[InstructionType]string{
 	InstructionTypeGotoTable:     "InstructionGotoTable",
 	InstructionTypeWriteMetadata: "InstructionWriteMetadata",
 	InstructionTypeWriteActions:  "InstructionWriteActions",
@@ -131,8 +129,7 @@ func (i *Instructions) ReadFrom(r io.Reader) (n int64, err error) {
 			return rd, err
 		}
 
-		format := "ofp: unknown instruction type: '%x'"
-		return nil, fmt.Errorf(format, instType)
+		return nil, fmt.Errorf("ofp: unknown instruction type: %s", instType)
 	}
 
 	return encoding.ScanFrom(r, &instType,
