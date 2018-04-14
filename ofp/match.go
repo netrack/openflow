@@ -431,7 +431,7 @@ func (m *Match) ReadFrom(r io.Reader) (n int64, err error) {
 	}
 
 	// Read the padding after the list of extensible matches.
-	nn, err = encoding.ReadFrom(r, makePad(padLen(matchlen)))
+	nn, err = encoding.ReadFrom(r, makePad(matchlen))
 	return n + nn, err
 }
 
