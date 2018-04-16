@@ -3,9 +3,10 @@ package ofp
 import (
 	"bytes"
 	"fmt"
-	"github.com/netrack/openflow/internal/encoding"
 	"io"
 	"sync"
+
+	"github.com/netrack/openflow/internal/encoding"
 )
 
 // MultipartType defines the type of multipart request. It specifies the

@@ -3,8 +3,9 @@ package ofp
 import (
 	"bytes"
 	"fmt"
-	"github.com/netrack/openflow/internal/encoding"
 	"io"
+
+	"github.com/netrack/openflow/internal/encoding"
 )
 
 const (

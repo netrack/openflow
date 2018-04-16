@@ -2,9 +2,10 @@ package ofp
 
 import (
 	"fmt"
-	"github.com/netrack/openflow/internal/encoding"
 	"io"
 	"io/ioutil"
+
+	"github.com/netrack/openflow/internal/encoding"
 )
 
 // ErrType indicates high-level type of error.
@@ -582,14 +583,14 @@ func (e Error) Error() string {
 	return e.String()
 }
 
-func (t Error) String() string {
-	errCodeText, ok := errTypeCodeText[t.Type]
+func (e Error) String() string {
+	errCodeText, ok := errTypeCodeText[e.Type]
 	if !ok {
-		return fmt.Sprintf("ErrType(%d)Code(%d)", t.Type, t.Code)
+		return fmt.Sprintf("ErrType(%d)Code(%d)", e.Type, e.Code)
 	}
-	text, ok := errCodeText[t.Code]
+	text, ok := errCodeText[e.Code]
 	if !ok {
-		return fmt.Sprintf("%sCode(%d)", t.Type, t.Code)
+		return fmt.Sprintf("%sCode(%d)", e.Type, e.Code)
 	}
 	return text
 }

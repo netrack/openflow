@@ -1,9 +1,10 @@
 package openflow
 
 import (
+	"fmt"
 	"io"
 	"math/rand"
-	"fmt"
+
 	"github.com/netrack/openflow/internal/encoding"
 )
 
