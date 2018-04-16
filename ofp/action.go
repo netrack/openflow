@@ -577,7 +577,7 @@ func (a *ActionSetField) ReadFrom(r io.Reader) (int64, error) {
 	}
 
 	limrd := io.LimitReader(r, int64(header.Len-4))
-	num, err = a.Field.ReadFrom(limrd, true)
+	num, err = a.Field.ReadFrom(limrd)
 	n += num
 
 	if err != nil {
