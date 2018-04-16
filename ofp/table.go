@@ -180,8 +180,7 @@ func (t *TableFeatures) ReadFrom(r io.Reader) (int64, error) {
 			return rd, err
 		}
 
-		format := "ofp: unknown table property type: '%x'"
-		return nil, fmt.Errorf(format, tablePropType)
+		return nil, fmt.Errorf("ofp: unknown table property type: %s", tablePropType)
 	}
 
 	nn, err := encoding.ScanFrom(r, &tablePropType,
@@ -195,6 +194,13 @@ func (t *TableFeatures) ReadFrom(r io.Reader) (int64, error) {
 // Low order bit cleared indicates a property for a regular Flow Entry.
 // Low order bit set indicates a property for the Table-Miss Flow Entry.
 type TablePropType uint16
+
+func (t TablePropType) String() string {
+	if str, have := tablePropTypeText[t]; have {
+		return str
+	}
+	return fmt.Sprintf("TablePropType(%d)", t)
+}
 
 const (
 	// TablePropTypeInstructions indicates instructions property.
@@ -252,6 +258,25 @@ const (
 	// table-miss.
 	TablePropTypeExperimenterMiss TablePropType = 0xffff
 )
+
+var tablePropTypeText = map[TablePropType]string{
+	TablePropTypeInstructions:      "TablePropTypeInstructions",
+	TablePropTypeInstructionsMiss:  "TablePropTypeInstructionsMiss",
+	TablePropTypeNextTables:        "TablePropTypeNextTables",
+	TablePropTypeNextTablesMiss:    "TablePropTypeNextTablesMiss",
+	TablePropTypeWriteActions:      "TablePropTypeWriteActions",
+	TablePropTypeWriteActionsMiss:  "TablePropTypeWriteActionsMiss",
+	TablePropTypeApplyActions:      "TablePropTypeApplyActions",
+	TablePropTypeApplyActionsMiss:  "TablePropTypeApplyActionsMiss",
+	TablePropTypeMatch:             "TablePropTypeMatch",
+	TablePropTypeWildcards:         "TablePropTypeWildcards",
+	TablePropTypeWriteSetField:     "TablePropTypeWriteSetField",
+	TablePropTypeWriteSetFieldMiss: "TablePropTypeWriteSetFieldMiss",
+	TablePropTypeApplySetField:     "TablePropTypeApplySetField",
+	TablePropTypeApplySetFieldMiss: "TablePropTypeApplySetFieldMiss",
+	TablePropTypeExperimenter:      "TablePropTypeExperimenter",
+	TablePropTypeExperimenterMiss:  "TablePropTypeExperimenterMiss",
+}
 
 var tablePropMap = map[TablePropType]encoding.ReaderMaker{
 	TablePropTypeInstructions:      encoding.ReaderMakerOf(TablePropInstructions{}),

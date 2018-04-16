@@ -2,6 +2,7 @@ package ofp
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 
 	"github.com/netrack/openflow/internal/encoding"
@@ -29,6 +30,20 @@ const (
 // PacketInReason represents the reason why this packet have been sent
 // to the controller.
 type PacketInReason uint8
+
+func (r PacketInReason) String() string {
+	text, ok := packetInReasonText[r]
+	if !ok {
+		return fmt.Sprintf("PacketInReason(%d)", r)
+	}
+	return text
+}
+
+var packetInReasonText = map[PacketInReason]string{
+	PacketInReasonNoMatch:    "PacketInReasonNoMatch",
+	PacketInReasonAction:     "PacketInReasonAction",
+	PacketInReasonInvalidTTL: "PacketInReasonInvalidTTL",
+}
 
 // PacketIn used by the datapath to sent the processing packet to
 // controller.
