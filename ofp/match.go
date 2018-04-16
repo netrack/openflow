@@ -316,7 +316,7 @@ type XM struct {
 // unmarshal them to the list of extensible matchers. The caller
 // responsible of passing limited reader to prevent from read of
 // unnecessary data.
-func readAllXM(r io.Reader, xms *[]XM) (int64, error) {
+func readAllXM(r io.Reader, xms *[]XM, hasPayload bool) (int64, error) {
 	// Read all available bytes from the reader, they will be
 	// used to unmarshal them into the list of extensible matchers.
 	buf, err := ioutil.ReadAll(r)
@@ -327,11 +327,10 @@ func readAllXM(r io.Reader, xms *[]XM) (int64, error) {
 	}
 
 	rbuf := bytes.NewBuffer(buf)
-
 	for rbuf.Len() >= xmlen {
 		var xm XM
 
-		_, err = xm.ReadFrom(rbuf)
+		_, err = xm.readFrom(rbuf, hasPayload)
 		if err != nil {
 			return n, err
 		}
@@ -345,6 +344,13 @@ func readAllXM(r io.Reader, xms *[]XM) (int64, error) {
 // ReadFrom implements io.ReaderFrom interface. It deserializes
 // the OpenFlow extensible match from the given reader.
 func (xm *XM) ReadFrom(r io.Reader) (n int64, err error) {
+	return xm.readFrom(r, true)
+}
+
+// readFrom deserializes the OpenFlow extensible match from the
+// given reader.  If hasPayload is false, xm.Value and xm.Mask
+// will be filled with the zero value.
+func (xm *XM) readFrom(r io.Reader, hasPayload bool) (n int64, err error) {
 	var length uint8
 
 	n, err = encoding.ReadFrom(
@@ -356,14 +362,15 @@ func (xm *XM) ReadFrom(r io.Reader) (n int64, err error) {
 	hasmask := (xm.Type & 1) == 1
 	xm.Type >>= 1
 
-	var m int64
-
 	xm.Value, xm.Mask = make(XMValue, length), nil
-	m, err = encoding.ReadFrom(r, &xm.Value)
-	n += m
 
-	if err != nil {
-		return
+	if hasPayload {
+		var m int64
+		m, err = encoding.ReadFrom(r, &xm.Value)
+		n += m
+		if err != nil {
+			return
+		}
 	}
 
 	if hasmask {
@@ -475,7 +482,7 @@ func (m *Match) ReadFrom(r io.Reader) (n int64, err error) {
 
 	// Limit the reader to the length of the extensible matches.
 	limrd := io.LimitReader(r, int64(rdlen))
-	nn, err = readAllXM(limrd, &m.Fields)
+	nn, err = readAllXM(limrd, &m.Fields, true)
 	if n += nn; err != nil {
 		return
 	}
