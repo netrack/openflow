@@ -196,6 +196,7 @@ func (a *Actions) WriteTo(w io.Writer) (int64, error) {
 // the list of types that implement Action interface.
 func (a *Actions) ReadFrom(r io.Reader) (int64, error) {
 	var actionType ActionType
+	*a = nil
 
 	rm := func() (io.ReaderFrom, error) {
 		if rm, ok := actionMap[actionType]; ok {
