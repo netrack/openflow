@@ -221,13 +221,13 @@ func writeInstructionActions(w io.Writer, t InstructionType,
 
 // readInstructionActions deserializes the instruction with actions.
 // It is shared among the Apply/Clear/Write instructions.
-func readInstructionActions(r io.Reader, actions Actions) (int64, error) {
+func readInstructionActions(r io.Reader, actions *Actions) (int64, error) {
 	var read int64
 
 	// Read the header of the instruction at first to retrieve
 	// the size of actions in the packet.
 	var header instruction
-	num, err := encoding.ReadFrom(r, &header)
+	num, err := encoding.ReadFrom(r, &header, &defaultPad4)
 	read += num
 
 	if err != nil {
@@ -236,7 +236,7 @@ func readInstructionActions(r io.Reader, actions Actions) (int64, error) {
 
 	// Limit the reader to the size of actions, so we could know
 	// where is the a border of the message.
-	limrd := io.LimitReader(r, int64(header.Len-4))
+	limrd := io.LimitReader(r, int64(header.Len-8))
 	num, err = actions.ReadFrom(limrd)
 	read += num
 
@@ -265,7 +265,7 @@ func (i *InstructionApplyActions) WriteTo(w io.Writer) (int64, error) {
 // ReadFrom implements io.ReadFrom interface. It deserializes
 // the instruction used to apply actions from the wire format.
 func (i *InstructionApplyActions) ReadFrom(r io.Reader) (int64, error) {
-	return readInstructionActions(r, i.Actions)
+	return readInstructionActions(r, &i.Actions)
 }
 
 // InstructionWriteActions represents a bundle of actions that should
@@ -290,7 +290,7 @@ func (i *InstructionWriteActions) WriteTo(w io.Writer) (int64, error) {
 // ReadFrom implements io.ReadFrom interface. It serializes instruction
 // used to write actions from the wire format.
 func (i *InstructionWriteActions) ReadFrom(r io.Reader) (int64, error) {
-	return readInstructionActions(r, i.Actions)
+	return readInstructionActions(r, &i.Actions)
 }
 
 // InstructionClearActions is an instruction used to clear the set
