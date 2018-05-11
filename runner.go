@@ -6,10 +6,10 @@ type Runner interface {
 	Run(func())
 }
 
-// OnDemandRoutineRunner is a runner that start each function in a
-// separate go-routine. This handler is useful for initial prototyping,
+// OnDemandRoutineRunner is a runner that starts each function in a
+// separate goroutine. This handler is useful for initial prototyping,
 // but it is highly recommended to use runner with a fixed amount of
-// workers in order to prevent over go-routining.
+// workers in order to prevent over goroutining.
 type OnDemandRoutineRunner struct{}
 
 // Run starts a function in a separate go-routine. This method implements
