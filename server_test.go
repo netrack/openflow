@@ -3,6 +3,7 @@ package openflow
 import (
 	"io"
 	"net"
+	"sync"
 	"testing"
 )
 
@@ -78,7 +79,11 @@ func TestServerServe(t *testing.T) {
 	// Define a connection state transition callback to validate the
 	// transition of the client connections.
 	states := make(map[ConnState]int)
+	var statesMu sync.Mutex
+
 	connState := func(c Conn, s ConnState) {
+		statesMu.Lock()
+		defer statesMu.Unlock()
 		// Simply increase a counter of the connection states.
 		states[s]++
 	}
@@ -89,11 +94,11 @@ func TestServerServe(t *testing.T) {
 	dln := &dummyListener{[]net.Conn{dconn}}
 
 	s := Server{Handler: HandlerFunc(h), ConnState: connState}
-	defer s.close()
 	s.Serve(dln)
 
 	// Wait for handler being called for the client connection.
 	<-done
+	s.close()
 
 	if req.Conn().(*conn).rwc != dconn {
 		t.Fatalf("Wrong connection instance returned")
@@ -105,6 +110,9 @@ func TestServerServe(t *testing.T) {
 	}
 
 	// Ensure the client connection transitioned all required states.
+	statesMu.Lock()
+	defer statesMu.Unlock()
+
 	if states[StateNew] != 1 {
 		t.Errorf("Connection did not transition new state")
 	}

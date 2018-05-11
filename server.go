@@ -156,6 +156,11 @@ type Server struct {
 	// Addr is an address to listen on.
 	Addr string
 
+	// Runner defines concurrency model of handling requests from the
+	// switch within a single connection. By default OnDemandRoutineRunner
+	// is used.
+	Runner Runner
+
 	// Handler to invoke on the incoming requests.
 	Handler Handler
 
@@ -213,11 +218,16 @@ func (srv *Server) Serve(l net.Listener) error {
 		handler = DefaultMux
 	}
 
+	runner := srv.Runner
+	if runner == nil {
+		runner = OnDemandRoutineRunner{}
+	}
+
 	// Initialize a channel used to terminate the main handling loop.
 	srv.once.Do(func() { srv.stop = make(chan struct{}) })
 
 	for {
-		err := srv.accept(l, handler)
+		err := srv.accept(l, runner, handler)
 		if err != nil {
 			return err
 		}
@@ -227,7 +237,7 @@ func (srv *Server) Serve(l net.Listener) error {
 // The accept block until a new connection will be extracted from the
 // queue. It keeps track of count of incoming connections and closes all
 // that exceed the MaxConns threshold.
-func (srv *Server) accept(l net.Listener, h Handler) error {
+func (srv *Server) accept(l net.Listener, r Runner, h Handler) error {
 	rwc, err := l.Accept()
 	if err != nil {
 		return err
@@ -250,29 +260,30 @@ func (srv *Server) accept(l net.Listener, h Handler) error {
 	}
 
 	atomic.AddInt32(&srv.conns, 1)
-	go srv.serve(c, h)
+	go srv.serve(c, r, h)
 
 	return nil
 }
 
-func (srv *Server) serve(c *conn, h Handler) {
+func (srv *Server) serve(c *conn, r Runner, h Handler) {
 	// Define a deferred call to close the connection.
 	defer c.Close()
+	defer srv.setState(c, StateClosed)
 	rcvr := &receiver{Conn: c}
 
 	for {
 		select {
 		// Receive new requests in the infinite loop and handle them
-		// sequentially. When error is returned from the receive loop, this
-		// routine will be stopped and the client connection closed.
+		// according to the Runner algorithm. When error is returned
+		// from the receive loop, this routine will be stopped and the
+		// client connection closed.
 		case entry := <-rcvr.C():
 			if entry.err != nil {
 				atomic.AddInt32(&srv.conns, -1)
-				srv.setState(c, StateClosed)
 				return
 			}
 
-			srv.serveReq(c, entry.req, h)
+			r.Run(func() { srv.serveReq(c, entry.req, h) })
 
 		// Stop channel used here only for testing purposes to terminate the
 		// infinite receive loop. As a result the all client connections will

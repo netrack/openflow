@@ -49,7 +49,7 @@ func TestResponseWrite(t *testing.T) {
 		resp.ReadFrom(r.Body)
 		features.ReadFrom(r.Body)
 
-		// Read only the first table feture.
+		// Read only the first table feature.
 		log.Println(features)
 	}
 
