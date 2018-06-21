@@ -83,6 +83,9 @@ type PacketIn struct {
 
 	// Match is used to match the packet.
 	Match Match
+
+	// Data represents the original ethernet frame received by the datapath.
+	Data bytes.Buffer
 }
 
 // Cookies returns the cookie assigned to the rule, that triggered the
@@ -109,7 +112,7 @@ func (p *PacketIn) ReadFrom(r io.Reader) (int64, error) {
 	// Read the packet-in header, then the list of match
 	// rules, that used to match the processing packet.
 	return encoding.ReadFrom(r, &p.Buffer, &p.Length,
-		&p.Reason, &p.Table, &p.Cookie, &p.Match, &defaultPad2)
+		&p.Reason, &p.Table, &p.Cookie, &p.Match, &defaultPad2, &p.Data)
 }
 
 // PacketOut used by the controller to send a packet out through the
