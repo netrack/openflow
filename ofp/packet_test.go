@@ -1,6 +1,7 @@
 package ofp
 
 import (
+	"encoding/gob"
 	"testing"
 
 	"github.com/netrack/openflow/internal/encodingtest"
@@ -10,7 +11,7 @@ func TestPacketIn(t *testing.T) {
 	tests := []encodingtest.MU{
 		{&PacketIn{
 			Buffer: NoBuffer,
-			Length: 0x20,
+			Length: 0x38,
 			Reason: PacketInReasonAction,
 			Table:  Table(2),
 			Cookie: 0xdeadbeef,
@@ -19,9 +20,14 @@ func TestPacketIn(t *testing.T) {
 				Type:  XMTypeInPort,
 				Value: XMValue{0x00, 0x00, 0x00, 0x03},
 			}}},
+			Data: []byte{
+				0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+				0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+				0x08, 0x06,
+			},
 		}, []byte{
 			0xff, 0xff, 0xff, 0xff, // Buffer identifier.
-			0x00, 0x20, // Total frame length.
+			0x00, 0x38, // Total frame length.
 			0x01, // Packet-in submission reason.
 			0x02, // Table identifier.
 			0x00, 0x00, 0x00, 0x00,
@@ -33,10 +39,15 @@ func TestPacketIn(t *testing.T) {
 			// Match.
 			0x80, 0x00, // OpenFlow basic.
 			0x00,                   // Match field + Mask flag.
-			0x04,                   // Payload length.
-			0x00, 0x00, 0x00, 0x03, // Payload.
+			0x04,                   // Match field length.
+			0x00, 0x00, 0x00, 0x03, // Match field value.
 			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
 			0x00, 0x00, // 2-byte padding.
+
+			// Original ethernet frame.
+			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // Destination MAC.
+			0x11, 0x11, 0x11, 0x11, 0x11, 0x11, // Source MAC.
+			0x08, 0x06, // Ether-Type
 		}},
 	}
 
@@ -62,5 +73,6 @@ func TestPacketOut(t *testing.T) {
 		}},
 	}
 
+	gob.Register(ActionGroup{})
 	encodingtest.RunMU(t, tests)
 }

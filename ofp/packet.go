@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 
 	"github.com/netrack/openflow/internal/encoding"
 )
@@ -83,6 +84,9 @@ type PacketIn struct {
 
 	// Match is used to match the packet.
 	Match Match
+
+	// Data represents the original ethernet frame received by the datapath.
+	Data []byte
 }
 
 // Cookies returns the cookie assigned to the rule, that triggered the
@@ -100,16 +104,26 @@ func (p *PacketIn) SetCookies(cookies uint64) {
 // message into the wire format.
 func (p *PacketIn) WriteTo(w io.Writer) (int64, error) {
 	return encoding.WriteTo(w, p.Buffer, p.Length,
-		p.Reason, p.Table, p.Cookie, &p.Match, pad2{})
+		p.Reason, p.Table, p.Cookie, &p.Match, pad2{}, p.Data)
 }
 
 // ReadFrom implements io.ReaderFrom interface. It deserializes the
 // packet-in message from wire format.
 func (p *PacketIn) ReadFrom(r io.Reader) (int64, error) {
-	// Read the packet-in header, then the list of match
-	// rules, that used to match the processing packet.
-	return encoding.ReadFrom(r, &p.Buffer, &p.Length,
+	// Read the Packet-In header, list of match rules
+	// that used to match the processing packet,
+	// then the original frame, if any.
+	n, err := encoding.ReadFrom(r, &p.Buffer, &p.Length,
 		&p.Reason, &p.Table, &p.Cookie, &p.Match, &defaultPad2)
+	if err != nil {
+		return n, err
+	}
+	p.Data, err = ioutil.ReadAll(r)
+	if err != nil {
+		return n + int64(len(p.Data)), err
+	}
+
+	return n + int64(len(p.Data)), nil
 }
 
 // PacketOut used by the controller to send a packet out through the
