@@ -162,7 +162,7 @@ func TestListener(t *testing.T) {
 }
 
 func TestDial(t *testing.T) {
-	ln, err := Listen("tcp", ":6666")
+	ln, err := Listen("tcp", "localhost:6667")
 	if err != nil {
 		t.Fatal("Failed to create listener:", err)
 	}
