@@ -136,7 +136,7 @@ func (l *dummyListener) Addr() net.Addr {
 }
 
 func TestListener(t *testing.T) {
-	ln, err := Listen("tcp", ":6666")
+	ln, err := Listen("tcp", ":0")
 	if err != nil {
 		t.Fatal("Failed to create listener:", err)
 	}
@@ -162,7 +162,7 @@ func TestListener(t *testing.T) {
 }
 
 func TestDial(t *testing.T) {
-	ln, err := Listen("tcp", "localhost:6667")
+	ln, err := Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatal("Failed to create listener:", err)
 	}
