@@ -20,7 +20,7 @@ func TestFlowMod(t *testing.T) {
 	instr := Instructions{&InstructionClearActions{}}
 
 	tests := []encodingtest.MU{
-		{&FlowMod{
+		{ReadWriter: &FlowMod{
 			Cookie:       0xdbf7525e57bd7eef,
 			CookieMask:   0x44d8b8f011090dcb,
 			Table:        TableMax,
@@ -34,7 +34,7 @@ func TestFlowMod(t *testing.T) {
 			Flags:        flags,
 			Match:        match,
 			Instructions: instr,
-		}, []byte{
+		}, Bytes: []byte{
 			0xdb, 0xf7, 0x52, 0x5e, 0x57, 0xbd, 0x7e, 0xef, // Cookie.
 			0x44, 0xd8, 0xb8, 0xf0, 0x11, 0x09, 0x0d, 0xcb, // Cookie mask.
 			0xfe,       // Table identifier.
@@ -76,7 +76,7 @@ func TestFlowRemoved(t *testing.T) {
 	}}}
 
 	tests := []encodingtest.MU{
-		{&FlowRemoved{
+		{ReadWriter: &FlowRemoved{
 			Cookie:       0xf22884334a8def04,
 			Priority:     11,
 			Reason:       FlowReasonHardTimeout,
@@ -88,7 +88,7 @@ func TestFlowRemoved(t *testing.T) {
 			PacketCount:  8005984375916722949,
 			ByteCount:    3104105491404993109,
 			Match:        match,
-		}, []byte{
+		}, Bytes: []byte{
 			0xf2, 0x28, 0x84, 0x33, 0x4a, 0x8d, 0xef, 0x04, // Cookie.
 			0x00, 0x0b, // Priority,
 			0x01,                   // Reason.
@@ -122,14 +122,14 @@ func TestFlowStatsRequest(t *testing.T) {
 	}}}
 
 	tests := []encodingtest.MU{
-		{&FlowStatsRequest{
+		{ReadWriter: &FlowStatsRequest{
 			Table:      TableMax,
 			OutPort:    PortFlood,
 			OutGroup:   GroupAny,
 			Cookie:     0xdbf7525e57bd7eef,
 			CookieMask: 0x44d8b8f011090dcb,
 			Match:      match,
-		}, []byte{
+		}, Bytes: []byte{
 			0xfe,             // Table identifier.
 			0x00, 0x00, 0x00, // 3-byte padding.
 			0xff, 0xff, 0xff, 0xfb, // Out port.
@@ -165,7 +165,7 @@ func TestFlowStats(t *testing.T) {
 	instr := Instructions{&InstructionClearActions{}}
 
 	tests := []encodingtest.MU{
-		{&FlowStats{
+		{ReadWriter: &FlowStats{
 			Table:        Table(23),
 			DurationSec:  929584189,
 			DurationNSec: 1244051003,
@@ -178,7 +178,7 @@ func TestFlowStats(t *testing.T) {
 			ByteCount:    3104105491404993109,
 			Match:        match,
 			Instructions: instr,
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x48, // Length.
 			0x17,                   // Table identifier.
 			0x00,                   // 1-byte padding.

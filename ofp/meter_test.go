@@ -15,12 +15,12 @@ func TestMeterMod(t *testing.T) {
 	}
 
 	tests := []encodingtest.MU{
-		{&MeterMod{
+		{ReadWriter: &MeterMod{
 			Command: MeterModify,
 			Flags:   MeterFlagStats | MeterFlagBurst,
 			Meter:   Meter(42),
 			Bands:   bands,
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x01, // Meter command.
 			0x00, 0x0c, // Flags.
 			0x00, 0x00, 0x00, 0x2a, // Meter identifier.
@@ -58,7 +58,7 @@ func TestMeterMod(t *testing.T) {
 
 func TestMeterConfigRequest(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&MeterConfigRequest{Meter(2)}, []byte{
+		{ReadWriter: &MeterConfigRequest{Meter(2)}, Bytes: []byte{
 			0x00, 0x00, 0x00, 0x02, // Meter idenfitier.
 			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
 		}},
@@ -69,11 +69,11 @@ func TestMeterConfigRequest(t *testing.T) {
 
 func TestMeterConfig(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&MeterConfig{
+		{ReadWriter: &MeterConfig{
 			Flags: MeterFlagKBitPerSec | MeterFlagBurst,
 			Meter: Meter(42),
 			Bands: MeterBands{&MeterBandDrop{64, 128}},
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x18, // Length.
 			0x00, 0x05, // Flags.
 			0x00, 0x00, 0x00, 0x2a, // Meter identifier.
@@ -95,13 +95,13 @@ func TestMeterFeatures(t *testing.T) {
 		uint32(1<<MeterBandTypeDSCPRemark)
 
 	tests := []encodingtest.MU{
-		{&MeterFeatures{
+		{ReadWriter: &MeterFeatures{
 			MaxMeter:     45,
 			BandTypes:    types,
 			Capabilities: uint32(1 << MeterFlagBurst),
 			MaxBands:     128,
 			MaxColor:     16,
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x00, 0x00, 0x2d, // Max meter.
 			0x00, 0x00, 0x00, 0x06, // Band types.
 			0x00, 0x00, 0x00, 0x10, // Capabilities.
@@ -121,7 +121,7 @@ func TestMeterStats(t *testing.T) {
 	}
 
 	tests := []encodingtest.MU{
-		{&MeterStats{
+		{ReadWriter: &MeterStats{
 			Meter:         Meter(42),
 			FlowCount:     2716600054,
 			PacketInCount: 3600438613393559849,
@@ -129,7 +129,7 @@ func TestMeterStats(t *testing.T) {
 			DurationSec:   50,
 			DurationNSec:  10,
 			BandStats:     stats,
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x00, 0x00, 0x2a, // Meter identifier.
 			0x00, 0x48, // Length.
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 6-byte padding.

@@ -8,12 +8,12 @@ import (
 
 func TestActionCopyTTLInOut(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&ActionCopyTTLOut{}, []byte{
+		{ReadWriter: &ActionCopyTTLOut{}, Bytes: []byte{
 			0x00, 0xb, // Action type.
 			0x00, 0x08, // Action lenght.
 			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
 		}},
-		{&ActionCopyTTLIn{}, []byte{
+		{ReadWriter: &ActionCopyTTLIn{}, Bytes: []byte{
 			0x00, 0xc,
 			0x00, 0x08,
 			0x00, 0x00, 0x00, 0x00,
@@ -25,19 +25,19 @@ func TestActionCopyTTLInOut(t *testing.T) {
 
 func TestActionOutput(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&ActionOutput{Port: PortIn, MaxLen: 0}, []byte{
+		{ReadWriter: &ActionOutput{Port: PortIn, MaxLen: 0}, Bytes: []byte{
 			0x0, 0x0, // Action type.
 			0x0, 0x10, // Action length.
 			0xff, 0xff, 0xff, 0xf8, // Port number.
 			0x0, 0x0, // Maximum length.
 			0x0, 0x0, 0x0, 0x0, 0x0, 0x0}}, // 6-byte padding.
-		{&ActionOutput{Port: PortFlood, MaxLen: 0}, []byte{
+		{ReadWriter: &ActionOutput{Port: PortFlood, MaxLen: 0}, Bytes: []byte{
 			0x0, 0x0,
 			0x0, 0x10,
 			0xff, 0xff, 0xff, 0xfb,
 			0x0, 0x0,
 			0x0, 0x0, 0x0, 0x0, 0x0, 0x0}},
-		{&ActionOutput{Port: PortController, MaxLen: 0x80}, []byte{
+		{ReadWriter: &ActionOutput{Port: PortController, MaxLen: 0x80}, Bytes: []byte{
 			0x0, 0x0,
 			0x0, 0x10,
 			0xff, 0xff, 0xff, 0xfd,
@@ -50,15 +50,15 @@ func TestActionOutput(t *testing.T) {
 
 func TestActionGroup(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&ActionGroup{Group: GroupMax}, []byte{
+		{ReadWriter: &ActionGroup{Group: GroupMax}, Bytes: []byte{
 			0x0, 0x16, // Action type.
 			0x0, 0x08, // Action length.
 			0xff, 0xff, 0xff, 0x00}}, // Group identifier.
-		{&ActionGroup{Group: GroupAll}, []byte{
+		{ReadWriter: &ActionGroup{Group: GroupAll}, Bytes: []byte{
 			0x0, 0x16,
 			0x0, 0x08,
 			0xff, 0xff, 0xff, 0xfc}},
-		{&ActionGroup{Group: GroupAny}, []byte{
+		{ReadWriter: &ActionGroup{Group: GroupAny}, Bytes: []byte{
 			0x0, 0x16,
 			0x0, 0x08,
 			0xff, 0xff, 0xff, 0xff}},
@@ -69,11 +69,11 @@ func TestActionGroup(t *testing.T) {
 
 func TestActionSetQueue(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&ActionSetQueue{QueueID: QueueAll}, []byte{
+		{ReadWriter: &ActionSetQueue{QueueID: QueueAll}, Bytes: []byte{
 			0x0, 0x15, // Action type.
 			0x0, 0x08, // Action length.
 			0xff, 0xff, 0xff, 0xff}}, // Queue identifier.
-		{&ActionSetQueue{QueueID: 0x4200}, []byte{
+		{ReadWriter: &ActionSetQueue{QueueID: 0x4200}, Bytes: []byte{
 			0x0, 0x15,
 			0x0, 0x08,
 			0x0, 0x0, 0x42, 0x00}},
@@ -84,12 +84,12 @@ func TestActionSetQueue(t *testing.T) {
 
 func TestActionMPLSTTL(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&ActionSetMPLSTTL{TTL: 64}, []byte{
+		{ReadWriter: &ActionSetMPLSTTL{TTL: 64}, Bytes: []byte{
 			0x0, 0x0f, // Action type.
 			0x0, 0x08, // Action length.
 			0x40,            // Time to live.
 			0x0, 0x0, 0x0}}, // 3-bytes padding.
-		{&ActionSetMPLSTTL{TTL: 32}, []byte{
+		{ReadWriter: &ActionSetMPLSTTL{TTL: 32}, Bytes: []byte{
 			0x0, 0x0f,
 			0x0, 0x08,
 			0x20,
@@ -101,7 +101,7 @@ func TestActionMPLSTTL(t *testing.T) {
 
 func TestActionSetNetworkTTL(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&ActionSetNetworkTTL{TTL: 48}, []byte{
+		{ReadWriter: &ActionSetNetworkTTL{TTL: 48}, Bytes: []byte{
 			0x0, 0x17, // Action type.
 			0x0, 0x08, // Action length.
 			0x30,            // Time to live.
@@ -113,12 +113,12 @@ func TestActionSetNetworkTTL(t *testing.T) {
 
 func TestActionPushPopVLAN(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&ActionPushVLAN{EtherType: 1000}, []byte{
+		{ReadWriter: &ActionPushVLAN{EtherType: 1000}, Bytes: []byte{
 			0x0, 0x11, // Action type.
 			0x0, 0x08, // Action length.
 			0x03, 0xe8, // Ethernet type.
 			0x0, 0x0}}, // 2-bytes padding.
-		{&ActionPopVLAN{}, []byte{
+		{ReadWriter: &ActionPopVLAN{}, Bytes: []byte{
 			0x0, 0x12,
 			0x0, 0x08,
 			0x0, 0x0, 0x0, 0x0}},
@@ -129,12 +129,12 @@ func TestActionPushPopVLAN(t *testing.T) {
 
 func TestActionPopMPLS(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&ActionPopMPLS{EtherType: 1001}, []byte{
+		{ReadWriter: &ActionPopMPLS{EtherType: 1001}, Bytes: []byte{
 			0x0, 0x14, // Action type.
 			0x0, 0x08, // Action length.
 			0x03, 0xe9, // Ethernet type.
 			0x0, 0x0}}, // 2-bytes padding.
-		{&ActionPopMPLS{EtherType: 9}, []byte{
+		{ReadWriter: &ActionPopMPLS{EtherType: 9}, Bytes: []byte{
 			0x0, 0x14,
 			0x0, 0x8,
 			0x0, 0x9,
@@ -159,7 +159,7 @@ func TestActionSetField(t *testing.T) {
 	}
 
 	tests := []encodingtest.MU{
-		{&ActionSetField{Field: xm1}, []byte{
+		{ReadWriter: &ActionSetField{Field: xm1}, Bytes: []byte{
 			0x00, 0x19, // Action type.
 			0x00, 0x10, // Action length.
 			0x80, 0x00, // OpenFlow basic.
@@ -168,7 +168,7 @@ func TestActionSetField(t *testing.T) {
 			0x00, 0x01, 0x00, 0xff, // Payload.
 			0x0, 0x0, 0x0, 0x0, // 4-bytes padding.
 		}},
-		{&ActionSetField{Field: xm2}, []byte{
+		{ReadWriter: &ActionSetField{Field: xm2}, Bytes: []byte{
 			0x00, 0x19,
 			0x00, 0x10,
 			0x80, 0x00,
@@ -184,12 +184,12 @@ func TestActionSetField(t *testing.T) {
 
 func TestActionExperimenter(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&ActionExperimenter{41}, []byte{
+		{ReadWriter: &ActionExperimenter{41}, Bytes: []byte{
 			0xff, 0x0ff, // Action type.
 			0x0, 0x08, // Action length.
 			0x0, 0x0, 0x0, 0x29, // Experimeter.
 		}},
-		{&ActionExperimenter{42}, []byte{
+		{ReadWriter: &ActionExperimenter{42}, Bytes: []byte{
 			0xff, 0x0ff,
 			0x0, 0x08,
 			0x0, 0x0, 0x0, 0x2a,

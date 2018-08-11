@@ -21,7 +21,7 @@ func TestMultipartRequest(t *testing.T) {
 
 	// Multipart request saves the rest of the body,
 	// so we cannot use the unmarshal test for it.
-	encodingtest.RunM(t, []encodingtest.M{{mreq, data}})
+	encodingtest.RunM(t, []encodingtest.M{{Writer: mreq, Bytes:data}})
 
 	// Test unmarshalling manually:
 	var req MultipartRequest
@@ -49,10 +49,10 @@ func TestMultipartRequest(t *testing.T) {
 
 func TestMultipartReply(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&MultipartReply{
+		{ReadWriter: &MultipartReply{
 			Type:  MultipartTypePortStats,
 			Flags: MultipartReplyMode,
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x04, // Multipart type.
 			0x00, 0x01, // Multipart flags.
 			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
@@ -64,10 +64,10 @@ func TestMultipartReply(t *testing.T) {
 
 func TestExperimenterMultipartHeader(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&ExperimenterMultipartHeader{
+		{ReadWriter: &ExperimenterMultipartHeader{
 			Experimenter: 42,
 			ExpType:      14,
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x00, 0x00, 0x2a, // Experimenter.
 			0x00, 0x00, 0x00, 0x0e, // Experimenter type.
 		}},

@@ -13,8 +13,8 @@ func TestHello(t *testing.T) {
 	}
 
 	tests := []encodingtest.MU{
-		{&Hello{}, []byte{}},
-		{&Hello{elems}, []byte{
+		{ReadWriter: &Hello{}, Bytes: []byte{}},
+		{ReadWriter: &Hello{elems}, Bytes: []byte{
 			0x00, 0x01, // Hello element type.
 			0x00, 0x18, // Hello element length.
 			0x00, 0x00, 0x00, 0x10, // OpenFlow versions.
@@ -31,10 +31,10 @@ func TestHello(t *testing.T) {
 
 func TestExperimenter(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&Experimenter{
+		{ReadWriter: &Experimenter{
 			Experimenter: 42,
 			ExpType:      43,
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x00, 0x00, 0x2a, // Experimenter.
 			0x00, 0x00, 0x00, 0x2b, // Experimenter type.
 		}},
@@ -45,10 +45,10 @@ func TestExperimenter(t *testing.T) {
 
 func TestRoleRequest(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&RoleRequest{
+		{ReadWriter: &RoleRequest{
 			Role:         ControllerRoleMaster,
 			GenerationID: 0x22e92b72b39cab3a,
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x00, 0x00, 0x02, // Controller role.
 			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
 			0x22, 0xe9, 0x2b, 0x72, 0xb3, 0x9c, 0xab, 0x3a, // Generation.
@@ -60,11 +60,11 @@ func TestRoleRequest(t *testing.T) {
 
 func TestAsyncConfig(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&AsyncConfig{
+		{ReadWriter: &AsyncConfig{
 			[2]uint32{1 << PacketInReasonAction, 0},
 			[2]uint32{0, 1 << PortReasonModify},
 			[2]uint32{0, 1 << FlowReasonGroupDelete},
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, // Packet-in.
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, // Port.
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, // Flow.

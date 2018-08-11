@@ -8,7 +8,7 @@ import (
 
 func TestAggregateStatsRequest(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&AggregateStatsRequest{
+		{ReadWriter: &AggregateStatsRequest{
 			Table:      TableMax,
 			OutPort:    PortNormal,
 			OutGroup:   GroupAll,
@@ -19,7 +19,7 @@ func TestAggregateStatsRequest(t *testing.T) {
 				Type:  XMTypeInPort,
 				Value: XMValue{0x00, 0x00, 0x00, 0x03},
 			}}},
-		}, []byte{
+		}, Bytes: []byte{
 			0xfe,             // Table identifier.
 			0x00, 0x00, 0x00, // 3-byte padding.
 			0xff, 0xff, 0xff, 0xfa, // Out port.
@@ -45,11 +45,11 @@ func TestAggregateStatsRequest(t *testing.T) {
 
 func TestAggregateStats(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&AggregateStats{
+		{ReadWriter: &AggregateStats{
 			PacketCount: 0x0906caed7a9289a1,
 			ByteCount:   0x202bba4297c31ce6,
 			FlowCount:   0xcd348340,
-		}, []byte{
+		}, Bytes: []byte{
 			0x09, 0x06, 0xca, 0xed, 0x7a, 0x92, 0x89, 0xa1, // Packet count.
 			0x20, 0x2b, 0xba, 0x42, 0x97, 0xc3, 0x1c, 0xe6, // Byte count.
 			0xcd, 0x34, 0x83, 0x40, // Flow count.

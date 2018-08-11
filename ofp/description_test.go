@@ -21,13 +21,13 @@ func TestDescription(t *testing.T) {
 	dp := mk("switch datapath", descLen)
 
 	tests := []encodingtest.MU{
-		{&Description{
+		{ReadWriter: &Description{
 			Manufacturer: string(mfr),
 			Hardware:     string(hw),
 			Software:     string(sw),
 			SerialNum:    string(sn),
 			Datapath:     string(dp),
-		}, bytes.Join([][]byte{mfr, hw, sw, sn, dp}, []byte(nil))},
+		}, Bytes: bytes.Join([][]byte{mfr, hw, sw, sn, dp}, []byte(nil))},
 	}
 
 	encodingtest.RunMU(t, tests)

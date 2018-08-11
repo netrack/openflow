@@ -9,7 +9,7 @@ import (
 
 func TestPacketIn(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&PacketIn{
+		{ReadWriter: &PacketIn{
 			Buffer: NoBuffer,
 			Length: 0x38,
 			Reason: PacketInReasonAction,
@@ -25,7 +25,7 @@ func TestPacketIn(t *testing.T) {
 				0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
 				0x08, 0x06,
 			},
-		}, []byte{
+		}, Bytes: []byte{
 			0xff, 0xff, 0xff, 0xff, // Buffer identifier.
 			0x00, 0x38, // Total frame length.
 			0x01, // Packet-in submission reason.
@@ -56,13 +56,12 @@ func TestPacketIn(t *testing.T) {
 
 func TestPacketOut(t *testing.T) {
 	tests := []encodingtest.MU{
-		// Test Packet-Out without data (buffer_id required).
-		{&PacketOut{
-			Buffer:  0x01,
+		{ReadWriter: &PacketOut{
+			Buffer:  NoBuffer,
 			InPort:  PortController,
 			Actions: Actions{&ActionGroup{Group: GroupAll}},
-		}, []byte{
-			0x00, 0x00, 0x00, 0x01, // Buffer identifier.
+		}, Bytes: []byte{
+			0xff, 0xff, 0xff, 0xff, // Buffer identifier.
 			0xff, 0xff, 0xff, 0xfd, // Port number.
 			0x00, 0x08, // Actions list length in bytes.
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 6-byte padding.
@@ -72,37 +71,8 @@ func TestPacketOut(t *testing.T) {
 			0x00, 0x08,
 			0xff, 0xff, 0xff, 0xfc,
 		}},
-		// Test Packet-Out with data (no buffer_id).
-		{&PacketOut{
-			Buffer:  NoBuffer,
-			InPort:  PortController,
-			Actions: Actions{&ActionOutput{Port: PortNo(1)}},
-			Data: []byte{
-				0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-				0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
-				0x08, 0x06,
-			},
-		}, []byte{
-			0xff, 0xff, 0xff, 0xff, // Buffer identifier (OFP_NO_BUFFER).
-			0xff, 0xff, 0xff, 0xfd, // Port number (OFPP_CONTROLLER).
-			0x00, 0x10, // Actions list length in bytes.
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 6-byte padding.
-
-			// Actions.
-			0x00, 0x00, // Type output.
-			0x00, 0x10, // Length.
-			0x00, 0x00, 0x00, 0x01, // Port.
-			0x00, 0x00, // Max length.
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 6-byte padding.
-
-			// Data with the ethernet frame.
-			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // Destination MAC.
-			0x11, 0x11, 0x11, 0x11, 0x11, 0x11, // Source MAC.
-			0x08, 0x06, // Ether-Type
-		}},
 	}
 
 	gob.Register(ActionGroup{})
-	gob.Register(ActionOutput{})
 	encodingtest.RunMU(t, tests)
 }

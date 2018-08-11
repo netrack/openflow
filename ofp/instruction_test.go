@@ -9,7 +9,7 @@ import (
 
 func TestInstructionGotoTable(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&InstructionGotoTable{Table: Table(15)}, []byte{
+		{ReadWriter: &InstructionGotoTable{Table: Table(15)}, Bytes: []byte{
 			0x00, 0x01, // Instruction type.
 			0x00, 0x08, // Instruction length.
 			0x0f,             // Table identifier.
@@ -22,10 +22,10 @@ func TestInstructionGotoTable(t *testing.T) {
 
 func TestIntructionWriteMetadata(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&InstructionWriteMetadata{
+		{ReadWriter: &InstructionWriteMetadata{
 			Metadata:     0x5091aedc9697445e,
 			MetadataMask: 0x3ec894d841073494,
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x02, // Instruction type.
 			0x00, 0x18, // Intruction length.
 			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
@@ -39,12 +39,12 @@ func TestIntructionWriteMetadata(t *testing.T) {
 
 func TestInstructionApplyActions(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&InstructionApplyActions{
+		{ReadWriter: &InstructionApplyActions{
 			Actions: Actions{
 				&ActionGroup{Group: GroupAll},
 				&ActionCopyTTLOut{},
 			},
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x04, // Instruction type.
 			0x00, 0x18, // Instruction length.
 			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
@@ -66,7 +66,7 @@ func TestInstructionApplyActions(t *testing.T) {
 
 func TestIntructionMeter(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&InstructionMeter{Meter: 0x6bb97a25}, []byte{
+		{ReadWriter: &InstructionMeter{Meter: 0x6bb97a25}, Bytes: []byte{
 			0x00, 0x06, // Instruction type.
 			0x00, 0x08, // Instruction length.
 			0x6b, 0xb9, 0x7a, 0x25, // Meter identifier.

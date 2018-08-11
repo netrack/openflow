@@ -143,11 +143,8 @@ type PacketOut struct {
 	// processing and an output port.
 	Actions Actions
 
-	// Data represents the ethernet frame to be sent via the datapath.
-	// This data is only present and meaningful if buffer_id is OFP_NO_BUFFER,
-	// otherwise data is empty.
-	// The length is inferred from the length field in the header.
-	Data []byte
+	// Followed by packet data. The length is inferred from the length
+	// field in the header.
 }
 
 // WriteTo implements io.WriterTo interface. It serializes the message
@@ -163,29 +160,24 @@ func (p *PacketOut) WriteTo(w io.Writer) (n int64, err error) {
 	}
 
 	return encoding.WriteTo(w, p.Buffer, p.InPort,
-		uint16(buf.Len()), pad6{}, buf.Bytes(), p.Data)
+		uint16(buf.Len()), pad6{}, buf.Bytes())
 }
 
 // ReadFrom implements io.ReaderFrom interface. It deserializes the
 // packet-out message from the wire format.
 func (p *PacketOut) ReadFrom(r io.Reader) (int64, error) {
-	var plen uint16
+	var len uint16
 
 	n, err := encoding.ReadFrom(r, &p.Buffer, &p.InPort,
-		&plen, &defaultPad6)
+		&len, &defaultPad6)
 
 	if err != nil {
 		return n, err
 	}
 
-	limrd := io.LimitReader(r, int64(plen))
+	limrd := io.LimitReader(r, int64(len))
 	p.Actions = nil
 
 	nn, err := p.Actions.ReadFrom(limrd)
-	if n += nn; err != nil {
-		return n, err
-	}
-
-	p.Data, err = ioutil.ReadAll(r)
-	return n + int64(len(p.Data)), err
+	return n + nn, err
 }

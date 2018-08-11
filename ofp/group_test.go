@@ -14,12 +14,12 @@ func TestBucket(t *testing.T) {
 	}
 
 	tests := []encodingtest.MU{
-		{&Bucket{
+		{ReadWriter: &Bucket{
 			Weight:     42,
 			WatchPort:  PortNo(5),
 			WatchGroup: Group(7),
 			Actions:    actions,
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x28, // Length.
 			0x00, 0x2a, // Wight.
 			0x00, 0x00, 0x00, 0x05, // Watch port.
@@ -54,12 +54,12 @@ func TestGroupMod(t *testing.T) {
 	}
 
 	tests := []encodingtest.MU{
-		{&GroupMod{
+		{ReadWriter: &GroupMod{
 			Command: GroupModify,
 			Type:    GroupTypeIndirect,
 			Group:   Group(3),
 			Buckets: buckets,
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x01, // Group command.
 			0x02,                   // Group type.
 			0x00,                   // 1-byte padding.
@@ -96,17 +96,17 @@ func TestGroupMod(t *testing.T) {
 
 func TestBucketCounter(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&BucketCounter{
+		{ReadWriter: &BucketCounter{
 			PacketCount: 10838451347809794865,
 			ByteCount:   9634678394999596076,
-		}, []byte{
+		}, Bytes: []byte{
 			0x96, 0x69, 0xea, 0x13, 0x85, 0x8e, 0x7b, 0x31,
 			0x85, 0xb5, 0x40, 0xf4, 0x1b, 0x14, 0xe4, 0x2c,
 		}},
-		{&BucketCounter{
+		{ReadWriter: &BucketCounter{
 			PacketCount: 5523660708591555761,
 			ByteCount:   14713084686717327527,
-		}, []byte{
+		}, Bytes: []byte{
 			0x4c, 0xa7, 0xfc, 0x26, 0x1b, 0x61, 0xd4, 0xb1,
 			0xcc, 0x2f, 0x60, 0x91, 0xbe, 0x06, 0x98, 0xa7,
 		}},
@@ -117,7 +117,7 @@ func TestBucketCounter(t *testing.T) {
 
 func TestGroupStatsRequest(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&GroupStatsRequest{Group(7)}, []byte{
+		{ReadWriter: &GroupStatsRequest{Group(7)}, Bytes: []byte{
 			0x00, 0x00, 0x00, 0x07, // Group identifier.
 			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
 		}},
@@ -131,11 +131,11 @@ func TestGroupDescStats(t *testing.T) {
 	buckets := []Bucket{{1, PortNo(2), Group(42), actions}}
 
 	tests := []encodingtest.MU{
-		{&GroupDescStats{
+		{ReadWriter: &GroupDescStats{
 			Type:    GroupTypeSelect,
 			Group:   Group(42),
 			Buckets: buckets,
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x20, // Length.
 			0x01,                   // Group type.
 			0x00,                   // 1-byte padding.
@@ -165,7 +165,7 @@ func TestGroupStats(t *testing.T) {
 	}}
 
 	tests := []encodingtest.MU{
-		{&GroupStats{
+		{ReadWriter: &GroupStats{
 			Group:        Group(4),
 			RefCount:     7,
 			PacketCount:  15724173823290642489,
@@ -173,7 +173,7 @@ func TestGroupStats(t *testing.T) {
 			DurationSec:  2042699544,
 			DurationNSec: 2073841368,
 			BucketStats:  counters,
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x38, // Length.
 			0x00, 0x00, // 2-byte padding.
 			0x00, 0x00, 0x00, 0x04, // Group identifier.
@@ -208,12 +208,12 @@ func TestGroupFeatures(t *testing.T) {
 		one<<uint32(ActionTypePushMPLS)
 
 	tests := []encodingtest.MU{
-		{&GroupFeatures{
+		{ReadWriter: &GroupFeatures{
 			Types:        types,
 			Capabilities: capabilities,
 			MaxGroups:    [4]uint32{4, 5, 6, 7},
 			Actions:      [4]uint32{actions, 0, 0, 0},
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x00, 0x00, 0x0f, // Group types.
 			0x00, 0x00, 0x00, 0x11, // Capabilities.
 
