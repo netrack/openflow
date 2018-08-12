@@ -71,7 +71,7 @@ func TestPort(t *testing.T) {
 	copy(name, "sw1-eth0")
 
 	tests := []encodingtest.MU{
-		{&Port{
+		{ReadWriter: &Port{
 			PortNo:     PortNormal,
 			HWAddr:     hwaddr,
 			Name:       string(name),
@@ -83,7 +83,7 @@ func TestPort(t *testing.T) {
 			Peer:       peer,
 			CurrSpeed:  42,
 			MaxSpeed:   43,
-		}, []byte{
+		}, Bytes: []byte{
 			0xff, 0xff, 0xff, 0xfa, // Port number.
 			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
 			0x01, 0x23, 0x45, 0x67, 0x89, 0xab, // Hardware address.
@@ -108,13 +108,13 @@ func TestPortMod(t *testing.T) {
 	features := PortFeature10GbitFullDuplex | PortFeatureAutoneg
 
 	tests := []encodingtest.MU{
-		{&PortMod{
+		{ReadWriter: &PortMod{
 			PortNo:    PortFlood,
 			HWAddr:    hwaddr,
 			Config:    PortConfigNoFwd,
 			Mask:      PortConfig(0),
 			Advertise: features,
-		}, []byte{
+		}, Bytes: []byte{
 			0xff, 0xff, 0xff, 0xfb, // Port number.
 			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
 			0x01, 0x23, 0x45, 0x67, 0x89, 0xab, // Hardware address.
@@ -137,7 +137,7 @@ func TestPortStatus(t *testing.T) {
 	copy(name, "sw1-eth1")
 
 	tests := []encodingtest.MU{
-		{&PortStatus{
+		{ReadWriter: &PortStatus{
 			Reason: PortReasonAdd,
 			Port: Port{
 				PortNo:     PortFlood,
@@ -152,7 +152,7 @@ func TestPortStatus(t *testing.T) {
 				CurrSpeed:  2047,
 				MaxSpeed:   65535,
 			},
-		}, []byte{
+		}, Bytes: []byte{
 			0x00,                                     // Port status reason.
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 7-byte padding.
 
@@ -179,9 +179,9 @@ func TestPortStatus(t *testing.T) {
 
 func TestPortStatsRequest(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&PortStatsRequest{
+		{ReadWriter: &PortStatsRequest{
 			PortNo: PortNo(2),
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x00, 0x00, 0x02, // Port number.
 			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
 		}},
@@ -192,7 +192,7 @@ func TestPortStatsRequest(t *testing.T) {
 
 func TestPortStats(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&PortStats{
+		{ReadWriter: &PortStats{
 			PortNo:       PortNo(3),
 			RxPackets:    6773009508081008653,
 			TxPackets:    4449515516159517871,
@@ -208,7 +208,7 @@ func TestPortStats(t *testing.T) {
 			Collisions:   7394863223143382373,
 			DurationSec:  684498643,
 			DurationNSec: 2789499113,
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x00, 0x00, 0x03, // Port number.
 			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
 			0x5d, 0xfe, 0x90, 0x43, 0x3d, 0x83, 0x00, 0x0d, // Rx packets.

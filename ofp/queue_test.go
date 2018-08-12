@@ -14,11 +14,11 @@ func TestPacketQueue(t *testing.T) {
 	}
 
 	tests := []encodingtest.MU{
-		{&PacketQueue{
+		{ReadWriter: &PacketQueue{
 			Queue:      QueueAll,
 			Port:       PortNormal,
 			Properties: props,
-		}, []byte{
+		}, Bytes: []byte{
 			0xff, 0xff, 0xff, 0xff, // Queue.
 			0xff, 0xff, 0xff, 0xfa, // Port number.
 			0x00, 0x30, // Length.
@@ -48,10 +48,10 @@ func TestQueuePropExperimenter(t *testing.T) {
 	data := []byte{0x00, 0x01, 0x02, 0x03}
 
 	tests := []encodingtest.MU{
-		{&QueuePropExperimenter{
+		{ReadWriter: &QueuePropExperimenter{
 			Experimenter: 359,
 			Data:         data,
-		}, append([]byte{
+		}, Bytes: append([]byte{
 			0xff, 0xff, // Queue property type.
 			0x00, 0x14, // Queue property length.
 			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
@@ -65,10 +65,10 @@ func TestQueuePropExperimenter(t *testing.T) {
 
 func TestQueueStastsRequest(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&QueueStatsRequest{
+		{ReadWriter: &QueueStatsRequest{
 			Port:  PortNo(1),
 			Queue: Queue(2),
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x00, 0x00, 0x01, // Port number.
 			0x00, 0x00, 0x00, 0x02, // Queue number.
 		}},
@@ -79,7 +79,7 @@ func TestQueueStastsRequest(t *testing.T) {
 
 func TestQueueStats(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&QueueStats{
+		{ReadWriter: &QueueStats{
 			Port:         PortNo(42),
 			Queue:        Queue(9),
 			TxBytes:      5631918746835501714,
@@ -87,7 +87,7 @@ func TestQueueStats(t *testing.T) {
 			TxErrors:     9021256935579401134,
 			DurationSec:  3332165368,
 			DurationNSec: 3773668775,
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x00, 0x00, 0x2a, // Port number.
 			0x00, 0x00, 0x00, 0x09, // Queue.
 			0x4e, 0x28, 0x98, 0x42, 0xd4, 0xfe, 0x42, 0x92, // Tx bytes.
@@ -103,7 +103,7 @@ func TestQueueStats(t *testing.T) {
 
 func TestQueueGetConfigRequest(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&QueueGetConfigRequest{PortNo(42)}, []byte{
+		{ReadWriter: &QueueGetConfigRequest{PortNo(42)}, Bytes: []byte{
 			0x00, 0x00, 0x00, 0x2a, // Port number.
 			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
 		}},
@@ -129,10 +129,10 @@ func TestQueueGetConfigReply(t *testing.T) {
 	}
 
 	tests := []encodingtest.MU{
-		{&QueueGetConfigReply{
+		{ReadWriter: &QueueGetConfigReply{
 			Port:   PortNo(43),
 			Queues: queues,
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x00, 0x00, 0x2b, // Port number.
 			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
 

@@ -8,11 +8,11 @@ import (
 
 func TestXM(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&XM{Class: XMClassOpenflowBasic,
+		{ReadWriter: &XM{Class: XMClassOpenflowBasic,
 			Type:  XMTypeUDPSrc,
 			Value: XMValue{0x00, 0x35},
 			Mask:  XMValue{0xff, 0xff}},
-			[]byte{
+			Bytes: []byte{
 				0x80, 0x00, // OpenFlow basic.
 				0x1f,                   // Match field + Mask flag.
 				0x04,                   // Payload length.
@@ -30,7 +30,7 @@ func TestMatch(t *testing.T) {
 		Value: XMValue{0x00, 0x00, 0x00, 0x03},
 	}}}
 
-	tests := []encodingtest.MU{{m, []byte{
+	tests := []encodingtest.MU{{ReadWriter: m, Bytes: []byte{
 		0x00, 0x01, // Match type.
 		0x00, 0x0c, // Match length.
 		0x80, 0x00, // OpenFlow basic.

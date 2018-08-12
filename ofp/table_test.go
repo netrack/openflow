@@ -9,10 +9,10 @@ import (
 
 func TestTableMod(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&TableMod{
+		{ReadWriter: &TableMod{
 			Table:  TableMax,
 			Config: TableConfigDeprecatedMask,
-		}, []byte{
+		}, Bytes: []byte{
 			0xfe,             // Table identifier.
 			0x00, 0x00, 0x00, // 3-byte padding.
 			0x00, 0x00, 0x00, 0x03, // Configuration.
@@ -24,12 +24,12 @@ func TestTableMod(t *testing.T) {
 
 func TestTableStats(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&TableStats{
+		{ReadWriter: &TableStats{
 			Table:        TableMax,
 			ActiveCount:  267,
 			LookupCount:  132,
 			MatchedCount: 54,
-		}, []byte{
+		}, Bytes: []byte{
 			0xfe,             // Table identifier.
 			0x00, 0x00, 0x00, // 3-byte padding.
 			0x00, 0x00, 0x01, 0x0b, // Active count.
@@ -43,10 +43,10 @@ func TestTableStats(t *testing.T) {
 
 func TestTablePropInstructions(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&TablePropInstructions{Instructions: []InstructionType{
+		{ReadWriter: &TablePropInstructions{Instructions: []InstructionType{
 			InstructionTypeMeter,
 			InstructionTypeGotoTable,
-		}}, []byte{
+		}}, Bytes: []byte{
 			0x00, 0x00, // Property type.
 			0x00, 0x0c, // Property length.
 
@@ -69,9 +69,9 @@ func TestTablePropInstructions(t *testing.T) {
 
 func TestTablePropNextTables(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&TablePropNextTables{
+		{ReadWriter: &TablePropNextTables{
 			NextTables: []Table{1, 2, 3},
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x02, // Property type.
 			0x00, 0x07, // Property length.
 
@@ -88,10 +88,10 @@ func TestTablePropNextTables(t *testing.T) {
 
 func TestTablePropWriteActions(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&TablePropWriteActions{Actions: []ActionType{
+		{ReadWriter: &TablePropWriteActions{Actions: []ActionType{
 			ActionTypeCopyTTLOut,
 			ActionTypeCopyTTLIn,
-		}}, []byte{
+		}}, Bytes: []byte{
 			0x00, 0x04, // Property type.
 			0x00, 0x0c, // Property length.
 
@@ -111,9 +111,9 @@ func TestTablePropWriteActions(t *testing.T) {
 
 func TestTablePropApplyActions(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&TablePropApplyActions{
+		{ReadWriter: &TablePropApplyActions{
 			Miss: true, Actions: []ActionType{ActionTypeGroup},
-		}, []byte{
+		}, Bytes: []byte{
 			0x00, 0x07, // Property type.
 			0x00, 0x08, // Property length.
 
@@ -151,10 +151,11 @@ var fieldsBytes = []byte{
 
 func TestTablePropMatch(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&TablePropMatch{Fields: fields}, append([]byte{
-			0x00, 0x08, // Property type.
-			0x00, 0x0c, // Property length.
-		}, fieldsBytes...)},
+		{ReadWriter: &TablePropMatch{Fields: fields},
+			Bytes: append([]byte{
+				0x00, 0x08, // Property type.
+				0x00, 0x0c, // Property length.
+			}, fieldsBytes...)},
 	}
 
 	encodingtest.RunMU(t, tests)
@@ -162,7 +163,7 @@ func TestTablePropMatch(t *testing.T) {
 
 func TestTablePropWildcards(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&TablePropWildcards{Fields: fields}, append([]byte{
+		{ReadWriter: &TablePropWildcards{Fields: fields}, Bytes: append([]byte{
 			0x00, 0x0a, // Property type.
 			0x00, 0x0c, // Property length.
 		}, fieldsBytes...)},
@@ -173,10 +174,12 @@ func TestTablePropWildcards(t *testing.T) {
 
 func TestTablePropWriteSetField(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&TablePropWriteSetField{Fields: fields}, append([]byte{
-			0x00, 0x0c, // Property type.
-			0x00, 0x0c, // Property length.
-		}, fieldsBytes...)},
+		{
+			ReadWriter: &TablePropWriteSetField{Fields: fields},
+			Bytes: append([]byte{
+				0x00, 0x0c, // Property type.
+				0x00, 0x0c, // Property length.
+			}, fieldsBytes...)},
 	}
 
 	encodingtest.RunMU(t, tests)
@@ -184,13 +187,15 @@ func TestTablePropWriteSetField(t *testing.T) {
 
 func TestTablePropApplySetField(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&TablePropApplySetField{
-			Miss:   true,
-			Fields: fields,
-		}, append([]byte{
-			0x00, 0x0f, // Property type.
-			0x00, 0x0c, // Property length.
-		}, fieldsBytes...)},
+		{
+			ReadWriter: &TablePropApplySetField{
+				Miss:   true,
+				Fields: fields,
+			},
+			Bytes: append([]byte{
+				0x00, 0x0f, // Property type.
+				0x00, 0x0c, // Property length.
+			}, fieldsBytes...)},
 	}
 
 	encodingtest.RunMU(t, tests)
@@ -198,11 +203,11 @@ func TestTablePropApplySetField(t *testing.T) {
 
 func TestTablePropExperimenter(t *testing.T) {
 	tests := []encodingtest.MU{
-		{&TablePropExperimenter{
+		{ReadWriter: &TablePropExperimenter{
 			Experimenter: 42,
 			ExpType:      43,
 			Data:         []byte{0x11, 0x22},
-		}, []byte{
+		}, Bytes: []byte{
 			0xff, 0xfe, // Property type.
 			0x00, 0x0e, // Property length.
 			0x00, 0x00, 0x00, 0x2a, // Experimenter.
@@ -258,14 +263,14 @@ func TestTableFeatures(t *testing.T) {
 	)
 
 	tests := []encodingtest.MU{
-		{&TableFeatures{
+		{ReadWriter: &TableFeatures{
 			Table:         Table(3),
 			Name:          string(name),
 			MetadataMatch: 0xff,
 			MetadataWrite: 0xfe,
 			MaxEntries:    512,
 			Properties:    properties,
-		}, bytes},
+		}, Bytes: bytes},
 	}
 
 	gob.Register(TablePropApplyActions{})
