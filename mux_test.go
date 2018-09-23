@@ -72,13 +72,13 @@ func TestTypeMux(t *testing.T) {
 	// it will return EOF, which will be used to identify the
 	// successful read of the message.
 	if err != io.EOF {
-		t.Errorf("Serve failed:", err)
+		t.Errorf("Serve failed: %v", err)
 	}
 
 	wg.Wait()
 
 	returned := fmt.Sprintf("%x", conn.w.Bytes())
 	if returned != "0400000c0000000000000000" {
-		t.Errorf("Invalid data returned: ", returned)
+		t.Errorf("Invalid data returned: %v", returned)
 	}
 }

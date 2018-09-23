@@ -43,7 +43,7 @@ func TestCookieReaderOf(t *testing.T) {
 	}
 
 	if jar.Cookies() != 42 {
-		t.Fatalf("Invalid cookie returned: %d", jar.Cookies)
+		t.Fatalf("Invalid cookie returned: %d", jar.Cookies())
 	}
 }
 
