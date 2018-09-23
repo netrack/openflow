@@ -156,10 +156,11 @@ type Server struct {
 	// Addr is an address to listen on.
 	Addr string
 
-	// Runner defines concurrency model of handling requests from the
-	// switch within a single connection. By default OnDemandRoutineRunner
-	// is used.
-	Runner Runner
+	// HandlerRunner defines concurrency model of handling requests from
+	// the switch within a single connection.
+	//
+	// By default OnDemandRoutineRunner is used.
+	HandlerRunner Runner
 
 	// Handler to invoke on the incoming requests.
 	Handler Handler
@@ -169,6 +170,15 @@ type Server struct {
 
 	// Maximum duration before timing out the write of the response.
 	WriteTimeout time.Duration
+
+	// ConnRunner defines concurrency model of processing client connections.
+	//
+	// By default each accepted connection is handled in a standalone
+	// goroutine. Such approach could result in a consuming all CPU and
+	// Memory resourses of the computer, therefore it is higly recommended
+	// to server connections only on a fixed amount of workers (see
+	// MultiRoutineRunner).
+	ConnRunner Runner
 
 	// ConnState specifies an optional callback function that is called
 	// when a client connection changes state.
@@ -218,16 +228,21 @@ func (srv *Server) Serve(l net.Listener) error {
 		handler = DefaultMux
 	}
 
-	runner := srv.Runner
-	if runner == nil {
-		runner = OnDemandRoutineRunner{}
+	hr := srv.HandlerRunner
+	if hr == nil {
+		hr = OnDemandRoutineRunner{}
+	}
+
+	cr := srv.ConnRunner
+	if cr == nil {
+		cr = OnDemandRoutineRunner{}
 	}
 
 	// Initialize a channel used to terminate the main handling loop.
 	srv.once.Do(func() { srv.stop = make(chan struct{}) })
 
 	for {
-		err := srv.accept(l, runner, handler)
+		err := srv.accept(l, cr, hr, handler)
 		if err != nil {
 			return err
 		}
@@ -237,7 +252,7 @@ func (srv *Server) Serve(l net.Listener) error {
 // The accept block until a new connection will be extracted from the
 // queue. It keeps track of count of incoming connections and closes all
 // that exceed the MaxConns threshold.
-func (srv *Server) accept(l net.Listener, r Runner, h Handler) error {
+func (srv *Server) accept(l net.Listener, cr, hr Runner, h Handler) error {
 	rwc, err := l.Accept()
 	if err != nil {
 		return err
@@ -249,18 +264,19 @@ func (srv *Server) accept(l net.Listener, r Runner, h Handler) error {
 
 	srv.setState(c, StateNew)
 
-	// Terminate the
+	// Terminate the connection when count of open connections exceed
+	// a maximum limit.
 	numConns := atomic.LoadInt32(&srv.conns)
 	if srv.MaxConns != 0 && numConns >= int32(srv.MaxConns) {
 		// Make the close a deferred call in case of overridden ConnState
 		// function produce a panic error (to prevent file descriptor leak).
 		defer c.Close()
-		srv.setState(c, StateClosed)
+		defer srv.setState(c, StateClosed)
 		return nil
 	}
 
 	atomic.AddInt32(&srv.conns, 1)
-	go srv.serve(c, r, h)
+	cr.Run(func() { srv.serve(c, hr, h) })
 
 	return nil
 }
