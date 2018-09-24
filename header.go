@@ -60,6 +60,7 @@ const (
 	TypeMeterMod
 )
 
+// Type is an OpenFlow message type.
 type Type uint8
 
 func (t Type) String() string {
@@ -122,11 +123,12 @@ type Header struct {
 	Transaction uint32
 }
 
+// Copy returns a copy of the request header.
 func (h *Header) Copy() *Header {
 	return &Header{h.Version, h.Type, h.Length, h.Transaction}
 }
 
-// Length of the packet payload including header.
+// Len of the packet payload including header.
 func (h *Header) Len() int {
 	return int(h.Length)
 }

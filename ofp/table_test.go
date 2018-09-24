@@ -97,7 +97,7 @@ func TestTablePropWriteActions(t *testing.T) {
 
 			// Actions.
 			0x00, 0xb, // Action type.
-			0x00, 0x04, // Action lenght.
+			0x00, 0x04, // Action length.
 
 			0x00, 0xc, // Action type.
 			0x00, 0x04, // Action length.

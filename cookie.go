@@ -9,6 +9,7 @@ import (
 	"reflect"
 )
 
+// CookieJar manages storage and use of cookies in OpenFlow requests.
 type CookieJar interface {
 	SetCookies(uint64)
 	Cookies() uint64
@@ -55,7 +56,7 @@ func NewCookieMatcher(j CookieJar) *CookieMatcher {
 	cookiesLow := rand.Uint32()
 	cookiesHigh := rand.Uint32()
 
-	cookies = uint64(cookiesHigh<<32) | uint64(cookiesLow)
+	cookies = (uint64(cookiesHigh) << 32) | uint64(cookiesLow)
 
 	// Set the generated cookies to the given cookie jar and also
 	// put this value to the matcher.

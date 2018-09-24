@@ -282,7 +282,7 @@ const (
 )
 
 const (
-	// xmlen defines the length of the extention match header, it does
+	// xmlen defines the length of the extension match header, it does
 	// not include the value and mask.
 	xmlen = 4
 )

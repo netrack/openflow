@@ -32,7 +32,7 @@ func waitAll(ch chan struct{}, n int, t time.Duration) error {
 }
 
 func TestResponseWrite(t *testing.T) {
-	// Wait for 3 successfull echo-request replies and a
+	// Wait for 3 successful echo-request replies and a
 	// reply on the multipart aggregated statistics.
 	nreqs := 4
 	ch := make(chan struct{}, nreqs)

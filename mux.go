@@ -31,7 +31,7 @@ func (t TypeMatcher) Match(r *Request) bool {
 }
 
 // MultiMatcher creates a new Matcher instance that matches the request
-// by all specified criterias.
+// by all specified criteria.
 func MultiMatcher(m ...Matcher) Matcher {
 	fn := func(r *Request) bool {
 		for _, matcher := range m {
@@ -97,7 +97,7 @@ func (mux *ServeMux) Handle(m Matcher, h Handler) {
 	mux.handle(&muxEntry{m, h, false})
 }
 
-// Handle registers disposable handler for the given pattern.
+// HandleOnce registers disposable handler for the given pattern.
 //
 // It is not guaranteed that handler will process the first message
 // exemplar of the matching message.
@@ -110,7 +110,7 @@ func (mux *ServeMux) HandleFunc(m Matcher, h HandlerFunc) {
 	mux.Handle(m, h)
 }
 
-// HandleFunc registers handler function for the given message type.
+// Handler returns a handler of the specified request.
 func (mux *ServeMux) Handler(r *Request) Handler {
 	var matcher Matcher
 	var entry *muxEntry
@@ -175,6 +175,7 @@ type TypeMux struct {
 	mux *ServeMux
 }
 
+// NewTypeMux creates and returns a new TypeMux.
 func NewTypeMux() *TypeMux {
 	return &TypeMux{NewServeMux()}
 }
@@ -194,7 +195,7 @@ func (mux *TypeMux) HandleFunc(t Type, f HandlerFunc) {
 	mux.Handle(t, f)
 }
 
-// Handle returns a Handler instance for the given OpenFlow request.
+// Handler returns a Handler instance for the given OpenFlow request.
 func (mux *TypeMux) Handler(r *Request) Handler {
 	return mux.mux.Handler(r)
 }

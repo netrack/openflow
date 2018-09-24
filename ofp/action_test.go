@@ -10,7 +10,7 @@ func TestActionCopyTTLInOut(t *testing.T) {
 	tests := []encodingtest.MU{
 		{ReadWriter: &ActionCopyTTLOut{}, Bytes: []byte{
 			0x00, 0xb, // Action type.
-			0x00, 0x08, // Action lenght.
+			0x00, 0x08, // Action length.
 			0x00, 0x00, 0x00, 0x00, // 4-byte padding.
 		}},
 		{ReadWriter: &ActionCopyTTLIn{}, Bytes: []byte{

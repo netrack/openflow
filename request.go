@@ -11,8 +11,12 @@ import (
 )
 
 var (
-	ErrUnknownVersion  = errors.New("openflow: Unknown version passed")
-	ErrBodyTooLong     = errors.New("openflow: Request body is too long")
+	// ErrBodyTooLong is returned when actual request body exceeds the
+	// length specified in the request header.
+	ErrBodyTooLong = errors.New("openflow: Request body is too long")
+
+	// ErrCorruptedHeader is returned when request body does not match
+	// the length specified in a request header.
 	ErrCorruptedHeader = errors.New("openflow: Corrupted header")
 )
 

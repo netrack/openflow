@@ -66,10 +66,10 @@ const (
 	ConfigFlagFragMask
 )
 
-// SwitchFeatures is mesage used as a response to the controller on
+// SwitchFeatures is message used as a response to the controller on
 // feature request message.
 //
-// For exampe, to retireve the switch configuration, the following
+// For example, to retrieve the switch configuration, the following
 // request can be sent:
 //
 //	req := of.NewRequest(of.TypeFeaturesRequest, nil)
@@ -113,7 +113,7 @@ func (s *SwitchFeatures) ReadFrom(r io.Reader) (int64, error) {
 // SwitchConfig is a message used as a response to the controller
 // on switch configuration request message.
 //
-// To retireve the switch configuration, the following request can
+// To retrieve the switch configuration, the following request can
 // be sent:
 //
 //	req := of.NewRequest(of.TypeGetConfigRequest, nil)

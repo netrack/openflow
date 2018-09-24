@@ -229,7 +229,7 @@ type ActionOutput struct {
 	MaxLen uint16
 }
 
-// Type retuns the type of the action.
+// Type returns the type of the action.
 func (a *ActionOutput) Type() ActionType {
 	return ActionTypeOutput
 }

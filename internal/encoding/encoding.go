@@ -175,8 +175,6 @@ func ReadFunc(r io.Reader, rm ReaderMaker, fn func(r io.ReaderFrom)) (int64, err
 
 		fn(reader)
 	}
-
-	return n, nil
 }
 
 // ReaderMaker defines factory types, used to created new exemplars
@@ -204,7 +202,7 @@ func (fn ReaderMakerFunc) MakeReader() (io.ReaderFrom, error) {
 }
 
 func ScanFrom(r io.Reader, v interface{}, rm ReaderMaker) (int64, error) {
-	// Retrieve the size of the instruction type, that preceeds
+	// Retrieve the size of the instruction type, that precedes
 	// every instruction body.
 	valType := reflect.TypeOf(v)
 	typeLen := int(valType.Elem().Size())
@@ -244,8 +242,6 @@ func ScanFrom(r io.Reader, v interface{}, rm ReaderMaker) (int64, error) {
 			return n, SkipEOF(err)
 		}
 	}
-
-	return n, nil
 }
 
 // SkipEOF returns nil of the given error caused by the
