@@ -18,7 +18,7 @@ type OnDemandRoutineRunner struct{}
 
 // Run starts a function in a separate go-routine. This method implements
 // Runner interface.
-func (_ OnDemandRoutineRunner) Run(fn func()) {
+func (OnDemandRoutineRunner) Run(fn func()) {
 	go fn()
 }
 
@@ -29,7 +29,7 @@ func (_ OnDemandRoutineRunner) Run(fn func()) {
 type SequentialRunner struct{}
 
 // Run starts a function as is. This method implements Runner interface.
-func (_ SequentialRunner) Run(fn func()) {
+func (SequentialRunner) Run(fn func()) {
 	fn()
 }
 

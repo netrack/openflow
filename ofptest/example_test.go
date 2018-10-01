@@ -1,4 +1,4 @@
-package ofptest_test
+package ofptest
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 
 	of "github.com/netrack/openflow"
 	"github.com/netrack/openflow/ofp"
-	"github.com/netrack/openflow/ofptest"
 )
 
 func ExampleResponseRecorder() {
@@ -15,7 +14,7 @@ func ExampleResponseRecorder() {
 	}
 
 	req := of.NewRequest(of.TypeHello, nil)
-	w := ofptest.NewRecorder()
+	w := NewRecorder()
 
 	handler(w, req)
 	fmt.Printf("type: %d", w.First().Header.Type)
@@ -23,7 +22,7 @@ func ExampleResponseRecorder() {
 }
 
 func ExampleServer() {
-	ts := ofptest.NewServer(of.HandlerFunc(func(w of.ResponseWriter, r *of.Request) {
+	ts := NewServer(of.HandlerFunc(func(w of.ResponseWriter, r *of.Request) {
 		res := &ofp.EchoReply{Data: []byte("pong")}
 		w.Write(&of.Header{Type: of.TypeEchoReply}, res)
 	}))

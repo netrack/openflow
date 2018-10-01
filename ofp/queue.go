@@ -90,7 +90,7 @@ func (q QueueProps) ReadFrom(r io.Reader) (int64, error) {
 // packetQueueLen defines the length of the packet queue header.
 const packetQueueLen = 16
 
-// PacketQueue decribes the packet processing queue.
+// PacketQueue describes the packet processing queue.
 //
 // An OpenFlow switch provides limited Quality-of-Service support (QoS)
 // through a simple queuing mechanism. One (or more) queues can attach

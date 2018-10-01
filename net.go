@@ -9,16 +9,40 @@ import (
 	"time"
 )
 
+// A ConnState represents the state of a client connection to a server. It's
+// used by the optional Server.ConnState hook.
 type ConnState int
 
 const (
+	// StateNew represents a new connection that is expected to
+	// send a request immediately. Connections begin at this
+	// state and the transition to either StateHandshake or
+	// StateClosed.
 	StateNew ConnState = iota
+
+	// StateHandshake represents a connection that has initiated
+	// OpenFlow handshake routine. After the request is handled,
+	// the state transitions to one of: StateHandshake, StateActive,
+	// StateIdle or StateClosed.
 	StateHandshake
+
+	// StateActive represents a connection that has read 1 or more
+	// bytes of the request. The Server.ConnState hook for StateActive
+	// fires before the request has been handled.
 	StateActive
+
+	// StateIdle represents a connection that has finished
+	// handling a request and is in the keep-alive state, waiting
+	// for a new request. Connections transition from StateIdle
+	// to StateHandshake, StateActive or StateClosed
 	StateIdle
+
+	// StateClosed represents a closed connection. This is a
+	// terminal state.
 	StateClosed
 )
 
+// String returns the string presentation of the ConnState.
 func (c ConnState) String() string {
 	text, ok := connStateText[c]
 	if !ok {
