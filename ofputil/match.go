@@ -43,7 +43,7 @@ func MatchInPort(port ofp.PortNo) ofp.XM {
 	return basic(ofp.XMTypeInPort, bytesOf(port), nil)
 }
 
-// MatchIPPort creates an Openflow basic extensible match of IP protocol
+// MatchIPProto creates an Openflow basic extensible match of IP protocol
 // payload type.
 func MatchIPProto(ipp uint8) ofp.XM {
 	return basic(ofp.XMTypeIPProto, bytesOf(ipp), nil)
